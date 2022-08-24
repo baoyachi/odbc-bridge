@@ -1,1 +1,1 @@
-# odbc-sqlx-adapter
+# odbc-api-helper
