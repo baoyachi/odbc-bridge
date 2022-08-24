@@ -64,5 +64,5 @@ fn print_table(table: Table) {
     let string = table
         .draw_table(&cfg, &styles, alignments, usize::MAX)
         .unwrap();
-    println!("{}", string);
+    debug!("{}", string);
 }
