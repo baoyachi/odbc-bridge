@@ -1,0 +1,18 @@
+[package]
+name = "odbc-api-helper"
+version = "0.1.0"
+authors = ["baoyachi <liaoymxsdl@gmail.com>"]
+edition = "2021"
+description = "odbc-api helper"
+keywords = ["odbc", "odbc-api", "odbc-api-helper"]
+readme = "README.md"
+repository = "https://github.com/baoyachi/odbc-api-helper"
+documentation = "https://docs.rs/odbc-api-helper"
+homepage = "https://github.com/baoyachi/odbc-api-helper"
+license = "Apache-2.0"
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[dependencies]
+csv = "1.1.6"
+odbc-api = "0.46.0"
