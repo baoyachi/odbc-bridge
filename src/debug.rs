@@ -1,8 +1,7 @@
 use nu_protocol::Config;
 use nu_table::{Alignments, StyledString, Table, TableTheme, TextStyle};
 use odbc_api::buffers::TextRowSet;
-use odbc_api::handles::StatementImpl;
-use odbc_api::{Cursor, CursorImpl, ResultSetMetadata};
+use odbc_api::Cursor;
 use std::collections::HashMap;
 use std::error::Error;
 
@@ -18,13 +17,13 @@ const BATCH_SIZE: usize = 5000;
 /// ╰────┴────────────┴────────────────────────────┴────────────────────────────╯
 // ```
 ///
-pub fn print_all_tables(cursor: CursorImpl<StatementImpl<'_>>) -> Result<(), Box<dyn Error>> {
+pub fn print_all_tables(cursor: impl Cursor) -> Result<(), Box<dyn Error>> {
     let table = convert_table(cursor)?;
     print_table(table);
     Ok(())
 }
 
-pub fn convert_table(mut cursor: CursorImpl<StatementImpl<'_>>) -> Result<Table, Box<dyn Error>> {
+pub fn convert_table(mut cursor: impl Cursor) -> Result<Table, Box<dyn Error>> {
     let headers: Vec<StyledString> = cursor
         .column_names()?
         .collect::<Result<Vec<String>, _>>()?
