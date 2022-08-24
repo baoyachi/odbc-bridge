@@ -7,7 +7,7 @@ use std::error::Error;
 
 const BATCH_SIZE: usize = 5000;
 
-/// print CursorImpl output to table.E.g:
+/// Print Cursor output to table.E.g:
 /// ```bash
 /// > run you code...
 /// ╭────┬────────────┬────────────────────────────┬────────────────────────────╮
