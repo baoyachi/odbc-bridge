@@ -8,6 +8,16 @@ use std::error::Error;
 
 const BATCH_SIZE: usize = 5000;
 
+/// print CursorImpl output to table.E.g:
+/// ```bash
+/// > run you code...
+/// ╭────┬────────────┬────────────────────────────┬────────────────────────────╮
+/// │ id │   name     │         created_at         │         updated_at         │
+/// ├────┼────────────┼────────────────────────────┼────────────────────────────┤
+/// │ 1  │   hallo    │ 2022-08-24 15:50:36.000000 │ 2022-08-24 15:50:36.000000 │
+/// ╰────┴────────────┴────────────────────────────┴────────────────────────────╯
+// ```
+///
 pub fn print_all_tables(cursor: CursorImpl<StatementImpl<'_>>) -> Result<(), Box<dyn Error>> {
     let table = convert_table(cursor)?;
     print_table(table);
