@@ -20,7 +20,7 @@ const BATCH_SIZE: usize = 5000;
 pub fn print_all_tables(cursor: impl Cursor) -> Result<(), Box<dyn Error>> {
     let table = convert_table(cursor)?;
     let string = convert_table_string(table).ok_or_else(|| "convert table to string error")?;
-    debug!("\n{}",string);
+    debug!("\n{}", string);
     Ok(())
 }
 
@@ -57,7 +57,7 @@ pub fn convert_table(mut cursor: impl Cursor) -> Result<Table, Box<dyn Error>> {
     Ok(table)
 }
 
-pub fn convert_table_string(table: Table) -> Option<String>{
+pub fn convert_table_string(table: Table) -> Option<String> {
     let cfg = Config::default();
     let styles = HashMap::default();
     let alignments = Alignments::default();
