@@ -19,7 +19,7 @@ const BATCH_SIZE: usize = 5000;
 ///
 pub fn print_all_tables(cursor: impl Cursor) -> Result<(), Box<dyn Error>> {
     let table = convert_table(cursor)?;
-    let string = convert_table_string(table).ok_or_else(|| "convert table to string error")?;
+    let string = convert_table_string(table).ok_or("convert table to string error")?;
     debug!("\n{}", string);
     Ok(())
 }
