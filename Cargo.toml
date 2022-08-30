@@ -1,6 +1,6 @@
 [package]
 name = "odbc-api-helper"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["baoyachi <liaoymxsdl@gmail.com>"]
 edition = "2021"
 description = "odbc-api helper"
