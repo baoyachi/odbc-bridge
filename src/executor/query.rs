@@ -1,11 +1,8 @@
+use crate::executor::Print;
 use bytes::Bytes;
+use nu_table::{StyledString, Table, TableTheme, TextStyle};
 use odbc_api::buffers::TextRowSet;
 use odbc_api::{Connection, Cursor, DataType, ParameterCollectionRef, ResultSetMetadata};
-
-#[derive(Default)]
-pub struct ExecResult {
-    pub rows_affected: usize,
-}
 
 #[derive(Debug, Default)]
 pub struct QueryResult {
@@ -22,6 +19,28 @@ pub struct Column {
 impl Column {
     fn new(name: String, data_type: DataType) -> Self {
         Self { name, data_type }
+    }
+}
+
+impl Print for QueryResult {
+    fn covert_table(&self) -> Table {
+        let headers: Vec<StyledString> = self
+            .columns
+            .iter()
+            .map(|x| StyledString::new(x.name.to_string(), TextStyle::default_header()))
+            .collect();
+
+        let rows = self
+            .data
+            .iter()
+            .map(|x| {
+                x.into_iter()
+                    .map(|y| String::from_utf8_lossy(y.as_ref()).to_string())
+                    .map(|y| StyledString::new(y, TextStyle::basic_left()))
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        Table::new(headers, rows, TableTheme::rounded())
     }
 }
 
