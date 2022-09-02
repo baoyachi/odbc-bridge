@@ -5,6 +5,7 @@ use std::collections::HashMap;
 pub mod execute;
 pub mod query;
 mod statement;
+mod error;
 
 pub trait Print {
     fn print(&self) -> Result<(), &'static str> {
