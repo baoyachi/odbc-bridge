@@ -2,7 +2,9 @@ use crate::executor::Print;
 use bytes::Bytes;
 use nu_table::{StyledString, Table, TableTheme, TextStyle};
 use odbc_api::buffers::TextRowSet;
-use odbc_api::{Connection, Cursor, DataType, ParameterCollectionRef, ResultSetMetadata};
+use odbc_api::{
+    ColumnDescription, Connection, Cursor, DataType, ParameterCollectionRef, ResultSetMetadata,
+};
 
 #[derive(Debug, Default)]
 pub struct QueryResult {
@@ -14,11 +16,16 @@ pub struct QueryResult {
 pub struct Column {
     pub name: String,
     pub data_type: DataType,
+    pub nullable: bool,
 }
 
 impl Column {
-    fn new(name: String, data_type: DataType) -> Self {
-        Self { name, data_type }
+    fn new(name: String, data_type: DataType, nullable: bool) -> Self {
+        Self {
+            name,
+            data_type,
+            nullable,
+        }
     }
 }
 
@@ -59,7 +66,7 @@ pub fn query_result<S: Into<String>>(
         let column_name = cursor.col_name(col_index_u16)?;
         let data_type = cursor.col_data_type(col_index_u16)?;
 
-        let column = Column::new(column_name, data_type);
+        let column = Column::new(column_name, data_type, false);
         query_result.columns.push(column);
     }
 
@@ -77,5 +84,30 @@ pub fn query_result<S: Into<String>>(
             query_result.data.push(row_data);
         }
     }
+    Ok(query_result)
+}
+
+pub fn query_result2<S: Into<String>>(
+    conn: Connection,
+    sql: S,
+    params: impl ParameterCollectionRef,
+) -> anyhow::Result<QueryResult> {
+    let mut cursor = conn
+        .execute(&sql.into(), params)?
+        .ok_or_else(|| anyhow!("query error"))?;
+
+    let mut query_result = QueryResult::default();
+    for index in 0..cursor.num_result_cols()?.try_into()? {
+        let mut column_description = ColumnDescription::default();
+        cursor.describe_col(index + 1, &mut column_description)?;
+
+        let column = Column::new(
+            column_description.name_to_string()?,
+            column_description.data_type,
+            column_description.could_be_nullable(),
+        );
+        query_result.columns.push(column);
+    }
+
     Ok(query_result)
 }
