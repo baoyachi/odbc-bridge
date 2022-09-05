@@ -1,10 +1,8 @@
 use crate::executor::Print;
 use bytes::Bytes;
 use nu_table::{StyledString, Table, TableTheme, TextStyle};
-use odbc_api::buffers::TextRowSet;
-use odbc_api::{
-    ColumnDescription, Connection, Cursor, DataType, ParameterCollectionRef, ResultSetMetadata,
-};
+use odbc_api::buffers::{AnyColumnView, BufferDescription, BufferKind, ColumnarAnyBuffer, NullableSlice, TextRowSet};
+use odbc_api::{ColumnDescription, Connection, Cursor, DataType, ParameterCollectionRef, ResultSetMetadata, RowSetBuffer};
 
 #[derive(Debug, Default)]
 pub struct QueryResult {
@@ -51,6 +49,22 @@ impl Print for QueryResult {
     }
 }
 
+impl TryFrom<&Column> for BufferDescription {
+    type Error = String;
+
+    fn try_from(c: &Column) -> Result<Self, Self::Error> {
+        let description = BufferDescription {
+            nullable: c.nullable,
+            kind: BufferKind::from_data_type(c.data_type.clone()).ok_or_else(||
+                format!("covert DataType:{:?} to BufferKind error", c.data_type)
+            )?,
+        };
+        Ok(description)
+    }
+}
+
+const BATCH_SIZE: usize = 5000;
+
 pub fn query_result<S: Into<String>>(
     conn: Connection,
     sql: S,
@@ -70,7 +84,7 @@ pub fn query_result<S: Into<String>>(
         query_result.columns.push(column);
     }
 
-    const BATCH_SIZE: usize = 5000;
+
     let mut buffers = TextRowSet::for_cursor(BATCH_SIZE, &mut cursor, Some(4096))?;
     let mut row_set_cursor = cursor.bind_buffer(&mut buffers)?;
     while let Some(row_set) = row_set_cursor.fetch()? {
@@ -87,9 +101,18 @@ pub fn query_result<S: Into<String>>(
     Ok(query_result)
 }
 
+
+#[derive(Debug, Default)]
+pub struct QueryResult2<'a> {
+    pub columns: Vec<Column>,
+    pub data: Vec<Vec<AnyColumnView<'a>>>,
+}
+
+
 pub fn query_result2<S: Into<String>>(
     conn: Connection,
     sql: S,
+    max_batch_size: usize,
     params: impl ParameterCollectionRef,
 ) -> anyhow::Result<QueryResult> {
     let mut cursor = conn
@@ -109,5 +132,25 @@ pub fn query_result2<S: Into<String>>(
         query_result.columns.push(column);
     }
 
+    //
+    let descs = query_result.columns
+        .iter()
+        .map(|c| <&Column as TryInto<BufferDescription>>::try_into(c).unwrap());
+
+
+    let row_set_buffer = ColumnarAnyBuffer::from_description(max_batch_size, descs);
+
+    let mut row_set_cursor = cursor.bind_buffer(row_set_buffer).unwrap();
+    while let Some(row_set) = row_set_cursor.fetch()? {
+        for row_index in 0..row_set.num_rows() {
+            let mut column_views = vec![];
+            for (index, column) in query_result.columns.iter().enumerate() {
+                let column_view: AnyColumnView = row_set.column(index);
+                column_views.push(column_view);
+                println!("{}-{}", row_index, index);
+            }
+            // query_result.data.push(column_views);
+        }
+    }
     Ok(query_result)
 }
