@@ -1,4 +1,5 @@
 use std::char::decode_utf16;
+use std::ops::{Index, IndexMut};
 use crate::executor::Print;
 use bytes::Bytes;
 use nu_table::{StyledString, Table, TableTheme, TextStyle};
@@ -167,16 +168,25 @@ pub fn query_result2<S: Into<String>>(
     let mut row_set_cursor = cursor.bind_buffer(row_set_buffer).unwrap();
 
 
+    let mut total_row = vec![];
     while let Some(row_set) = row_set_cursor.fetch()? {
-        let total_row: Vec<Vec<ColumnType>> = vec![];
         // let single_row: Vec<ColumnType=vec![];
         for (index, column) in query_result.columns.iter().enumerate() {
             let column_view: AnyColumnView = row_set.column(index);
-            let column_type = column_view.convert_struct_type();
-            println!("println:len:{},{}-{:?}", column_type.len(), index, column_type);
-            query_result.data.push(column_type);
+            let column_types = column_view.convert_struct_type();
+            if index == 0 {
+                for c in column_types.into_iter() {
+                    total_row.push(vec![c]);
+                }
+            } else {
+                for (col_index,c) in column_types.into_iter().enumerate() {
+                    let row = total_row.index_mut(col_index);
+                    row.push(c)
+                }
+            }
         }
     }
+    query_result.data = total_row;
     Ok(query_result)
 }
 
@@ -342,6 +352,6 @@ impl ConvertType for AnyColumnView<'_> {
 
 impl ToString for ColumnType {
     fn to_string(&self) -> String {
-        format!("{:?}",self)
+        format!("{:?}", self)
     }
 }
