@@ -3,10 +3,7 @@ use crate::extension::{Column, ColumnItem};
 use crate::Convert;
 use nu_table::{StyledString, Table, TableTheme, TextStyle};
 use odbc_api::buffers::{AnyColumnView, BufferDescription, ColumnarAnyBuffer};
-use odbc_api::{
-    ColumnDescription, Connection, Cursor, ParameterCollectionRef,
-    ResultSetMetadata,
-};
+use odbc_api::{ColumnDescription, Connection, Cursor, ParameterCollectionRef, ResultSetMetadata};
 use std::ops::IndexMut;
 
 const BATCH_SIZE: usize = 5000;
