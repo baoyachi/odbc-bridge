@@ -2,9 +2,9 @@ use nu_protocol::Config;
 use nu_table::{Alignments, Table};
 use std::collections::HashMap;
 
+mod error;
 pub mod execute;
 pub mod query;
-mod statement;
 
 pub trait Print {
     fn print(&self) -> Result<(), &'static str> {
