@@ -15,6 +15,6 @@ pub fn exec_result<S: Into<String>>(
     let row_op = stmt.row_count()?;
     let result = row_op
         .map(|r| ExecResult { rows_affected: r })
-        .unwrap_or(Default::default());
+        .unwrap_or_default();
     Ok(result)
 }

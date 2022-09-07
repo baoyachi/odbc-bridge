@@ -26,7 +26,7 @@ impl Print for QueryResult {
             .data
             .iter()
             .map(|x| {
-                x.into_iter()
+                x.iter()
                     .map(|y| y.to_string())
                     .map(|y| StyledString::new(y, TextStyle::basic_left()))
                     .collect::<Vec<_>>()

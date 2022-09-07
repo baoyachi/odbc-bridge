@@ -27,7 +27,7 @@ impl TryFrom<&Column> for BufferDescription {
     fn try_from(c: &Column) -> Result<Self, Self::Error> {
         let description = BufferDescription {
             nullable: c.nullable,
-            kind: BufferKind::from_data_type(c.data_type.clone())
+            kind: BufferKind::from_data_type(c.data_type)
                 .ok_or_else(|| format!("covert DataType:{:?} to BufferKind error", c.data_type))?,
         };
         Ok(description)
@@ -102,21 +102,21 @@ impl Convert<Vec<ColumnItem>> for AnyColumnView<'_> {
             AnyColumnView::Date(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(ColumnItem::Date(Some(value.clone())))
+                    buffer.push(ColumnItem::Date(Some(*value)))
                 }
                 return buffer;
             }
             AnyColumnView::Timestamp(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(ColumnItem::Timestamp(Some(value.clone())))
+                    buffer.push(ColumnItem::Timestamp(Some(*value)))
                 }
                 return buffer;
             }
             AnyColumnView::Time(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(ColumnItem::Time(Some(value.clone())))
+                    buffer.push(ColumnItem::Time(Some(*value)))
                 }
                 return buffer;
             }
