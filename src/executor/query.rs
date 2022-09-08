@@ -1,5 +1,5 @@
 use crate::executor::Print;
-use crate::extension::{Column, ColumnItem};
+use crate::extension::odbc::{Column, ColumnItem};
 use crate::Convert;
 use nu_table::{StyledString, Table, TableTheme, TextStyle};
 use odbc_api::buffers::{AnyColumnView, BufferDescription, ColumnarAnyBuffer};
