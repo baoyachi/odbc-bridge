@@ -5,10 +5,23 @@ use postgres_protocol::types as pp_type;
 use postgres_types::{Oid, Type as PgType};
 use time::{format_description, Date, PrimitiveDateTime, Time};
 
+#[derive(Debug, Default)]
+pub struct PgQueryResult {
+    pub columns: Vec<PgColumn>,
+    pub data: Vec<Vec<PgColumnItem>>,
+}
+
+pub struct PgColumn {
+    pub name: String,
+    pub pg_type: PgType,
+    pub oid: Oid,
+    pub nullable: bool,
+}
+
 pub struct PgColumnItem {
-    data: BytesMut,
-    pg_type: PgType,
-    oid: Oid,
+    pub data: BytesMut,
+    pub pg_type: PgType,
+    pub oid: Oid,
 }
 
 impl PgColumnItem {
