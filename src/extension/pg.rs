@@ -5,7 +5,7 @@ use postgres_protocol::types as pp_type;
 use postgres_types::{Oid, Type as PgType};
 use time::{format_description, Date, PrimitiveDateTime, Time};
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct PgQueryResult {
     pub columns: Vec<PgColumn>,
     pub data: Vec<Vec<PgColumnItem>>,
