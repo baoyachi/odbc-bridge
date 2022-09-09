@@ -2,6 +2,7 @@ use nu_protocol::Config;
 use nu_table::{Alignments, Table};
 use std::collections::HashMap;
 
+pub mod database;
 mod error;
 pub mod execute;
 pub mod query;
