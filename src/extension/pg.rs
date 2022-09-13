@@ -8,13 +8,14 @@ use postgres_types::{Oid, Type as PgType};
 use std::collections::HashMap;
 use time::{format_description, Date, PrimitiveDateTime, Time};
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct PgQueryResult {
     pub column_names: HashMap<String, usize>,
     pub columns: Vec<PgColumn>,
     pub data: Vec<Vec<PgColumnItem>>,
 }
 
+#[derive(Debug)]
 pub struct PgColumn {
     pub name: String,
     pub pg_type: PgType,
@@ -22,6 +23,7 @@ pub struct PgColumn {
     pub nullable: bool,
 }
 
+#[derive(Debug)]
 pub struct PgColumnItem {
     pub data: BytesMut,
     pub pg_type: PgType,
