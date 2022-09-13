@@ -1,11 +1,11 @@
+pub mod database;
+pub mod error;
+pub mod execute;
+pub mod query;
+
 use nu_protocol::Config;
 use nu_table::{Alignments, Table};
 use std::collections::HashMap;
-
-pub mod database;
-mod error;
-pub mod execute;
-pub mod query;
 
 pub trait Print {
     fn print(&self) -> Result<(), &'static str> {
