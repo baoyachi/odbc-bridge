@@ -1,2 +1,2 @@
 pub mod odbc;
-mod pg;
+pub mod pg;
