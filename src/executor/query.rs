@@ -7,8 +7,11 @@ const BATCH_SIZE: usize = 5000;
 
 #[derive(Debug, Default)]
 pub struct QueryResult {
-    pub(crate) column_names: HashMap<String, usize>,
+    // record table column name with index
+    pub column_names: HashMap<String, usize>,
+    // table columns header
     pub columns: Vec<Column>,
+    // table columns data
     pub data: Vec<Vec<ColumnItem>>,
 }
 
