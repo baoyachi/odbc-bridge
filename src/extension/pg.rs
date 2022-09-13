@@ -1,12 +1,16 @@
-use crate::extension::odbc::ColumnItem;
+use crate::executor::query::QueryResult;
+use crate::extension::odbc::{Column, ColumnItem};
 use crate::Convert;
 use bytes::BytesMut;
+use odbc_api::buffers::BufferKind;
 use postgres_protocol::types as pp_type;
 use postgres_types::{Oid, Type as PgType};
+use std::collections::HashMap;
 use time::{format_description, Date, PrimitiveDateTime, Time};
 
 #[derive(Default)]
 pub struct PgQueryResult {
+    pub column_names: HashMap<String, usize>,
     pub columns: Vec<PgColumn>,
     pub data: Vec<Vec<PgColumnItem>>,
 }
@@ -28,6 +32,37 @@ impl PgColumnItem {
     fn new(data: BytesMut, pg_type: PgType) -> Self {
         let oid = pg_type.oid();
         Self { data, pg_type, oid }
+    }
+}
+
+impl Convert<PgColumn> for Column {
+    fn convert(self) -> PgColumn {
+        let buffer_kind = BufferKind::from_data_type(self.data_type).unwrap();
+        let pg_type = match buffer_kind {
+            BufferKind::Binary { .. } => PgType::BYTEA,
+            BufferKind::Text { .. } => PgType::TEXT,
+            BufferKind::WText { .. } => PgType::TEXT,
+            BufferKind::F64 => PgType::FLOAT8,
+            BufferKind::F32 => PgType::FLOAT4,
+            BufferKind::Date => PgType::DATE,
+            BufferKind::Time => PgType::TIME,
+            BufferKind::Timestamp => PgType::TIMESTAMP,
+            BufferKind::I8 => PgType::CHAR,
+            BufferKind::I16 => PgType::INT2,
+            BufferKind::I32 => PgType::INT4,
+            BufferKind::I64 => PgType::INT8,
+            BufferKind::U8 => {
+                panic!("not coverage U8");
+            }
+            BufferKind::Bit => PgType::BOOL,
+        };
+        let oid = pg_type.oid();
+        PgColumn {
+            name: self.name,
+            pg_type,
+            oid,
+            nullable: self.nullable,
+        }
     }
 }
 
@@ -106,5 +141,19 @@ impl Convert<PgColumnItem> for ColumnItem {
             ColumnItem::Bit(v) => (v.map(|x| pp_type::bool_to_sql(x, &mut buf)), PgType::BOOL),
         };
         PgColumnItem::new(buf, t)
+    }
+}
+
+impl From<QueryResult> for PgQueryResult {
+    fn from(result: QueryResult) -> Self {
+        PgQueryResult {
+            column_names: result.column_names,
+            columns: result.columns.into_iter().map(|x| x.convert()).collect(),
+            data: result
+                .data
+                .into_iter()
+                .map(|x| x.into_iter().map(|x| x.convert()).collect())
+                .collect(),
+        }
     }
 }
