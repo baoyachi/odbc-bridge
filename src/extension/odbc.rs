@@ -3,6 +3,7 @@ use odbc_api::buffers::{AnyColumnView, BufferDescription, BufferKind};
 use odbc_api::sys::{Date, Time, Timestamp, NULL_DATA};
 use odbc_api::DataType;
 use std::char::decode_utf16;
+use std::ops::Deref;
 
 #[derive(Debug, Clone)]
 pub struct Column {
@@ -50,6 +51,7 @@ pub enum ColumnItem {
     I64(Option<i64>),
     U8(Option<u8>),
     Bit(Option<bool>),
+    Unknown(Option<Vec<u8>>)
 }
 
 impl ToString for ColumnItem {
@@ -214,16 +216,56 @@ impl Convert<Vec<ColumnItem>> for AnyColumnView<'_> {
                     })
                     .collect();
             }
-            AnyColumnView::NullableI64(_) => {
-                warn!("lost NullableI64 type");
+            AnyColumnView::NullableI64(view) => {
+                let (values, indicators) = view.raw_values();
+                let values = values.to_vec();
+
+                return values
+                    .iter()
+                    .enumerate()
+                    .map(|(index, value)| {
+                        if indicators[index] != NULL_DATA {
+                            ColumnItem::I64(Some(*value))
+                        } else {
+                            ColumnItem::I64(None)
+                        }
+                    })
+                    .collect();
             }
-            AnyColumnView::NullableU8(_) => {
-                warn!("lost NullableU8 type");
+            AnyColumnView::NullableU8(view) => {
+                let (values, indicators) = view.raw_values();
+                let values = values.to_vec();
+
+                return values
+                    .iter()
+                    .enumerate()
+                    .map(|(index, value)| {
+                        if indicators[index] != NULL_DATA {
+                            ColumnItem::U8(Some(*value))
+                        } else {
+                            ColumnItem::U8(None)
+                        }
+                    })
+                    .collect();
             }
-            AnyColumnView::NullableBit(_) => {
-                warn!("lost NullableBit type");
+            AnyColumnView::NullableBit(view) => {
+                let (values, indicators) = view.raw_values();
+                let values = values.to_vec();
+
+                return values
+                    .iter()
+                    .enumerate()
+                    .map(|(index, value)| {
+                        if indicators[index] != NULL_DATA {
+                            ColumnItem::Bit(Some(value.deref().as_bool()))
+                        } else {
+                            ColumnItem::Bit(None)
+                        }
+                    })
+                    .collect();
             }
         };
-        vec![ColumnItem::Bit(None)]
+        let opt = self.as_slice::<u8>().map(|x|x.to_vec());
+        vec![ColumnItem::Unknown(opt)]
     }
 }
