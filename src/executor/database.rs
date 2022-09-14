@@ -54,8 +54,7 @@ impl<'a> OdbcDbConnection<'a> {
         let desc_table_tpl = desc_table_tpl.into();
         if !desc_table_tpl.contains(Self::DESC_TEMPLATE_TABLE) {
             return Err(anyhow!(
-                "not contain {},e.g:`select * from {} limit 0`",
-                Self::DESC_TEMPLATE_TABLE,
+                "not contain {},e.g:`select * from employee limit 0`",
                 Self::DESC_TEMPLATE_TABLE
             ));
         }
