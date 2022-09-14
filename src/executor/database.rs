@@ -79,7 +79,6 @@ impl<'a> OdbcDbConnection<'a> {
         }
     }
 
-
     pub fn desc_table_sql(&self, table_name: &str) -> String {
         self.desc_table_tpl
             .replace(Self::DESC_TEMPLATE_TABLE, table_name)
@@ -131,7 +130,10 @@ impl<'a> OdbcDbConnection<'a> {
             .iter()
             .map(|c| <&Column as TryInto<BufferDescription>>::try_into(c).unwrap());
 
-        let row_set_buffer = ColumnarAnyBuffer::from_description(self.max_batch_size.unwrap_or(Self::MAX_BATCH_SIZE), descs);
+        let row_set_buffer = ColumnarAnyBuffer::from_description(
+            self.max_batch_size.unwrap_or(Self::MAX_BATCH_SIZE),
+            descs,
+        );
 
         let mut row_set_cursor = cursor.bind_buffer(row_set_buffer).unwrap();
 
