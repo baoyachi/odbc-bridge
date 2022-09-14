@@ -1,6 +1,4 @@
 # odbc-api-helper
-========================================
-[docsrs]: https://docs.rs/odbc-api-helper
 
 [![GitHub Actions](https://github.com/baoyachi/odbc-api-helper/workflows/check/badge.svg)](https://github.com/baoyachi/odbc-api-helper/actions?query=workflow%3Acheck)
 [![Crates.io](https://img.shields.io/crates/v/odbc-api-helper.svg)](https://crates.io/crates/odbc-api-helper)
