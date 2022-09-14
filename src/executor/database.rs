@@ -8,7 +8,7 @@ use std::any::Any;
 use std::ops::IndexMut;
 
 pub struct Statement {
-    pub table_name: String,
+    pub table_name: Option<String>,
     /// The SQL query
     pub sql: String,
     /// The values for the SQL statement's parameters
@@ -99,17 +99,21 @@ impl<'a> OdbcDbConnection<'a> {
 
     fn query_result(
         &self,
-        state: Statement,
+        stmt: Statement,
         params: impl ParameterCollectionRef,
     ) -> anyhow::Result<QueryResult> {
         let mut cursor = self
             .conn
-            .execute(&state.sql, params)?
+            .execute(&stmt.sql, params)?
             .ok_or_else(|| anyhow!("query error"))?;
 
-        let mut query_result = QueryResult {
-            column_names: self.desc_table(&state.table_name)?.column_names,
-            ..Default::default()
+        let mut query_result = if let Some(table_name) = &stmt.table_name {
+            QueryResult {
+                column_names: self.desc_table(table_name)?.column_names,
+                ..Default::default()
+            }
+        } else {
+            QueryResult::default()
         };
 
         for index in 0..cursor.num_result_cols()?.try_into()? {
