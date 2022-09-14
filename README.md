@@ -1,5 +1,5 @@
 # odbc-api-helper
-Extension based on odbc api [odbc-api](https://github.com/pacman82/odbc-api)
+Extension based on **[odbc-api](https://github.com/pacman82/odbc-api)**
 
 
 [![GitHub Actions](https://github.com/baoyachi/odbc-api-helper/workflows/check/badge.svg)](https://github.com/baoyachi/odbc-api-helper/actions?query=workflow%3Acheck)
