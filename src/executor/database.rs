@@ -27,6 +27,7 @@ pub trait ConnectionTrait {
 
 pub struct OdbcDbConnection<'a> {
     conn: Connection<'a>,
+    max_batch_size: Option<usize>,
     desc_table_tpl: String,
 }
 
@@ -36,7 +37,7 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
     }
 
     fn query(&self, stmt: Statement) -> anyhow::Result<QueryResult> {
-        self.query_result(stmt, 2 ^ 8, ())
+        self.query_result(stmt, ())
     }
 
     fn show_table(&self, table_name: &str) -> anyhow::Result<QueryResult> {
@@ -45,6 +46,8 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
 }
 
 impl<'a> OdbcDbConnection<'a> {
+    // Max Buffer Size 256
+    pub const MAX_BATCH_SIZE: usize = 1 << 8;
     pub const DESC_TEMPLATE_TABLE: &'static str = "__{TEMPLATE_TABLE_NAME}__";
 
     pub fn new<S: Into<String>>(conn: Connection<'a>, desc_table_tpl: S) -> anyhow::Result<Self> {
@@ -58,10 +61,24 @@ impl<'a> OdbcDbConnection<'a> {
         }
         let connection = Self {
             conn,
+            max_batch_size: Some(Self::MAX_BATCH_SIZE),
             desc_table_tpl,
         };
         Ok(connection)
     }
+
+    pub fn max_batch_size(self, size: usize) -> Self {
+        let size = if size == 0 {
+            Self::MAX_BATCH_SIZE
+        } else {
+            size
+        };
+        Self {
+            max_batch_size: Some(size),
+            ..self
+        }
+    }
+
 
     pub fn desc_table_sql(&self, table_name: &str) -> String {
         self.desc_table_tpl
@@ -85,7 +102,6 @@ impl<'a> OdbcDbConnection<'a> {
     fn query_result(
         &self,
         state: Statement,
-        max_batch_size: usize,
         params: impl ParameterCollectionRef,
     ) -> anyhow::Result<QueryResult> {
         let mut cursor = self
@@ -115,7 +131,7 @@ impl<'a> OdbcDbConnection<'a> {
             .iter()
             .map(|c| <&Column as TryInto<BufferDescription>>::try_into(c).unwrap());
 
-        let row_set_buffer = ColumnarAnyBuffer::from_description(max_batch_size, descs);
+        let row_set_buffer = ColumnarAnyBuffer::from_description(self.max_batch_size.unwrap_or(Self::MAX_BATCH_SIZE), descs);
 
         let mut row_set_cursor = cursor.bind_buffer(row_set_buffer).unwrap();
 

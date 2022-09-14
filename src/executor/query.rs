@@ -3,8 +3,6 @@ use crate::extension::odbc::{Column, ColumnItem};
 use nu_table::{StyledString, Table, TableTheme, TextStyle};
 use std::collections::HashMap;
 
-const BATCH_SIZE: usize = 5000;
-
 #[derive(Debug, Default)]
 pub struct QueryResult {
     // record table column name with index
