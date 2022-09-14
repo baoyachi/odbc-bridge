@@ -1,6 +1,6 @@
 use crate::Convert;
 use odbc_api::buffers::{AnyColumnView, BufferDescription, BufferKind};
-use odbc_api::sys::{Date, Time, Timestamp};
+use odbc_api::sys::{Date, Time, Timestamp, NULL_DATA};
 use odbc_api::DataType;
 use std::char::decode_utf16;
 
@@ -198,8 +198,21 @@ impl Convert<Vec<ColumnItem>> for AnyColumnView<'_> {
             AnyColumnView::NullableI16(_) => {
                 warn!("lost NullableI16 type");
             }
-            AnyColumnView::NullableI32(_) => {
-                warn!("lost NullableI32 type");
+            AnyColumnView::NullableI32(view) => {
+                let (values, indicators) = view.raw_values();
+                let values = values.to_vec();
+
+                return values
+                    .iter()
+                    .enumerate()
+                    .map(|(index, value)| {
+                        if indicators[index] != NULL_DATA {
+                            ColumnItem::I32(Some(*value))
+                        } else {
+                            ColumnItem::I32(None)
+                        }
+                    })
+                    .collect();
             }
             AnyColumnView::NullableI64(_) => {
                 warn!("lost NullableI64 type");
