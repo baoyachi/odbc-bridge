@@ -4,23 +4,24 @@ use crate::extension::odbc::Column;
 use crate::Convert;
 use odbc_api::buffers::{AnyColumnView, BufferDescription, ColumnarAnyBuffer};
 use odbc_api::{ColumnDescription, Connection, Cursor, ParameterCollectionRef, ResultSetMetadata};
-use std::any::Any;
 use std::ops::IndexMut;
 
-pub struct Statement {
+pub struct Statement<T> {
     pub table_name: Option<String>,
     /// The SQL query
     pub sql: String,
     /// The values for the SQL statement's parameters
-    pub values: Option<Box<dyn Any>>,
+    pub values: Vec<T>,
 }
+
+pub trait SqlValue {}
 
 pub trait ConnectionTrait {
     /// Execute a [Statement]  INSETT,UPDATE,DELETE
-    fn execute(&self, stmt: Statement) -> anyhow::Result<ExecResult>;
+    fn execute<T: SqlValue>(&self, stmt: Statement<T>) -> anyhow::Result<ExecResult>;
 
     /// Execute a [Statement] and return a collection Vec<[QueryResult]> on success
-    fn query(&self, stmt: Statement) -> anyhow::Result<QueryResult>;
+    fn query<T: SqlValue>(&self, stmt: Statement<T>) -> anyhow::Result<QueryResult>;
 
     fn show_table(&self, table_name: &str) -> anyhow::Result<QueryResult>;
 }
@@ -32,11 +33,11 @@ pub struct OdbcDbConnection<'a> {
 }
 
 impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
-    fn execute(&self, stmt: Statement) -> anyhow::Result<ExecResult> {
+    fn execute<T: SqlValue>(&self, stmt: Statement<T>) -> anyhow::Result<ExecResult> {
         self.exec_result(stmt.sql, ())
     }
 
-    fn query(&self, stmt: Statement) -> anyhow::Result<QueryResult> {
+    fn query<T: SqlValue>(&self, stmt: Statement<T>) -> anyhow::Result<QueryResult> {
         self.query_result(stmt, ())
     }
 
@@ -97,9 +98,9 @@ impl<'a> OdbcDbConnection<'a> {
         Ok(result)
     }
 
-    fn query_result(
+    fn query_result<T: SqlValue>(
         &self,
-        stmt: Statement,
+        stmt: Statement<T>,
         params: impl ParameterCollectionRef,
     ) -> anyhow::Result<QueryResult> {
         let mut cursor = self
