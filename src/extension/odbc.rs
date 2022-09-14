@@ -51,7 +51,7 @@ pub enum ColumnItem {
     I64(Option<i64>),
     U8(Option<u8>),
     Bit(Option<bool>),
-    Unknown(Option<Vec<u8>>)
+    Unknown(Option<Vec<u8>>),
 }
 
 impl ToString for ColumnItem {
@@ -265,7 +265,7 @@ impl Convert<Vec<ColumnItem>> for AnyColumnView<'_> {
                     .collect();
             }
         };
-        let opt = self.as_slice::<u8>().map(|x|x.to_vec());
+        let opt = self.as_slice::<u8>().map(|x| x.to_vec());
         vec![ColumnItem::Unknown(opt)]
     }
 }
