@@ -5,7 +5,8 @@ use crate::Convert;
 use odbc_api::buffers::{AnyColumnView, BufferDescription, ColumnarAnyBuffer};
 use odbc_api::parameter::InputParameter;
 use odbc_api::{
-    ColumnDescription, Connection, Cursor, IntoParameter, ParameterCollectionRef, ResultSetMetadata,
+    Bit, ColumnDescription, Connection, Cursor, IntoParameter, ParameterCollectionRef,
+    ResultSetMetadata,
 };
 use std::ops::{Deref, IndexMut};
 
@@ -36,6 +37,7 @@ pub enum ValueInput {
     CHAR(String),
     VARCHAR(String),
     TEXT(String),
+    Bool(bool),
 }
 
 impl SqlValue for ValueInput {
@@ -49,6 +51,7 @@ impl SqlValue for ValueInput {
             Self::CHAR(i) => Box::new(i.to_string().into_parameter()),
             Self::VARCHAR(i) => Box::new(i.to_string().into_parameter()),
             Self::TEXT(i) => Box::new(i.to_string().into_parameter()),
+            Self::Bool(i) => Box::new(Bit::from_bool(*i).into_parameter()),
         }
     }
 }
