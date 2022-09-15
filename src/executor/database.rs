@@ -3,8 +3,11 @@ use crate::executor::query::QueryResult;
 use crate::extension::odbc::Column;
 use crate::Convert;
 use odbc_api::buffers::{AnyColumnView, BufferDescription, ColumnarAnyBuffer};
-use odbc_api::{ColumnDescription, Connection, Cursor, ParameterCollectionRef, ResultSetMetadata};
-use std::ops::IndexMut;
+use odbc_api::parameter::InputParameter;
+use odbc_api::{
+    ColumnDescription, Connection, Cursor, IntoParameter, ParameterCollectionRef, ResultSetMetadata,
+};
+use std::ops::{Deref, IndexMut};
 
 pub struct Statement<T> {
     pub table_name: Option<String>,
@@ -14,7 +17,41 @@ pub struct Statement<T> {
     pub values: Vec<T>,
 }
 
-pub trait SqlValue {}
+pub trait SqlValue {
+    fn to_value(&self) -> Box<dyn InputParameter>;
+}
+
+impl SqlValue for () {
+    fn to_value(&self) -> Box<dyn InputParameter> {
+        panic!("not convert")
+    }
+}
+
+pub enum ValueInput {
+    INT2(i16),
+    INT4(i32),
+    INT8(i64),
+    FLOAT4(f32),
+    FLOAT8(f64),
+    CHAR(String),
+    VARCHAR(String),
+    TEXT(String),
+}
+
+impl SqlValue for ValueInput {
+    fn to_value(&self) -> Box<dyn InputParameter> {
+        match self {
+            Self::INT2(i) => Box::new(i.into_parameter()),
+            Self::INT4(i) => Box::new(i.into_parameter()),
+            Self::INT8(i) => Box::new(i.into_parameter()),
+            Self::FLOAT4(i) => Box::new(i.into_parameter()),
+            Self::FLOAT8(i) => Box::new(i.into_parameter()),
+            Self::CHAR(i) => Box::new(i.to_string().into_parameter()),
+            Self::VARCHAR(i) => Box::new(i.to_string().into_parameter()),
+            Self::TEXT(i) => Box::new(i.to_string().into_parameter()),
+        }
+    }
+}
 
 pub trait ConnectionTrait {
     /// Execute a [Statement]  INSETT,UPDATE,DELETE
@@ -38,7 +75,63 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
     }
 
     fn query<T: SqlValue>(&self, stmt: Statement<T>) -> anyhow::Result<QueryResult> {
-        self.query_result(stmt, ())
+        let mut values = stmt.values;
+        let stmt: Statement<T> = Statement {
+            table_name: stmt.table_name,
+            sql: stmt.sql,
+            values: vec![],
+        };
+        // change Vec<T> -> tuple(t,t,t,t,t.....)
+        // TODO refactor rewrite by macro
+        match values.len() {
+            1 => self.query_result(&stmt, values.remove(0).to_value().deref()),
+            2 => self.query_result(
+                &stmt,
+                (
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                ),
+            ),
+            3 => self.query_result(
+                &stmt,
+                (
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                ),
+            ),
+            4 => self.query_result(
+                &stmt,
+                (
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                ),
+            ),
+            5 => self.query_result(
+                &stmt,
+                (
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                ),
+            ),
+            6 => self.query_result(
+                &stmt,
+                (
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                ),
+            ),
+            _ => self.query_result(&stmt, ()),
+        }
     }
 
     fn show_table(&self, table_name: &str) -> anyhow::Result<QueryResult> {
@@ -100,7 +193,7 @@ impl<'a> OdbcDbConnection<'a> {
 
     fn query_result<T: SqlValue>(
         &self,
-        stmt: Statement<T>,
+        stmt: &Statement<T>,
         params: impl ParameterCollectionRef,
     ) -> anyhow::Result<QueryResult> {
         let mut cursor = self
