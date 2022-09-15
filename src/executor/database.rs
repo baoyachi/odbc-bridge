@@ -71,7 +71,60 @@ pub struct OdbcDbConnection<'a> {
 
 impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
     fn execute<T: SqlValue>(&self, stmt: Statement<T>) -> anyhow::Result<ExecResult> {
-        self.exec_result(stmt.sql, ())
+        let raw_sql = stmt.sql;
+        let mut values = stmt.values;
+
+        // change Vec<T> -> tuple(t,t,t,t,t.....)
+        // TODO refactor rewrite by macro
+        match values.len() {
+            1 => self.exec_result(raw_sql, values.remove(0).to_value().deref()),
+            2 => self.exec_result(
+                raw_sql,
+                (
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                ),
+            ),
+            3 => self.exec_result(
+                raw_sql,
+                (
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                ),
+            ),
+            4 => self.exec_result(
+                raw_sql,
+                (
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                ),
+            ),
+            5 => self.exec_result(
+                raw_sql,
+                (
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                ),
+            ),
+            6 => self.exec_result(
+                raw_sql,
+                (
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                    values.remove(0).to_value().deref(),
+                ),
+            ),
+            _ => self.exec_result(raw_sql, ()),
+        }
     }
 
     fn query<T: SqlValue>(&self, stmt: Statement<T>) -> anyhow::Result<QueryResult> {
