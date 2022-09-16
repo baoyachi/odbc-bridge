@@ -8,7 +8,7 @@ use odbc_api::{
     Bit, ColumnDescription, Connection, Cursor, IntoParameter, ParameterCollectionRef,
     ResultSetMetadata,
 };
-use std::ops::{Deref, IndexMut};
+use std::ops::IndexMut;
 
 pub struct Statement<T> {
     pub table_name: Option<String>,
@@ -75,119 +75,22 @@ pub struct OdbcDbConnection<'a> {
 impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
     fn execute<T: SqlValue>(&self, stmt: Statement<T>) -> anyhow::Result<ExecResult> {
         let raw_sql = stmt.sql;
-        let mut values = stmt.values;
+        let values = stmt.values;
 
-        // change Vec<T> -> tuple(t,t,t,t,t.....)
-        // TODO refactor rewrite by macro
-        match values.len() {
-            1 => self.exec_result(raw_sql, values.remove(0).to_value().deref()),
-            2 => self.exec_result(
-                raw_sql,
-                (
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                ),
-            ),
-            3 => self.exec_result(
-                raw_sql,
-                (
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                ),
-            ),
-            4 => self.exec_result(
-                raw_sql,
-                (
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                ),
-            ),
-            5 => self.exec_result(
-                raw_sql,
-                (
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                ),
-            ),
-            6 => self.exec_result(
-                raw_sql,
-                (
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                ),
-            ),
-            _ => self.exec_result(raw_sql, ()),
-        }
+        let params: Vec<_> = values.into_iter().map(|v| v.to_value()).collect();
+        self.exec_result(raw_sql, &params[..])
     }
 
     fn query<T: SqlValue>(&self, stmt: Statement<T>) -> anyhow::Result<QueryResult> {
-        let mut values = stmt.values;
+        let values = stmt.values;
         let stmt: Statement<T> = Statement {
             table_name: stmt.table_name,
             sql: stmt.sql,
             values: vec![],
         };
-        // change Vec<T> -> tuple(t,t,t,t,t.....)
-        // TODO refactor rewrite by macro
-        match values.len() {
-            1 => self.query_result(&stmt, values.remove(0).to_value().deref()),
-            2 => self.query_result(
-                &stmt,
-                (
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                ),
-            ),
-            3 => self.query_result(
-                &stmt,
-                (
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                ),
-            ),
-            4 => self.query_result(
-                &stmt,
-                (
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                ),
-            ),
-            5 => self.query_result(
-                &stmt,
-                (
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                ),
-            ),
-            6 => self.query_result(
-                &stmt,
-                (
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                    values.remove(0).to_value().deref(),
-                ),
-            ),
-            _ => self.query_result(&stmt, ()),
-        }
+
+        let params: Vec<_> = values.into_iter().map(|v| v.to_value()).collect();
+        self.query_result(&stmt, &params[..])
     }
 
     fn show_table(&self, table_name: &str) -> anyhow::Result<QueryResult> {
