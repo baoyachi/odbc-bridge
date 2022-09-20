@@ -64,6 +64,16 @@ pub trait ConnectionTrait {
     fn query<T: SqlValue>(&self, stmt: Statement<T>) -> anyhow::Result<QueryResult>;
 
     fn show_table(&self, table_name: &str) -> anyhow::Result<QueryResult>;
+
+    // begin transaction
+    fn begin(&self) -> anyhow::Result<()>;
+
+    // finish transaction
+    fn finish(&self) -> anyhow::Result<()>;
+
+    fn commit(&self) -> anyhow::Result<()>;
+
+    fn rollback(&self) -> anyhow::Result<()>;
 }
 
 pub struct OdbcDbConnection<'a> {
@@ -96,6 +106,26 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
     fn show_table(&self, table_name: &str) -> anyhow::Result<QueryResult> {
         self.desc_table(table_name)
     }
+
+    fn begin(&self) -> anyhow::Result<()> {
+        Ok(self.conn.set_autocommit(false)?)
+    }
+
+    fn finish(&self) -> anyhow::Result<()> {
+        self.conn.set_autocommit(true)?;
+        Ok(())
+    }
+
+    fn commit(&self) -> anyhow::Result<()> {
+        self.conn.commit()?;
+        Ok(())
+    }
+
+    fn rollback(&self) -> anyhow::Result<()> {
+        self.conn.rollback()?;
+        Ok(())
+    }
+
 }
 
 impl<'a> OdbcDbConnection<'a> {
