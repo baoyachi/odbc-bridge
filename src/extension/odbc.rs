@@ -62,6 +62,7 @@ impl ToString for ColumnItem {
 
 impl Convert<Vec<ColumnItem>> for AnyColumnView<'_> {
     fn convert(self) -> Vec<ColumnItem> {
+        debug!("AnyColumnView:{:?}", AnyColumnView);
         match self {
             AnyColumnView::Text(view) => {
                 let mut buffer = Vec::with_capacity(view.len());
