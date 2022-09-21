@@ -106,10 +106,10 @@ impl<'a> OdbcDbConnection<'a> {
     pub fn new<S: Into<String>>(conn: Connection<'a>, desc_table_tpl: S) -> anyhow::Result<Self> {
         let desc_table_tpl = desc_table_tpl.into();
         if !desc_table_tpl.contains(Self::DESC_TEMPLATE_TABLE) {
-            return Err(anyhow!(
+            warn!(
                 "not contain {},e.g:`select * from employee limit 0`",
                 Self::DESC_TEMPLATE_TABLE
-            ));
+            );
         }
         let connection = Self {
             conn,
