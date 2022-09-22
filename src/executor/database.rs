@@ -118,7 +118,6 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
         self.conn.rollback()?;
         Ok(())
     }
-
 }
 
 impl<'a> OdbcDbConnection<'a> {
