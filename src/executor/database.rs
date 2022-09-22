@@ -1,67 +1,25 @@
 use crate::executor::execute::ExecResult;
 use crate::executor::query::QueryResult;
+use crate::executor::statement::{SqlValue, StatementInput};
 use crate::extension::odbc::Column;
 use crate::Convert;
+use either::Either;
 use odbc_api::buffers::{AnyColumnView, BufferDescription, ColumnarAnyBuffer};
-use odbc_api::parameter::InputParameter;
-use odbc_api::{
-    Bit, ColumnDescription, Connection, Cursor, IntoParameter, ParameterCollectionRef,
-    ResultSetMetadata,
-};
+use odbc_api::{ColumnDescription, Connection, Cursor, ParameterCollectionRef, ResultSetMetadata};
 use std::ops::IndexMut;
-
-pub struct Statement<T> {
-    pub table_name: Option<String>,
-    /// The SQL query
-    pub sql: String,
-    /// The values for the SQL statement's parameters
-    pub values: Vec<T>,
-}
-
-pub trait SqlValue {
-    fn to_value(&self) -> Box<dyn InputParameter>;
-}
-
-impl SqlValue for () {
-    fn to_value(&self) -> Box<dyn InputParameter> {
-        panic!("not convert")
-    }
-}
-
-pub enum ValueInput {
-    INT2(i16),
-    INT4(i32),
-    INT8(i64),
-    FLOAT4(f32),
-    FLOAT8(f64),
-    CHAR(String),
-    VARCHAR(String),
-    TEXT(String),
-    Bool(bool),
-}
-
-impl SqlValue for ValueInput {
-    fn to_value(&self) -> Box<dyn InputParameter> {
-        match self {
-            Self::INT2(i) => Box::new(i.into_parameter()),
-            Self::INT4(i) => Box::new(i.into_parameter()),
-            Self::INT8(i) => Box::new(i.into_parameter()),
-            Self::FLOAT4(i) => Box::new(i.into_parameter()),
-            Self::FLOAT8(i) => Box::new(i.into_parameter()),
-            Self::CHAR(i) => Box::new(i.to_string().into_parameter()),
-            Self::VARCHAR(i) => Box::new(i.to_string().into_parameter()),
-            Self::TEXT(i) => Box::new(i.to_string().into_parameter()),
-            Self::Bool(i) => Box::new(Bit::from_bool(*i).into_parameter()),
-        }
-    }
-}
 
 pub trait ConnectionTrait {
     /// Execute a [Statement]  INSETT,UPDATE,DELETE
-    fn execute<T: SqlValue>(&self, stmt: Statement<T>) -> anyhow::Result<ExecResult>;
+    fn execute<S, T>(&self, stmt: S) -> anyhow::Result<ExecResult>
+    where
+        S: StatementInput<T>,
+        T: SqlValue;
 
     /// Execute a [Statement] and return a collection Vec<[QueryResult]> on success
-    fn query<T: SqlValue>(&self, stmt: Statement<T>) -> anyhow::Result<QueryResult>;
+    fn query<S, T>(&self, stmt: S) -> anyhow::Result<QueryResult>
+    where
+        S: StatementInput<T>,
+        T: SqlValue;
 
     fn show_table(&self, table_name: &str) -> anyhow::Result<QueryResult>;
 }
@@ -73,24 +31,59 @@ pub struct OdbcDbConnection<'a> {
 }
 
 impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
-    fn execute<T: SqlValue>(&self, stmt: Statement<T>) -> anyhow::Result<ExecResult> {
-        let raw_sql = stmt.sql;
-        let values = stmt.values;
-
-        let params: Vec<_> = values.into_iter().map(|v| v.to_value()).collect();
-        self.exec_result(raw_sql, &params[..])
+    fn execute<S, T>(&self, stmt: S) -> anyhow::Result<ExecResult>
+    where
+        S: StatementInput<T>,
+        T: SqlValue,
+    {
+        let sql = stmt.to_sql().to_string();
+        match stmt.to_value() {
+            Either::Left(values) => {
+                let params: Vec<_> = values
+                    .into_iter()
+                    .map(|v| v.to_value())
+                    .map(|x| {
+                        match x {
+                            Either::Left(v) => v,
+                            Either::Right(()) => {
+                                //TODO fix: throws Error
+                                panic!("value not include empty tuple")
+                            }
+                        }
+                    })
+                    .collect();
+                self.exec_result(sql, &params[..])
+            }
+            Either::Right(()) => self.exec_result(sql, ()),
+        }
     }
 
-    fn query<T: SqlValue>(&self, stmt: Statement<T>) -> anyhow::Result<QueryResult> {
-        let values = stmt.values;
-        let stmt: Statement<T> = Statement {
-            table_name: stmt.table_name,
-            sql: stmt.sql,
-            values: vec![],
-        };
+    fn query<S, T>(&self, stmt: S) -> anyhow::Result<QueryResult>
+    where
+        S: StatementInput<T>,
+        T: SqlValue,
+    {
+        let sql = stmt.to_sql().to_string();
 
-        let params: Vec<_> = values.into_iter().map(|v| v.to_value()).collect();
-        self.query_result(&stmt, &params[..])
+        match stmt.to_value() {
+            Either::Left(values) => {
+                let params: Vec<_> = values
+                    .into_iter()
+                    .map(|v| v.to_value())
+                    .map(|x| {
+                        match x {
+                            Either::Left(v) => v,
+                            Either::Right(()) => {
+                                //TODO fix: throws Error
+                                panic!("value not include empty tuple")
+                            }
+                        }
+                    })
+                    .collect();
+                self.query_result(None, &sql, &params[..])
+            }
+            Either::Right(()) => self.query_result(None, &sql, ()),
+        }
     }
 
     fn show_table(&self, table_name: &str) -> anyhow::Result<QueryResult> {
@@ -150,19 +143,20 @@ impl<'a> OdbcDbConnection<'a> {
         Ok(result)
     }
 
-    fn query_result<T: SqlValue>(
+    fn query_result(
         &self,
-        stmt: &Statement<T>,
+        table_name: Option<String>,
+        sql: &str,
         params: impl ParameterCollectionRef,
     ) -> anyhow::Result<QueryResult> {
         let mut cursor = self
             .conn
-            .execute(&stmt.sql, params)?
+            .execute(sql, params)?
             .ok_or_else(|| anyhow!("query error"))?;
 
-        let mut query_result = if let Some(table_name) = &stmt.table_name {
+        let mut query_result = if let Some(table_name) = table_name {
             QueryResult {
-                column_names: self.desc_table(table_name)?.column_names,
+                column_names: self.desc_table(&table_name)?.column_names,
                 ..Default::default()
             }
         } else {

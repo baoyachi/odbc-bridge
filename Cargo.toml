@@ -23,5 +23,6 @@ anyhow = "1.0.64"
 postgres-types = "0.2.4"
 postgres-protocol = "0.6.4"
 bytes = "1.2.1"
+either = "1.8.0"
 time = { version = "0.3.14", features = ["macros", "parsing"] }
 async-trait = "0.1.57"
