@@ -1,3 +1,4 @@
+use crate::TryConvert;
 use either::Either;
 use odbc_api::parameter::InputParameter;
 
@@ -79,5 +80,25 @@ impl StatementInput for String {
 
     fn to_sql(&self) -> &str {
         self
+    }
+}
+
+pub type EitherBoxParams = Either<Vec<Box<dyn InputParameter>>, ()>;
+
+impl<T: StatementInput> TryConvert<EitherBoxParams> for T {
+    type Error = &'static str;
+
+    fn try_convert(self) -> Result<EitherBoxParams, Self::Error> {
+        match self.to_value() {
+            Either::Left(values) => {
+                let params: Result<Vec<_>, Self::Error> = values
+                    .into_iter()
+                    .map(|v| v.to_value())
+                    .map(|x| x.left().ok_or("value not include empty tuple"))
+                    .collect();
+                Ok(Either::Left(params?))
+            }
+            Either::Right(values) => Ok(Either::Right(values)),
+        }
     }
 }
