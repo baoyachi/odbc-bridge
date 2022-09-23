@@ -4,7 +4,7 @@ use odbc_api::Bit;
 use odbc_api::IntoParameter;
 
 pub trait StatementInput {
-    type Item:SqlValue;
+    type Item: SqlValue;
 
     fn to_value(self) -> Either<Vec<Self::Item>, ()>;
     fn to_sql(&self) -> &str;
