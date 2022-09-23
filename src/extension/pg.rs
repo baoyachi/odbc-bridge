@@ -1,12 +1,52 @@
 use crate::executor::query::QueryResult;
+use crate::executor::statement::SqlValue;
 use crate::extension::odbc::{Column, ColumnItem};
 use crate::Convert;
 use bytes::BytesMut;
+use either::Either;
 use odbc_api::buffers::BufferKind;
+use odbc_api::parameter::InputParameter;
+use odbc_api::Bit;
+use odbc_api::IntoParameter;
 use postgres_protocol::types as pp_type;
 use postgres_types::{Oid, Type as PgType};
 use std::collections::HashMap;
+
 use time::{format_description, Date, PrimitiveDateTime, Time};
+
+pub enum PgValueInput {
+    INT2(i16),
+    INT4(i32),
+    INT8(i64),
+    FLOAT4(f32),
+    FLOAT8(f64),
+    CHAR(String),
+    VARCHAR(String),
+    TEXT(String),
+    Bool(bool),
+}
+
+impl SqlValue for PgValueInput {
+    fn to_value(&self) -> Either<Box<dyn InputParameter>, ()> {
+        macro_rules! left_param {
+            ($($arg:tt)*) => {{
+                Either::Left(Box::new($($arg)*))
+            }};
+        }
+
+        match self {
+            Self::INT2(i) => left_param!(i.into_parameter()),
+            Self::INT4(i) => left_param!(i.into_parameter()),
+            Self::INT8(i) => left_param!(i.into_parameter()),
+            Self::FLOAT4(i) => left_param!(i.into_parameter()),
+            Self::FLOAT8(i) => left_param!(i.into_parameter()),
+            Self::CHAR(i) => left_param!(i.to_string().into_parameter()),
+            Self::VARCHAR(i) => left_param!(i.to_string().into_parameter()),
+            Self::TEXT(i) => left_param!(i.to_string().into_parameter()),
+            Self::Bool(i) => left_param!(Bit::from_bool(*i).into_parameter()),
+        }
+    }
+}
 
 #[derive(Debug, Default)]
 pub struct PgQueryResult {
