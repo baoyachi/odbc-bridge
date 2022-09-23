@@ -36,7 +36,6 @@ pub trait ConnectionTrait {
 pub struct OdbcDbConnection<'a> {
     conn: Connection<'a>,
     max_batch_size: Option<usize>,
-    desc_table_tpl: String,
 }
 
 pub type EitherBoxParams = Either<Vec<Box<dyn InputParameter>>, ()>;
@@ -146,20 +145,11 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
 impl<'a> OdbcDbConnection<'a> {
     // Max Buffer Size 256
     pub const MAX_BATCH_SIZE: usize = 1 << 8;
-    pub const DESC_TEMPLATE_TABLE: &'static str = "__{TEMPLATE_TABLE_NAME}__";
 
-    pub fn new<S: Into<String>>(conn: Connection<'a>, desc_table_tpl: S) -> anyhow::Result<Self> {
-        let desc_table_tpl = desc_table_tpl.into();
-        if !desc_table_tpl.contains(Self::DESC_TEMPLATE_TABLE) {
-            warn!(
-                "not contain {},e.g:`select * from employee limit 0`",
-                Self::DESC_TEMPLATE_TABLE
-            );
-        }
+    pub fn new<S: Into<String>>(conn: Connection<'a>) -> anyhow::Result<Self> {
         let connection = Self {
             conn,
             max_batch_size: Some(Self::MAX_BATCH_SIZE),
-            desc_table_tpl,
         };
         Ok(connection)
     }
@@ -174,11 +164,6 @@ impl<'a> OdbcDbConnection<'a> {
             max_batch_size: Some(size),
             ..self
         }
-    }
-
-    pub fn desc_table_sql(&self, table_name: &str) -> String {
-        self.desc_table_tpl
-            .replace(Self::DESC_TEMPLATE_TABLE, table_name)
     }
 
     fn exec_result<S: Into<String>>(
@@ -255,10 +240,10 @@ impl<'a> OdbcDbConnection<'a> {
         Ok(query_result)
     }
 
-    fn desc_table(&self, table_name: &str) -> anyhow::Result<QueryResult> {
+    fn desc_table(&self, sql: &str) -> anyhow::Result<QueryResult> {
         let mut cursor = self
             .conn
-            .execute(&self.desc_table_sql(table_name), ())?
+            .execute(sql, ())?
             .ok_or_else(|| anyhow!("query error"))?;
 
         let mut query_result = QueryResult::default();
