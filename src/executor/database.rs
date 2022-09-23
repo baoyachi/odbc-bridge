@@ -191,6 +191,7 @@ impl<'a> OdbcDbConnection<'a> {
         } else {
             QueryResult::default()
         };
+        let mut query_result = QueryResult::default();
 
         for index in 0..cursor.num_result_cols()?.try_into()? {
             let mut column_description = ColumnDescription::default();
@@ -201,6 +202,7 @@ impl<'a> OdbcDbConnection<'a> {
                 column_description.data_type,
                 column_description.could_be_nullable(),
             );
+            query_result.column_names.insert(column.name.clone(),index as usize);
             query_result.columns.push(column);
         }
 
