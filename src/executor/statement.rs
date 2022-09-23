@@ -15,11 +15,19 @@ pub trait SqlValue {
 }
 
 pub struct Statement<T> {
-    pub table_name: Option<String>,
     /// The SQL query
     pub sql: String,
     /// The values for the SQL statement's parameters
     pub values: Vec<T>,
+}
+
+
+impl<T> Statement<T>
+    where T: SqlValue
+{
+    pub fn new<S: Into<String>>(sql: S, values: Vec<T>) -> Self {
+        Statement { sql: sql.into(), values }
+    }
 }
 
 pub enum ValueInput {
@@ -69,8 +77,8 @@ impl SqlValue for ValueInput {
 }
 
 impl<T> StatementInput for Statement<T>
-where
-    T: SqlValue,
+    where
+        T: SqlValue,
 {
     type Item = T;
 
