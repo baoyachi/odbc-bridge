@@ -5,20 +5,20 @@ use crate::extension::odbc::Column;
 use crate::Convert;
 use either::Either;
 use odbc_api::buffers::{AnyColumnView, BufferDescription, ColumnarAnyBuffer};
+use odbc_api::parameter::InputParameter;
 use odbc_api::{ColumnDescription, Connection, Cursor, ParameterCollectionRef, ResultSetMetadata};
 use std::ops::IndexMut;
-use odbc_api::parameter::InputParameter;
 
 pub trait ConnectionTrait {
     /// Execute a [Statement]  INSETT,UPDATE,DELETE
     fn execute<S>(&self, stmt: S) -> anyhow::Result<ExecResult>
-        where
-            S: StatementInput;
+    where
+        S: StatementInput;
 
     /// Execute a [Statement] and return a collection Vec<[QueryResult]> on success
     fn query<S>(&self, stmt: S) -> anyhow::Result<QueryResult>
-        where
-            S: StatementInput;
+    where
+        S: StatementInput;
 
     fn show_table(&self, table_name: &str) -> anyhow::Result<QueryResult>;
 
@@ -41,8 +41,7 @@ pub struct OdbcDbConnection<'a> {
 
 pub type EitherBoxParams = Either<Vec<Box<dyn InputParameter>>, ()>;
 
-impl<T: StatementInput> Convert<EitherBoxParams> for T
-{
+impl<T: StatementInput> Convert<EitherBoxParams> for T {
     fn convert(self) -> EitherBoxParams {
         match self.to_value() {
             Either::Left(values) => {
@@ -66,11 +65,10 @@ impl<T: StatementInput> Convert<EitherBoxParams> for T
     }
 }
 
-
 impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
     fn execute<S>(&self, stmt: S) -> anyhow::Result<ExecResult>
-        where
-            S: StatementInput
+    where
+        S: StatementInput,
     {
         let sql = stmt.to_sql().to_string();
         match stmt.to_value() {
@@ -95,8 +93,8 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
     }
 
     fn query<S>(&self, stmt: S) -> anyhow::Result<QueryResult>
-        where
-            S: StatementInput
+    where
+        S: StatementInput,
     {
         let sql = stmt.to_sql().to_string();
 
