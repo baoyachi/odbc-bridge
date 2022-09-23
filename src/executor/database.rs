@@ -7,19 +7,18 @@ use either::Either;
 use odbc_api::buffers::{AnyColumnView, BufferDescription, ColumnarAnyBuffer};
 use odbc_api::{ColumnDescription, Connection, Cursor, ParameterCollectionRef, ResultSetMetadata};
 use std::ops::IndexMut;
+use odbc_api::parameter::InputParameter;
 
 pub trait ConnectionTrait {
     /// Execute a [Statement]  INSETT,UPDATE,DELETE
-    fn execute<S, T>(&self, stmt: S) -> anyhow::Result<ExecResult>
-    where
-        S: StatementInput<T>,
-        T: SqlValue;
+    fn execute<S>(&self, stmt: S) -> anyhow::Result<ExecResult>
+        where
+            S: StatementInput;
 
     /// Execute a [Statement] and return a collection Vec<[QueryResult]> on success
-    fn query<S, T>(&self, stmt: S) -> anyhow::Result<QueryResult>
-    where
-        S: StatementInput<T>,
-        T: SqlValue;
+    fn query<S>(&self, stmt: S) -> anyhow::Result<QueryResult>
+        where
+            S: StatementInput;
 
     fn show_table(&self, table_name: &str) -> anyhow::Result<QueryResult>;
 
@@ -40,11 +39,38 @@ pub struct OdbcDbConnection<'a> {
     desc_table_tpl: String,
 }
 
+pub type EitherBoxParams = Either<Vec<Box<dyn InputParameter>>, ()>;
+
+impl<T: StatementInput> Convert<EitherBoxParams> for T
+{
+    fn convert(self) -> EitherBoxParams {
+        match self.to_value() {
+            Either::Left(values) => {
+                let params: Vec<_> = values
+                    .into_iter()
+                    .map(|v| v.to_value())
+                    .map(|x| {
+                        match x {
+                            Either::Left(v) => v,
+                            Either::Right(()) => {
+                                //TODO fix: throws Error
+                                panic!("value not include empty tuple")
+                            }
+                        }
+                    })
+                    .collect();
+                Either::Left(params)
+            }
+            Either::Right(values) => Either::Right(values),
+        }
+    }
+}
+
+
 impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
-    fn execute<S, T>(&self, stmt: S) -> anyhow::Result<ExecResult>
-    where
-        S: StatementInput<T>,
-        T: SqlValue,
+    fn execute<S>(&self, stmt: S) -> anyhow::Result<ExecResult>
+        where
+            S: StatementInput
     {
         let sql = stmt.to_sql().to_string();
         match stmt.to_value() {
@@ -68,10 +94,9 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
         }
     }
 
-    fn query<S, T>(&self, stmt: S) -> anyhow::Result<QueryResult>
-    where
-        S: StatementInput<T>,
-        T: SqlValue,
+    fn query<S>(&self, stmt: S) -> anyhow::Result<QueryResult>
+        where
+            S: StatementInput
     {
         let sql = stmt.to_sql().to_string();
 
@@ -220,7 +245,7 @@ impl<'a> OdbcDbConnection<'a> {
         while let Some(row_set) = row_set_cursor.fetch()? {
             for index in 0..query_result.columns.len() {
                 let column_view: AnyColumnView = row_set.column(index);
-                let column_types = column_view.convert();
+                let column_types: Vec<_> = column_view.convert();
                 if index == 0 {
                     for c in column_types.into_iter() {
                         total_row.push(vec![c]);
