@@ -1,7 +1,5 @@
 use either::Either;
 use odbc_api::parameter::InputParameter;
-use odbc_api::Bit;
-use odbc_api::IntoParameter;
 
 pub trait StatementInput {
     type Item: SqlValue;
