@@ -3,8 +3,10 @@ use odbc_api::parameter::InputParameter;
 use odbc_api::Bit;
 use odbc_api::IntoParameter;
 
-pub trait StatementInput<T> {
-    fn to_value(self) -> Either<Vec<T>, ()>;
+pub trait StatementInput {
+    type Item:SqlValue;
+
+    fn to_value(self) -> Either<Vec<Self::Item>, ()>;
     fn to_sql(&self) -> &str;
 }
 
@@ -66,10 +68,12 @@ impl SqlValue for ValueInput {
     }
 }
 
-impl<T> StatementInput<T> for Statement<T>
+impl<T> StatementInput for Statement<T>
 where
     T: SqlValue,
 {
+    type Item = T;
+
     fn to_value(self) -> Either<Vec<T>, ()> {
         Either::Left(self.values)
     }
@@ -79,22 +83,22 @@ where
     }
 }
 
-impl StatementInput<Self> for &str {
-    fn to_value(self) -> Either<Vec<Self>, ()> {
-        Either::Right(())
-    }
-
-    fn to_sql(&self) -> &str {
-        self
-    }
-}
-
-impl StatementInput<Self> for String {
-    fn to_value(self) -> Either<Vec<Self>, ()> {
-        Either::Right(())
-    }
-
-    fn to_sql(&self) -> &str {
-        self
-    }
-}
+// impl StatementInput<Self> for &str {
+//     fn to_value(self) -> Either<Vec<Self>, ()> {
+//         Either::Right(())
+//     }
+//
+//     fn to_sql(&self) -> &str {
+//         self
+//     }
+// }
+//
+// impl StatementInput<Self> for String {
+//     fn to_value(self) -> Either<Vec<Self>, ()> {
+//         Either::Right(())
+//     }
+//
+//     fn to_sql(&self) -> &str {
+//         self
+//     }
+// }
