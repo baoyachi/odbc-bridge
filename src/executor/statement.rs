@@ -21,12 +21,15 @@ pub struct Statement<T> {
     pub values: Vec<T>,
 }
 
-
 impl<T> Statement<T>
-    where T: SqlValue
+where
+    T: SqlValue,
 {
     pub fn new<S: Into<String>>(sql: S, values: Vec<T>) -> Self {
-        Statement { sql: sql.into(), values }
+        Statement {
+            sql: sql.into(),
+            values,
+        }
     }
 }
 
@@ -77,8 +80,8 @@ impl SqlValue for ValueInput {
 }
 
 impl<T> StatementInput for Statement<T>
-    where
-        T: SqlValue,
+where
+    T: SqlValue,
 {
     type Item = T;
 
