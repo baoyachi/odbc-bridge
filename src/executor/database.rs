@@ -204,7 +204,7 @@ impl<'a> OdbcDbConnection<'a> {
             );
             query_result
                 .column_names
-                .insert(column.name.clone(),index as usize);
+                .insert(column.name.clone(), index as usize);
             query_result.columns.push(column);
         }
 
