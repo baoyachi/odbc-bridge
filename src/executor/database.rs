@@ -90,9 +90,9 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
                         }
                     })
                     .collect();
-                self.query_result(None, &sql, &params[..])
+                self.query_result(&sql, &params[..])
             }
-            Either::Right(()) => self.query_result(None, &sql, ()),
+            Either::Right(()) => self.query_result(&sql, ()),
         }
     }
 
@@ -174,7 +174,6 @@ impl<'a> OdbcDbConnection<'a> {
 
     fn query_result(
         &self,
-        table_name: Option<String>,
         sql: &str,
         params: impl ParameterCollectionRef,
     ) -> anyhow::Result<QueryResult> {
@@ -183,14 +182,6 @@ impl<'a> OdbcDbConnection<'a> {
             .execute(sql, params)?
             .ok_or_else(|| anyhow!("query error"))?;
 
-        let mut query_result = if let Some(table_name) = table_name {
-            QueryResult {
-                column_names: self.desc_table(&table_name)?.column_names,
-                ..Default::default()
-            }
-        } else {
-            QueryResult::default()
-        };
         let mut query_result = QueryResult::default();
 
         for index in 0..cursor.num_result_cols()?.try_into()? {
