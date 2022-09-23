@@ -89,7 +89,7 @@ impl<'a> OdbcDbConnection<'a> {
     // Max Buffer Size 256
     pub const MAX_BATCH_SIZE: usize = 1 << 8;
 
-    pub fn new<S: Into<String>>(conn: Connection<'a>) -> anyhow::Result<Self> {
+    pub fn new(conn: Connection<'a>) -> anyhow::Result<Self> {
         let connection = Self {
             conn,
             max_batch_size: Some(Self::MAX_BATCH_SIZE),
