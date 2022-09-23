@@ -33,18 +33,6 @@ where
     }
 }
 
-pub enum ValueInput {
-    INT2(i16),
-    INT4(i32),
-    INT8(i64),
-    FLOAT4(f32),
-    FLOAT8(f64),
-    CHAR(String),
-    VARCHAR(String),
-    TEXT(String),
-    Bool(bool),
-}
-
 impl SqlValue for &str {
     fn to_value(&self) -> Either<Box<dyn InputParameter>, ()> {
         Either::Right(())
@@ -54,28 +42,6 @@ impl SqlValue for &str {
 impl SqlValue for String {
     fn to_value(&self) -> Either<Box<dyn InputParameter>, ()> {
         Either::Right(())
-    }
-}
-
-impl SqlValue for ValueInput {
-    fn to_value(&self) -> Either<Box<dyn InputParameter>, ()> {
-        macro_rules! left_param {
-            ($($arg:tt)*) => {{
-                Either::Left(Box::new($($arg)*))
-            }};
-        }
-
-        match self {
-            Self::INT2(i) => left_param!(i.into_parameter()),
-            Self::INT4(i) => left_param!(i.into_parameter()),
-            Self::INT8(i) => left_param!(i.into_parameter()),
-            Self::FLOAT4(i) => left_param!(i.into_parameter()),
-            Self::FLOAT8(i) => left_param!(i.into_parameter()),
-            Self::CHAR(i) => left_param!(i.to_string().into_parameter()),
-            Self::VARCHAR(i) => left_param!(i.to_string().into_parameter()),
-            Self::TEXT(i) => left_param!(i.to_string().into_parameter()),
-            Self::Bool(i) => left_param!(Bit::from_bool(*i).into_parameter()),
-        }
     }
 }
 
