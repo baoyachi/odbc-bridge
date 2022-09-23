@@ -1,4 +1,4 @@
-use crate::Convert;
+use crate::TryConvert;
 use either::Either;
 use odbc_api::parameter::InputParameter;
 
@@ -85,26 +85,20 @@ impl StatementInput for String {
 
 pub type EitherBoxParams = Either<Vec<Box<dyn InputParameter>>, ()>;
 
-impl<T: StatementInput> Convert<EitherBoxParams> for T {
-    fn convert(self) -> EitherBoxParams {
+impl<T: StatementInput> TryConvert<EitherBoxParams> for T {
+    type Error = &'static str;
+
+    fn try_convert(self) -> Result<EitherBoxParams, Self::Error> {
         match self.to_value() {
             Either::Left(values) => {
-                let params: Vec<_> = values
+                let params: Result<Vec<_>, Self::Error> = values
                     .into_iter()
                     .map(|v| v.to_value())
-                    .map(|x| {
-                        match x {
-                            Either::Left(v) => v,
-                            Either::Right(()) => {
-                                //TODO fix: throws Error
-                                panic!("value not include empty tuple")
-                            }
-                        }
-                    })
+                    .map(|x| x.left().ok_or("value not include empty tuple"))
                     .collect();
-                Either::Left(params)
+                Ok(Either::Left(params?))
             }
-            Either::Right(values) => Either::Right(values),
+            Either::Right(values) => Ok(Either::Right(values)),
         }
     }
 }
