@@ -83,22 +83,26 @@ where
     }
 }
 
-// impl StatementInput<Self> for &str {
-//     fn to_value(self) -> Either<Vec<Self>, ()> {
-//         Either::Right(())
-//     }
-//
-//     fn to_sql(&self) -> &str {
-//         self
-//     }
-// }
-//
-// impl StatementInput<Self> for String {
-//     fn to_value(self) -> Either<Vec<Self>, ()> {
-//         Either::Right(())
-//     }
-//
-//     fn to_sql(&self) -> &str {
-//         self
-//     }
-// }
+impl StatementInput for &str {
+    type Item = Self;
+
+    fn to_value(self) -> Either<Vec<Self::Item>, ()> {
+        Either::Right(())
+    }
+
+    fn to_sql(&self) -> &str {
+        self
+    }
+}
+
+impl StatementInput for String {
+    type Item = Self;
+
+    fn to_value(self) -> Either<Vec<Self::Item>, ()> {
+        Either::Right(())
+    }
+
+    fn to_sql(&self) -> &str {
+        self
+    }
+}
