@@ -1,11 +1,10 @@
 use crate::executor::execute::ExecResult;
 use crate::executor::query::QueryResult;
-use crate::executor::statement::{SqlValue, StatementInput};
+use crate::executor::statement::StatementInput;
 use crate::extension::odbc::Column;
-use crate::Convert;
+use crate::{Convert, TryConvert};
 use either::Either;
 use odbc_api::buffers::{AnyColumnView, BufferDescription, ColumnarAnyBuffer};
-use odbc_api::parameter::InputParameter;
 use odbc_api::{ColumnDescription, Connection, Cursor, ParameterCollectionRef, ResultSetMetadata};
 use std::ops::IndexMut;
 
@@ -38,55 +37,14 @@ pub struct OdbcDbConnection<'a> {
     max_batch_size: Option<usize>,
 }
 
-pub type EitherBoxParams = Either<Vec<Box<dyn InputParameter>>, ()>;
-
-impl<T: StatementInput> Convert<EitherBoxParams> for T {
-    fn convert(self) -> EitherBoxParams {
-        match self.to_value() {
-            Either::Left(values) => {
-                let params: Vec<_> = values
-                    .into_iter()
-                    .map(|v| v.to_value())
-                    .map(|x| {
-                        match x {
-                            Either::Left(v) => v,
-                            Either::Right(()) => {
-                                //TODO fix: throws Error
-                                panic!("value not include empty tuple")
-                            }
-                        }
-                    })
-                    .collect();
-                Either::Left(params)
-            }
-            Either::Right(values) => Either::Right(values),
-        }
-    }
-}
-
 impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
     fn execute<S>(&self, stmt: S) -> anyhow::Result<ExecResult>
     where
         S: StatementInput,
     {
         let sql = stmt.to_sql().to_string();
-        match stmt.to_value() {
-            Either::Left(values) => {
-                let params: Vec<_> = values
-                    .into_iter()
-                    .map(|v| v.to_value())
-                    .map(|x| {
-                        match x {
-                            Either::Left(v) => v,
-                            Either::Right(()) => {
-                                //TODO fix: throws Error
-                                panic!("value not include empty tuple")
-                            }
-                        }
-                    })
-                    .collect();
-                self.exec_result(sql, &params[..])
-            }
+        match stmt.try_convert().unwrap() {
+            Either::Left(params) => self.exec_result(sql, &params[..]),
             Either::Right(()) => self.exec_result(sql, ()),
         }
     }
@@ -97,23 +55,8 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
     {
         let sql = stmt.to_sql().to_string();
 
-        match stmt.to_value() {
-            Either::Left(values) => {
-                let params: Vec<_> = values
-                    .into_iter()
-                    .map(|v| v.to_value())
-                    .map(|x| {
-                        match x {
-                            Either::Left(v) => v,
-                            Either::Right(()) => {
-                                //TODO fix: throws Error
-                                panic!("value not include empty tuple")
-                            }
-                        }
-                    })
-                    .collect();
-                self.query_result(&sql, &params[..])
-            }
+        match stmt.try_convert().unwrap() {
+            Either::Left(params) => self.query_result(&sql, &params[..]),
             Either::Right(()) => self.query_result(&sql, ()),
         }
     }
@@ -146,7 +89,7 @@ impl<'a> OdbcDbConnection<'a> {
     // Max Buffer Size 256
     pub const MAX_BATCH_SIZE: usize = 1 << 8;
 
-    pub fn new<S: Into<String>>(conn: Connection<'a>) -> anyhow::Result<Self> {
+    pub fn new(conn: Connection<'a>) -> anyhow::Result<Self> {
         let connection = Self {
             conn,
             max_batch_size: Some(Self::MAX_BATCH_SIZE),
