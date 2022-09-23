@@ -1,8 +1,8 @@
 use crate::executor::execute::ExecResult;
 use crate::executor::query::QueryResult;
-use crate::executor::statement::{SqlValue, StatementInput};
+use crate::executor::statement::StatementInput;
 use crate::extension::odbc::Column;
-use crate::Convert;
+use crate::{Convert, TryConvert};
 use either::Either;
 use odbc_api::buffers::{AnyColumnView, BufferDescription, ColumnarAnyBuffer};
 use odbc_api::{ColumnDescription, Connection, Cursor, ParameterCollectionRef, ResultSetMetadata};
@@ -43,23 +43,8 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
         S: StatementInput,
     {
         let sql = stmt.to_sql().to_string();
-        match stmt.to_value() {
-            Either::Left(values) => {
-                let params: Vec<_> = values
-                    .into_iter()
-                    .map(|v| v.to_value())
-                    .map(|x| {
-                        match x {
-                            Either::Left(v) => v,
-                            Either::Right(()) => {
-                                //TODO fix: throws Error
-                                panic!("value not include empty tuple")
-                            }
-                        }
-                    })
-                    .collect();
-                self.exec_result(sql, &params[..])
-            }
+        match stmt.try_convert().unwrap() {
+            Either::Left(params) => self.exec_result(sql, &params[..]),
             Either::Right(()) => self.exec_result(sql, ()),
         }
     }
@@ -70,23 +55,8 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
     {
         let sql = stmt.to_sql().to_string();
 
-        match stmt.to_value() {
-            Either::Left(values) => {
-                let params: Vec<_> = values
-                    .into_iter()
-                    .map(|v| v.to_value())
-                    .map(|x| {
-                        match x {
-                            Either::Left(v) => v,
-                            Either::Right(()) => {
-                                //TODO fix: throws Error
-                                panic!("value not include empty tuple")
-                            }
-                        }
-                    })
-                    .collect();
-                self.query_result(&sql, &params[..])
-            }
+        match stmt.try_convert().unwrap() {
+            Either::Left(params) => self.query_result(&sql, &params[..]),
             Either::Right(()) => self.query_result(&sql, ()),
         }
     }
