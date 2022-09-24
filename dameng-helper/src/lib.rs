@@ -1,3 +1,5 @@
+mod dm_type;
+
 pub fn add(left: usize, right: usize) -> usize {
     left + right
 }
