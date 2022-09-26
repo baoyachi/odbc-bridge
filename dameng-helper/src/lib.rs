@@ -2,27 +2,28 @@
 pub mod data_type;
 pub mod error;
 
+use std::str::FromStr;
 use anyhow::anyhow;
 use odbc_api::buffers::TextRowSet;
 use odbc_api::{ColumnDescription, Cursor, CursorImpl, Error, ResultSetMetadata};
 use odbc_api::handles::StatementImpl;
 pub use data_type::*;
+use crate::error::DmError;
 
-#[derive(Debug, Default)]
+#[derive(Debug,Default)]
 pub struct TableDesc {
     table_id: Option<usize>,
     inner: Vec<TableInner>,
 }
 
-
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct TableInner {
     name: String,
-    data_type: String,
+    data_type: DataType,
 }
 
 impl TableInner {
-    fn new(name: String, data_type: String) -> Self {
+    fn new(name: String, data_type: DataType) -> Self {
         Self { name, data_type }
     }
 }
@@ -57,14 +58,14 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
                 let num_cols = batch.num_cols();
                 assert_eq!(num_cols, headers.len());
 
-                let mut row_data: Vec<String> = (0..num_cols)
+                let mut row_data: Vec<_> = (0..num_cols)
                     .map(|col_index| batch.at(col_index, row_index).unwrap_or(&[]))
                     .into_iter()
-                    .map(|x| String::from_utf8_lossy(x).to_string())
+                    .map(|x| String::from_utf8_lossy(x))
                     .collect();
                 table_desc.inner.push(TableInner::new(
-                    row_data.remove(0),
-                    row_data.remove(0),
+                    row_data.remove(0).to_string(),
+                    DataType::from_str(row_data.remove(0).as_ref())?,
                 ));
                 if table_desc.table_id.is_none() {
                     table_desc.table_id = Some(row_data.remove(0).parse::<usize>()?);

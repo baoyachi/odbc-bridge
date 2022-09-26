@@ -1,6 +1,7 @@
 use std::str::FromStr;
 use crate::error::DmError;
 
+#[derive(Debug)]
 pub enum DataType {
     /// `NUMERIC 数据类型用于存储零、正负定点数。其中:精度是一个无符号整数，
     /// 定义 了总的数字数，精度范围是 1至38，标度定义了小数点右边的数字位数，定义时如省略 精度，则默认是 16。
@@ -85,7 +86,7 @@ impl FromStr for DataType {
     type Err = DmError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let data_type = match &*s.to_lowercase() {
+        let data_type = match &*s.to_uppercase() {
             "NUMERIC" => Self::NUMERIC,
             "NUMBER" => Self::NUMBER,
             "DECIMAL" => Self::DECIMAL,
@@ -114,7 +115,7 @@ impl FromStr for DataType {
             "TIME WITH TIME ZONE" => Self::TIME_WITH_TIME_ZONE,
             "DATETIME WITH TIME ZONE" => Self::TIMESTAMP_WITH_TIME_ZONE,
             "TIMESTAMP WITH LOCAL TIME ZONE" => Self::TIMESTAMP_WITH_LOCAL_TIME_ZONE,
-            _ => return Err(DmError::DataTypeError(s.to_string()))
+            _ => return Err(DmError::DataTypeError(s.to_string())),
         };
         Ok(data_type)
     }
