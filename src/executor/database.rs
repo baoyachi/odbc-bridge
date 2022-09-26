@@ -34,7 +34,7 @@ pub trait ConnectionTrait {
 
 pub struct OdbcDbConnection<'a> {
     conn: Connection<'a>,
-    max_batch_size: Option<usize>,
+    max_batch_size: usize,
 }
 
 impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
@@ -92,7 +92,7 @@ impl<'a> OdbcDbConnection<'a> {
     pub fn new(conn: Connection<'a>) -> anyhow::Result<Self> {
         let connection = Self {
             conn,
-            max_batch_size: Some(Self::MAX_BATCH_SIZE),
+            max_batch_size: MAX_BATCH_SIZE,
         };
         Ok(connection)
     }
@@ -104,7 +104,7 @@ impl<'a> OdbcDbConnection<'a> {
             size
         };
         Self {
-            max_batch_size: Some(size),
+            max_batch_size: size,
             ..self
         }
     }
@@ -155,10 +155,7 @@ impl<'a> OdbcDbConnection<'a> {
             .iter()
             .map(|c| <&Column as TryInto<BufferDescription>>::try_into(c).unwrap());
 
-        let row_set_buffer = ColumnarAnyBuffer::from_description(
-            self.max_batch_size.unwrap_or(Self::MAX_BATCH_SIZE),
-            descs,
-        );
+        let row_set_buffer = ColumnarAnyBuffer::from_description(self.max_batch_size, descs);
 
         let mut row_set_cursor = cursor.bind_buffer(row_set_buffer).unwrap();
 
