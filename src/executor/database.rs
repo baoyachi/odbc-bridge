@@ -10,6 +10,7 @@ use odbc_api::{
     ColumnDescription, Connection, Cursor, CursorImpl, ParameterCollectionRef, ResultSetMetadata,
 };
 use std::ops::IndexMut;
+use dameng_helper::DmAdapter;
 
 pub trait ConnectionTrait {
     /// Execute a [Statement]  INSETT,UPDATE,DELETE
@@ -95,7 +96,7 @@ impl<'a> OdbcDbConnection<'a> {
     pub fn new(conn: Connection<'a>) -> anyhow::Result<Self> {
         let connection = Self {
             conn,
-            max_batch_size: MAX_BATCH_SIZE,
+            max_batch_size: Self::MAX_BATCH_SIZE,
         };
         Ok(connection)
     }
@@ -193,5 +194,14 @@ impl<'a> OdbcDbConnection<'a> {
             .execute(sql, ())?
             .ok_or_else(|| anyhow!("query error"))?;
         Self::get_cursor_columns(&mut cursor)
+    }
+
+    pub fn get_table_desc(&self) -> anyhow::Result<()> {
+        let mut cursor = self
+            .conn
+            .execute(&CursorImpl::get_table_sql("T2"), ())?
+            .ok_or_else(|| anyhow!("query error"))?;
+        cursor.get_table_desc();
+        Ok(())
     }
 }
