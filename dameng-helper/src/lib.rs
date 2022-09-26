@@ -1,5 +1,6 @@
 #[allow(non_camel_case_types)]
 pub mod data_type;
+pub mod error;
 
 use anyhow::anyhow;
 use odbc_api::buffers::TextRowSet;
@@ -34,7 +35,7 @@ pub trait DmAdapter {
 
 impl DmAdapter for CursorImpl<StatementImpl<'_>> {
     fn get_table_sql(table_name: &str) -> String {
-        /// use sql: select a.name,a.type$ as data_type,a.id as table_id from SYSCOLUMNS as a left join SYSOBJECTS as b on a.id = b.id where b.name = '?'
+        // use sql: select a.name,a.type$ as data_type,a.id as table_id from SYSCOLUMNS as a left join SYSOBJECTS as b on a.id = b.id where b.name = '?'
         format!(
             r#"select a.name,a.type$ as data_type,a.id as table_id from SYSCOLUMNS as a left join SYSOBJECTS as b on a.id = b.id where b.name = '{}'"#,
             table_name)

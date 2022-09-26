@@ -196,12 +196,13 @@ impl<'a> OdbcDbConnection<'a> {
         Self::get_cursor_columns(&mut cursor)
     }
 
-    pub fn get_table_desc(&self) -> anyhow::Result<()> {
+    pub fn get_table_desc(&self,table_name:&str) -> anyhow::Result<()> {
         let mut cursor = self
             .conn
-            .execute(&CursorImpl::get_table_sql("T2"), ())?
+            .execute(&CursorImpl::get_table_sql(table_name), ())?
             .ok_or_else(|| anyhow!("query error"))?;
-        cursor.get_table_desc();
+        let desc = cursor.get_table_desc()?;
+        info!("{:?}",desc);
         Ok(())
     }
 }
