@@ -6,13 +6,13 @@ use std::char::decode_utf16;
 use std::ops::Deref;
 
 #[derive(Debug, Clone)]
-pub struct Column {
+pub struct OdbcColumn {
     pub name: String,
     pub data_type: DataType,
     pub nullable: bool,
 }
 
-impl Column {
+impl OdbcColumn {
     pub fn new(name: String, data_type: DataType, nullable: bool) -> Self {
         Self {
             name,
@@ -22,10 +22,10 @@ impl Column {
     }
 }
 
-impl TryFrom<&Column> for BufferDescription {
+impl TryFrom<&OdbcColumn> for BufferDescription {
     type Error = String;
 
-    fn try_from(c: &Column) -> Result<Self, Self::Error> {
+    fn try_from(c: &OdbcColumn) -> Result<Self, Self::Error> {
         let description = BufferDescription {
             nullable: c.nullable,
             kind: BufferKind::from_data_type(c.data_type)
@@ -36,7 +36,7 @@ impl TryFrom<&Column> for BufferDescription {
 }
 
 #[derive(Debug)]
-pub enum ColumnItem {
+pub enum OdbcColumnItem {
     Text(Option<String>),
     WText(Option<String>),
     Binary(Option<Vec<u8>>),
@@ -54,23 +54,23 @@ pub enum ColumnItem {
     Unknown(Option<Vec<u8>>),
 }
 
-impl ToString for ColumnItem {
+impl ToString for OdbcColumnItem {
     fn to_string(&self) -> String {
         format!("{:?}", self)
     }
 }
 
-impl Convert<Vec<ColumnItem>> for AnyColumnView<'_> {
-    fn convert(self) -> Vec<ColumnItem> {
+impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
+    fn convert(self) -> Vec<OdbcColumnItem> {
         match self {
             AnyColumnView::Text(view) => {
                 let mut buffer = Vec::with_capacity(view.len());
                 for v in view.iter() {
                     if let Some(x) = v {
                         let cow = String::from_utf8_lossy(x);
-                        buffer.push(ColumnItem::Text(Some(cow.to_string())));
+                        buffer.push(OdbcColumnItem::Text(Some(cow.to_string())));
                     } else {
-                        buffer.push(ColumnItem::Text(None))
+                        buffer.push(OdbcColumnItem::Text(None))
                     }
                 }
                 return buffer;
@@ -83,9 +83,9 @@ impl Convert<Vec<ColumnItem>> for AnyColumnView<'_> {
                         for c in decode_utf16(utf16.as_slice().iter().cloned()) {
                             buf_utf8.push(c.unwrap());
                         }
-                        buffer.push(ColumnItem::WText(Some(buf_utf8)));
+                        buffer.push(OdbcColumnItem::WText(Some(buf_utf8)));
                     } else {
-                        buffer.push(ColumnItem::WText(None))
+                        buffer.push(OdbcColumnItem::WText(None))
                     }
                 }
                 return buffer;
@@ -94,9 +94,9 @@ impl Convert<Vec<ColumnItem>> for AnyColumnView<'_> {
                 let mut buffer = vec![];
                 for value in view.iter() {
                     if let Some(bytes) = value {
-                        buffer.push(ColumnItem::Binary(Some(bytes.to_vec())))
+                        buffer.push(OdbcColumnItem::Binary(Some(bytes.to_vec())))
                     } else {
-                        buffer.push(ColumnItem::Binary(None))
+                        buffer.push(OdbcColumnItem::Binary(None))
                     }
                 }
                 return buffer;
@@ -104,35 +104,35 @@ impl Convert<Vec<ColumnItem>> for AnyColumnView<'_> {
             AnyColumnView::Date(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(ColumnItem::Date(Some(*value)))
+                    buffer.push(OdbcColumnItem::Date(Some(*value)))
                 }
                 return buffer;
             }
             AnyColumnView::Timestamp(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(ColumnItem::Timestamp(Some(*value)))
+                    buffer.push(OdbcColumnItem::Timestamp(Some(*value)))
                 }
                 return buffer;
             }
             AnyColumnView::Time(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(ColumnItem::Time(Some(*value)))
+                    buffer.push(OdbcColumnItem::Time(Some(*value)))
                 }
                 return buffer;
             }
             AnyColumnView::I32(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(ColumnItem::I32(Some(*value)))
+                    buffer.push(OdbcColumnItem::I32(Some(*value)))
                 }
                 return buffer;
             }
             AnyColumnView::Bit(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(ColumnItem::Bit(Some(value.as_bool())))
+                    buffer.push(OdbcColumnItem::Bit(Some(value.as_bool())))
                 }
                 return buffer;
             }
@@ -140,42 +140,42 @@ impl Convert<Vec<ColumnItem>> for AnyColumnView<'_> {
             AnyColumnView::F64(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(ColumnItem::F64(Some(*value)))
+                    buffer.push(OdbcColumnItem::F64(Some(*value)))
                 }
                 return buffer;
             }
             AnyColumnView::F32(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(ColumnItem::F32(Some(*value)))
+                    buffer.push(OdbcColumnItem::F32(Some(*value)))
                 }
                 return buffer;
             }
             AnyColumnView::I8(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(ColumnItem::I8(Some(*value)))
+                    buffer.push(OdbcColumnItem::I8(Some(*value)))
                 }
                 return buffer;
             }
             AnyColumnView::I16(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(ColumnItem::I16(Some(*value)))
+                    buffer.push(OdbcColumnItem::I16(Some(*value)))
                 }
                 return buffer;
             }
             AnyColumnView::I64(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(ColumnItem::I64(Some(*value)))
+                    buffer.push(OdbcColumnItem::I64(Some(*value)))
                 }
                 return buffer;
             }
             AnyColumnView::U8(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(ColumnItem::U8(Some(*value)))
+                    buffer.push(OdbcColumnItem::U8(Some(*value)))
                 }
                 return buffer;
             }
@@ -209,9 +209,9 @@ impl Convert<Vec<ColumnItem>> for AnyColumnView<'_> {
                     .enumerate()
                     .map(|(index, value)| {
                         if indicators[index] != NULL_DATA {
-                            ColumnItem::I32(Some(*value))
+                            OdbcColumnItem::I32(Some(*value))
                         } else {
-                            ColumnItem::I32(None)
+                            OdbcColumnItem::I32(None)
                         }
                     })
                     .collect();
@@ -225,9 +225,9 @@ impl Convert<Vec<ColumnItem>> for AnyColumnView<'_> {
                     .enumerate()
                     .map(|(index, value)| {
                         if indicators[index] != NULL_DATA {
-                            ColumnItem::I64(Some(*value))
+                            OdbcColumnItem::I64(Some(*value))
                         } else {
-                            ColumnItem::I64(None)
+                            OdbcColumnItem::I64(None)
                         }
                     })
                     .collect();
@@ -241,9 +241,9 @@ impl Convert<Vec<ColumnItem>> for AnyColumnView<'_> {
                     .enumerate()
                     .map(|(index, value)| {
                         if indicators[index] != NULL_DATA {
-                            ColumnItem::U8(Some(*value))
+                            OdbcColumnItem::U8(Some(*value))
                         } else {
-                            ColumnItem::U8(None)
+                            OdbcColumnItem::U8(None)
                         }
                     })
                     .collect();
@@ -257,15 +257,15 @@ impl Convert<Vec<ColumnItem>> for AnyColumnView<'_> {
                     .enumerate()
                     .map(|(index, value)| {
                         if indicators[index] != NULL_DATA {
-                            ColumnItem::Bit(Some(value.deref().as_bool()))
+                            OdbcColumnItem::Bit(Some(value.deref().as_bool()))
                         } else {
-                            ColumnItem::Bit(None)
+                            OdbcColumnItem::Bit(None)
                         }
                     })
                     .collect();
             }
         };
         let opt = self.as_slice::<u8>().map(|x| x.to_vec());
-        vec![ColumnItem::Unknown(opt)]
+        vec![OdbcColumnItem::Unknown(opt)]
     }
 }

@@ -1,7 +1,7 @@
 use crate::executor::execute::ExecResult;
 use crate::executor::query::QueryResult;
 use crate::executor::statement::StatementInput;
-use crate::extension::odbc::Column;
+use crate::extension::odbc::OdbcColumn;
 use crate::{Convert, TryConvert};
 use either::Either;
 use odbc_api::buffers::{AnyColumnView, BufferDescription, ColumnarAnyBuffer};
@@ -142,7 +142,7 @@ impl<'a> OdbcDbConnection<'a> {
         let descs = query_result
             .columns
             .iter()
-            .map(|c| <&Column as TryInto<BufferDescription>>::try_into(c).unwrap());
+            .map(|c| <&OdbcColumn as TryInto<BufferDescription>>::try_into(c).unwrap());
 
         let row_set_buffer = ColumnarAnyBuffer::from_description(self.max_batch_size, descs);
 
@@ -175,7 +175,7 @@ impl<'a> OdbcDbConnection<'a> {
             let mut column_description = ColumnDescription::default();
             cursor.describe_col(index + 1, &mut column_description)?;
 
-            let column = Column::new(
+            let column = OdbcColumn::new(
                 column_description.name_to_string()?,
                 column_description.data_type,
                 column_description.could_be_nullable(),
