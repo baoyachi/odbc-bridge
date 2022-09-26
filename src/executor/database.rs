@@ -199,7 +199,7 @@ impl<'a> OdbcDbConnection<'a> {
     }
 
     pub fn get_table_desc(&self, table_name: &str) -> anyhow::Result<impl ColumnInto> {
-        let mut cursor = self
+        let cursor = self
             .conn
             .execute(&CursorImpl::get_table_sql(table_name), ())?
             .ok_or_else(|| anyhow!("query error"))?;
