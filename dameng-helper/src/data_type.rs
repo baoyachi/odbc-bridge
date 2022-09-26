@@ -1,3 +1,6 @@
+use std::str::FromStr;
+use crate::error::DmError;
+
 pub enum DataType {
     /// `NUMERIC 数据类型用于存储零、正负定点数。其中:精度是一个无符号整数，
     /// 定义 了总的数字数，精度范围是 1至38，标度定义了小数点右边的数字位数，定义时如省略 精度，则默认是 16。
@@ -5,38 +8,21 @@ pub enum DataType {
     /// 所有 NUMERIC 数据类型，如果其值超过精度，达梦数据库返回一个 出错信息，如果超过标度，则多余的位截断。
     /// 如果不指定精度和标度，缺省精度为 38。
     /// NUMERIC[( 精度 [, 标度])]
-    NUMERIC {
-        // 精度
-        precision: usize,
-        // 标度
-        scale: i16,
-    },
+    NUMERIC,
 
     /// 与 NUMERIC 类型相同。
     /// NUMBER[(精度 [, 标度])]
-    NUMBER {
-        // 精度
-        precision: usize,
-        // 标度
-        scale: i16,
-    },
+    NUMBER,
 
     /// 与 NUMERIC 相似。
     /// DECIMAL[(精度 [, 标度])],
-    DECIMAL {
-        // 精度
-        precision: usize,
-        // 标度
-        scale: i16,
-    },
+    DECIMAL,
 
     /// BIT 类型用于存储整数数据 1、0 或 NULL，可以用来支持 ODBC 和 JDBC 的布尔数据 类型。DM 的 BIT 类型与 SQL SERVER2000 的 BIT 数据类型相似。
     BIT,
 
     /// 用于存储有符号整数，精度为 10，标度为 0。取值范围为:-2147483648(- 2^31)~ +2147483647(2^31-1)。
     INTEGER,
-    /// 与 INTEGER 相同。
-    PLS_INTEGER,
 
     /// 用于存储有符号整数，精度为 19，标度为 0。取值范围为:-9223372036854775808(-2^63)~ 9223372036854775807(2^63-1)。
     BIGINT,
@@ -94,3 +80,46 @@ pub enum DataType {
     BOOL,
     // TODO 时间间隔数据类型
 }
+
+impl FromStr for DataType {
+    type Err = DmError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let data_type = match &*s.to_lowercase() {
+            "NUMERIC" => Self::NUMERIC,
+            "NUMBER" => Self::NUMBER,
+            "DECIMAL" => Self::DECIMAL,
+            "BIT" => Self::BIT,
+            "INTEGER" | "PLS_INTEGER" => Self::INTEGER,
+            "BIGINT" => Self::BIGINT,
+            "TINYINT" => Self::TINYINT,
+            "BYTE" => Self::BYTE,
+            "SMALLINT" => Self::SMALLINT,
+            "BINARY" => Self::BINARY,
+            "VARBINARY" => Self::VARBINARY,
+            "REAL" => Self::REAL,
+            "FLOAT" => Self::FLOAT,
+            "DOUBLE" => Self::DOUBLE,
+            "DOUBLE PRECISION" => Self::DOUBLE_PRECISION,
+            "CHAR" => Self::CHAR,
+            "VARCHAR" => Self::VARCHAR,
+            "TEXT" => Self::TEXT,
+            "IMAGE" => Self::IMAGE,
+            "BLOB" => Self::BLOB,
+            "CLOB" => Self::CLOB,
+            "BFILE" => Self::BFILE,
+            "DATE" => Self::DATE,
+            "TIME" => Self::TIME,
+            "TIMESTAMP" => Self::TIMESTAMP,
+            "TIME WITH TIME ZONE" => Self::TIME_WITH_TIME_ZONE,
+            "DATETIME WITH TIME ZONE" => Self::TIMESTAMP_WITH_TIME_ZONE,
+            "TIMESTAMP WITH LOCAL TIME ZONE" => Self::TIMESTAMP_WITH_LOCAL_TIME_ZONE,
+            _ => return Err(DmError::DataTypeError(s.to_string()))
+        };
+        Ok(data_type)
+    }
+}
+
+
+
+
