@@ -2,12 +2,10 @@
 pub mod data_type;
 pub mod error;
 
-use crate::error::DmError;
-use anyhow::anyhow;
 pub use data_type::*;
 use odbc_api::buffers::TextRowSet;
 use odbc_api::handles::StatementImpl;
-use odbc_api::{ColumnDescription, Cursor, CursorImpl, Error, ResultSetMetadata};
+use odbc_api::{Cursor, CursorImpl, ResultSetMetadata};
 use std::str::FromStr;
 
 #[derive(Debug, Default)]
@@ -59,7 +57,7 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
                 let mut row_data: Vec<_> = (0..num_cols)
                     .map(|col_index| batch.at(col_index, row_index).unwrap_or(&[]))
                     .into_iter()
-                    .map(|x| String::from_utf8_lossy(x))
+                    .map(String::from_utf8_lossy)
                     .collect();
                 table_desc.inner.push(DmColumnInner::new(
                     row_data.remove(0).to_string(),
