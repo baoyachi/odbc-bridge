@@ -179,26 +179,117 @@ impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
                 }
                 return buffer;
             }
-            AnyColumnView::NullableDate(_) => {
-                warn!("lost NullableDate type");
+            AnyColumnView::NullableDate(view) => {
+                let (values, indicators) = view.raw_values();
+                let values = values.to_vec();
+
+                return values
+                    .iter()
+                    .enumerate()
+                    .map(|(index, value)| {
+                        if indicators[index] != NULL_DATA {
+                            OdbcColumnItem::Date(Some(*value))
+                        } else {
+                            OdbcColumnItem::Date(None)
+                        }
+                    })
+                    .collect();
             }
-            AnyColumnView::NullableTime(_) => {
-                warn!("lost NullableTime type");
+            AnyColumnView::NullableTime(view) => {
+                let (values, indicators) = view.raw_values();
+                let values = values.to_vec();
+
+                return values
+                    .iter()
+                    .enumerate()
+                    .map(|(index, value)| {
+                        if indicators[index] != NULL_DATA {
+                            OdbcColumnItem::Time(Some(*value))
+                        } else {
+                            OdbcColumnItem::Time(None)
+                        }
+                    })
+                    .collect();
             }
-            AnyColumnView::NullableTimestamp(_) => {
-                warn!("lost NullableTimestamp type");
+            AnyColumnView::NullableTimestamp(view) => {
+                let (values, indicators) = view.raw_values();
+                let values = values.to_vec();
+
+                return values
+                    .iter()
+                    .enumerate()
+                    .map(|(index, value)| {
+                        if indicators[index] != NULL_DATA {
+                            OdbcColumnItem::Timestamp(Some(*value))
+                        } else {
+                            OdbcColumnItem::Timestamp(None)
+                        }
+                    })
+                    .collect();
             }
-            AnyColumnView::NullableF64(_) => {
-                warn!("lost NullableF64 type");
+            AnyColumnView::NullableF64(view) => {
+                let (values, indicators) = view.raw_values();
+                let values = values.to_vec();
+
+                return values
+                    .iter()
+                    .enumerate()
+                    .map(|(index, value)| {
+                        if indicators[index] != NULL_DATA {
+                            OdbcColumnItem::F64(Some(*value))
+                        } else {
+                            OdbcColumnItem::F64(None)
+                        }
+                    })
+                    .collect();
             }
-            AnyColumnView::NullableF32(_) => {
-                warn!("lost NullableF32 type");
+            AnyColumnView::NullableF32(view) => {
+                let (values, indicators) = view.raw_values();
+                let values = values.to_vec();
+
+                return values
+                    .iter()
+                    .enumerate()
+                    .map(|(index, value)| {
+                        if indicators[index] != NULL_DATA {
+                            OdbcColumnItem::F32(Some(*value))
+                        } else {
+                            OdbcColumnItem::F32(None)
+                        }
+                    })
+                    .collect();
             }
-            AnyColumnView::NullableI8(_) => {
-                warn!("lost NullableI8 type");
+            AnyColumnView::NullableI8(view) => {
+                let (values, indicators) = view.raw_values();
+                let values = values.to_vec();
+
+                return values
+                    .iter()
+                    .enumerate()
+                    .map(|(index, value)| {
+                        if indicators[index] != NULL_DATA {
+                            OdbcColumnItem::I8(Some(*value))
+                        } else {
+                            OdbcColumnItem::I8(None)
+                        }
+                    })
+                    .collect();
             }
-            AnyColumnView::NullableI16(_) => {
-                warn!("lost NullableI16 type");
+            AnyColumnView::NullableI16(view) => {
+                let (values, indicators) = view.raw_values();
+                let values = values.to_vec();
+
+                return values
+                    .iter()
+                    .enumerate()
+                    .map(|(index, value)| {
+                        if indicators[index] != NULL_DATA {
+                            OdbcColumnItem::I16(Some(*value))
+                        } else {
+                            OdbcColumnItem::I16(None)
+                        }
+                    })
+                    .collect();
             }
             AnyColumnView::NullableI32(view) => {
                 let (values, indicators) = view.raw_values();
@@ -265,7 +356,5 @@ impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
                     .collect();
             }
         };
-        let opt = self.as_slice::<u8>().map(|x| x.to_vec());
-        vec![OdbcColumnItem::Unknown(opt)]
     }
 }
