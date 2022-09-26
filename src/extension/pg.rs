@@ -131,7 +131,7 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
                         format!("{}-{}-{}", x.year, x.month, x.day).as_str(),
                         &format,
                     )
-                        .unwrap();
+                    .unwrap();
 
                     let base = || -> PrimitiveDateTime {
                         PrimitiveDateTime::new(
@@ -155,7 +155,7 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
                         format!("{}:{}:{}", x.hour, x.minute, x.second).as_str(),
                         &format,
                     )
-                        .unwrap();
+                    .unwrap();
                     let delta = time - Time::MIDNIGHT;
                     let time = i64::try_from(delta.whole_microseconds()).unwrap();
                     pp_type::time_to_sql(time, &mut buf);
