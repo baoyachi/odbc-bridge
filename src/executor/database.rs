@@ -3,6 +3,7 @@ use crate::executor::query::QueryResult;
 use crate::executor::statement::StatementInput;
 use crate::extension::odbc::OdbcColumn;
 use crate::{Convert, TryConvert};
+use dameng_helper::DmAdapter;
 use either::Either;
 use odbc_api::buffers::{AnyColumnView, BufferDescription, ColumnarAnyBuffer};
 use odbc_api::handles::StatementImpl;
@@ -10,7 +11,8 @@ use odbc_api::{
     ColumnDescription, Connection, Cursor, CursorImpl, ParameterCollectionRef, ResultSetMetadata,
 };
 use std::ops::IndexMut;
-use dameng_helper::DmAdapter;
+
+use crate::extension::ColumnInto;
 
 pub trait ConnectionTrait {
     /// Execute a [Statement]  INSETT,UPDATE,DELETE
@@ -196,13 +198,12 @@ impl<'a> OdbcDbConnection<'a> {
         Self::get_cursor_columns(&mut cursor)
     }
 
-    pub fn get_table_desc(&self,table_name:&str) -> anyhow::Result<()> {
+    pub fn get_table_desc(&self, table_name: &str) -> anyhow::Result<impl ColumnInto> {
         let mut cursor = self
             .conn
             .execute(&CursorImpl::get_table_sql(table_name), ())?
             .ok_or_else(|| anyhow!("query error"))?;
         let desc = cursor.get_table_desc()?;
-        info!("{:#?}",desc);
-        Ok(())
+        Ok(desc)
     }
 }
