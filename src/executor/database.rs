@@ -5,7 +5,10 @@ use crate::extension::odbc::Column;
 use crate::{Convert, TryConvert};
 use either::Either;
 use odbc_api::buffers::{AnyColumnView, BufferDescription, ColumnarAnyBuffer};
-use odbc_api::{ColumnDescription, Connection, Cursor, ParameterCollectionRef, ResultSetMetadata};
+use odbc_api::handles::StatementImpl;
+use odbc_api::{
+    ColumnDescription, Connection, Cursor, CursorImpl, ParameterCollectionRef, ResultSetMetadata,
+};
 use std::ops::IndexMut;
 
 pub trait ConnectionTrait {
@@ -133,22 +136,7 @@ impl<'a> OdbcDbConnection<'a> {
             .execute(sql, params)?
             .ok_or_else(|| anyhow!("query error"))?;
 
-        let mut query_result = QueryResult::default();
-
-        for index in 0..cursor.num_result_cols()?.try_into()? {
-            let mut column_description = ColumnDescription::default();
-            cursor.describe_col(index + 1, &mut column_description)?;
-
-            let column = Column::new(
-                column_description.name_to_string()?,
-                column_description.data_type,
-                column_description.could_be_nullable(),
-            );
-            query_result
-                .column_names
-                .insert(column.name.clone(), index as usize);
-            query_result.columns.push(column);
-        }
+        let mut query_result = Self::get_cursor_columns(&mut cursor)?;
 
         let descs = query_result
             .columns
@@ -180,12 +168,7 @@ impl<'a> OdbcDbConnection<'a> {
         Ok(query_result)
     }
 
-    fn desc_table(&self, sql: &str) -> anyhow::Result<QueryResult> {
-        let mut cursor = self
-            .conn
-            .execute(sql, ())?
-            .ok_or_else(|| anyhow!("query error"))?;
-
+    fn get_cursor_columns(cursor: &mut CursorImpl<StatementImpl>) -> anyhow::Result<QueryResult> {
         let mut query_result = QueryResult::default();
         for index in 0..cursor.num_result_cols()?.try_into()? {
             let mut column_description = ColumnDescription::default();
@@ -202,5 +185,13 @@ impl<'a> OdbcDbConnection<'a> {
             query_result.columns.push(column);
         }
         Ok(query_result)
+    }
+
+    fn desc_table(&self, sql: &str) -> anyhow::Result<QueryResult> {
+        let mut cursor = self
+            .conn
+            .execute(sql, ())?
+            .ok_or_else(|| anyhow!("query error"))?;
+        Self::get_cursor_columns(&mut cursor)
     }
 }
