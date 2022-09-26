@@ -1,5 +1,5 @@
-use std::str::FromStr;
 use crate::error::DmError;
+use std::str::FromStr;
 
 #[derive(Debug)]
 pub enum DataType {
@@ -120,7 +120,3 @@ impl FromStr for DataType {
         Ok(data_type)
     }
 }
-
-
-
-

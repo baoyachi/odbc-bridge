@@ -1,3 +1,7 @@
+use std::fmt::Debug;
+
+pub mod dameng;
 pub mod odbc;
 pub mod pg;
-pub mod dameng;
+
+pub trait ColumnInto: Debug {}

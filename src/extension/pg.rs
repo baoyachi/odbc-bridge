@@ -114,8 +114,12 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
         let mut buf = BytesMut::new();
 
         let (_, t) = match self {
-            OdbcColumnItem::Text(v) => (v.map(|x| pp_type::text_to_sql(&x, &mut buf)), PgType::TEXT),
-            OdbcColumnItem::WText(v) => (v.map(|x| pp_type::text_to_sql(&x, &mut buf)), PgType::TEXT),
+            OdbcColumnItem::Text(v) => {
+                (v.map(|x| pp_type::text_to_sql(&x, &mut buf)), PgType::TEXT)
+            }
+            OdbcColumnItem::WText(v) => {
+                (v.map(|x| pp_type::text_to_sql(&x, &mut buf)), PgType::TEXT)
+            }
             OdbcColumnItem::Binary(v) => (
                 v.map(|x| pp_type::bytea_to_sql(&*x, &mut buf)),
                 PgType::BYTEA,

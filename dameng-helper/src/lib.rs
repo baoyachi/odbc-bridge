@@ -2,15 +2,15 @@
 pub mod data_type;
 pub mod error;
 
-use std::str::FromStr;
-use anyhow::anyhow;
-use odbc_api::buffers::TextRowSet;
-use odbc_api::{ColumnDescription, Cursor, CursorImpl, Error, ResultSetMetadata};
-use odbc_api::handles::StatementImpl;
-pub use data_type::*;
 use crate::error::DmError;
+use anyhow::anyhow;
+pub use data_type::*;
+use odbc_api::buffers::TextRowSet;
+use odbc_api::handles::StatementImpl;
+use odbc_api::{ColumnDescription, Cursor, CursorImpl, Error, ResultSetMetadata};
+use std::str::FromStr;
 
-#[derive(Debug,Default)]
+#[derive(Debug, Default)]
 pub struct DmColumnDesc {
     table_id: Option<usize>,
     inner: Vec<DmColumnInner>,
@@ -28,7 +28,6 @@ impl DmColumnInner {
     }
 }
 
-
 pub trait DmAdapter {
     fn get_table_sql(table_name: &str) -> String;
     fn get_table_desc(self) -> anyhow::Result<DmColumnDesc>;
@@ -39,13 +38,12 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
         // use sql: select a.name,a.type$ as data_type,a.id as table_id from SYSCOLUMNS as a left join SYSOBJECTS as b on a.id = b.id where b.name = '?'
         format!(
             r#"select a.name,a.type$ as data_type,a.id as table_id from SYSCOLUMNS as a left join SYSOBJECTS as b on a.id = b.id where b.name = '{}'"#,
-            table_name)
+            table_name
+        )
     }
 
     fn get_table_desc(mut self) -> anyhow::Result<DmColumnDesc> {
-        let headers = self
-            .column_names()?
-            .collect::<Result<Vec<String>, _>>()?;
+        let headers = self.column_names()?.collect::<Result<Vec<String>, _>>()?;
 
         assert_eq!(headers, vec!["name", "data_type", "table_id"]);
 
@@ -75,5 +73,3 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
         Ok(table_desc)
     }
 }
-
-
