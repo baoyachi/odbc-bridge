@@ -181,9 +181,7 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
             OdbcColumnItem::I16(v) => (v.map(|x| pp_type::int2_to_sql(x, &mut buf)), PgType::INT2),
             OdbcColumnItem::I32(v) => (v.map(|x| pp_type::int4_to_sql(x, &mut buf)), PgType::INT4),
             OdbcColumnItem::I64(v) => (v.map(|x| pp_type::int8_to_sql(x, &mut buf)), PgType::INT8),
-            OdbcColumnItem::U8(_) => {
-                panic!("not coverage U8");
-            }
+            OdbcColumnItem::U8(v) => (v.map(|x| pp_type::char_to_sql(x as i8, &mut buf)), PgType::CHAR),
             OdbcColumnItem::Bit(v) => (v.map(|x| pp_type::bool_to_sql(x, &mut buf)), PgType::BOOL),
         };
         PgColumnItem::new(buf, t)
