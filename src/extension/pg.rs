@@ -131,7 +131,7 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
                         format!("{}-{}-{}", x.year, x.month, x.day).as_str(),
                         &format,
                     )
-                    .unwrap();
+                        .unwrap();
 
                     let base = || -> PrimitiveDateTime {
                         PrimitiveDateTime::new(
@@ -155,7 +155,7 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
                         format!("{}:{}:{}", x.hour, x.minute, x.second).as_str(),
                         &format,
                     )
-                    .unwrap();
+                        .unwrap();
                     let delta = time - Time::MIDNIGHT;
                     let time = i64::try_from(delta.whole_microseconds()).unwrap();
                     pp_type::time_to_sql(time, &mut buf);
@@ -221,25 +221,5 @@ impl Convert<PgType> for PgType {
 
 pub fn oid_typlen<C: Convert<PgType>>(c: C) -> i16 {
     let pg_type = c.convert();
-    match pg_type {
-        PgType::BOOL => 1,
-        PgType::BYTEA => -1,
-        PgType::CHAR => 1,
-        PgType::INT8 => 8,
-        PgType::INT2 => 2,
-        PgType::INT2_VECTOR => -1,
-        PgType::INT4 => 4,
-        PgType::TEXT => -1,
-        PgType::FLOAT4 => 4,
-        PgType::FLOAT8 => 8,
-        PgType::VARCHAR => -1,
-        PgType::DATE => 4,
-        PgType::TIME => 8,
-        PgType::TIMESTAMP => 8,
-        PgType::TIMESTAMPTZ => 8,
-        PgType::TIMETZ => 12,
-        PgType::BIT => -1,
-        PgType::JSONB => -1,
-        _ => panic!("unknown pg_type:{}", pg_type),
-    }
+    pg_helper::oid_typlen(pg_type)
 }
