@@ -240,6 +240,6 @@ pub fn oid_typlen<C: Convert<PgType>>(c: C) -> i16 {
         PgType::TIMETZ => 12,
         PgType::BIT => -1,
         PgType::JSONB => -1,
-        _ => panic!("unknow pg_type:{}", pg_type),
+        _ => panic!("unknown pg_type:{}", pg_type),
     }
 }
