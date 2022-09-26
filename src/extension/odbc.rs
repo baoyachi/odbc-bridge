@@ -51,7 +51,6 @@ pub enum OdbcColumnItem {
     I64(Option<i64>),
     U8(Option<u8>),
     Bit(Option<bool>),
-    Unknown(Option<Vec<u8>>),
 }
 
 impl ToString for OdbcColumnItem {

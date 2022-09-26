@@ -185,9 +185,6 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
                 panic!("not coverage U8");
             }
             OdbcColumnItem::Bit(v) => (v.map(|x| pp_type::bool_to_sql(x, &mut buf)), PgType::BOOL),
-            OdbcColumnItem::Unknown(_) => {
-                panic!("not coverage unknown");
-            }
         };
         PgColumnItem::new(buf, t)
     }
