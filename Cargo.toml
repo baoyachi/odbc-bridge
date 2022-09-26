@@ -28,3 +28,4 @@ bytes = "1.2.1"
 either = "1.8.0"
 time = { version = "0.3.14", features = ["macros", "parsing"] }
 async-trait = "0.1.57"
+dameng-helper = { path = "dameng-helper" }
