@@ -6,6 +6,7 @@ extern crate log;
 
 pub use odbc_api;
 
+pub mod brige;
 pub mod debug;
 pub mod executor;
 pub mod extension;
