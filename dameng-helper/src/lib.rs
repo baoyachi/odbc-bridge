@@ -11,18 +11,18 @@ pub use data_type::*;
 use crate::error::DmError;
 
 #[derive(Debug,Default)]
-pub struct TableDesc {
+pub struct DmColumnDesc {
     table_id: Option<usize>,
-    inner: Vec<TableInner>,
+    inner: Vec<DmColumnInner>,
 }
 
 #[derive(Debug)]
-pub struct TableInner {
+pub struct DmColumnInner {
     name: String,
     data_type: DataType,
 }
 
-impl TableInner {
+impl DmColumnInner {
     fn new(name: String, data_type: DataType) -> Self {
         Self { name, data_type }
     }
@@ -31,7 +31,7 @@ impl TableInner {
 
 pub trait DmAdapter {
     fn get_table_sql(table_name: &str) -> String;
-    fn get_table_desc(self) -> anyhow::Result<TableDesc>;
+    fn get_table_desc(self) -> anyhow::Result<DmColumnDesc>;
 }
 
 impl DmAdapter for CursorImpl<StatementImpl<'_>> {
@@ -42,7 +42,7 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
             table_name)
     }
 
-    fn get_table_desc(mut self) -> anyhow::Result<TableDesc> {
+    fn get_table_desc(mut self) -> anyhow::Result<DmColumnDesc> {
         let headers = self
             .column_names()?
             .collect::<Result<Vec<String>, _>>()?;
@@ -51,7 +51,7 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
 
         let mut buffers = TextRowSet::for_cursor(1024, &mut self, Some(4096))?;
         let mut row_set_cursor = self.bind_buffer(&mut buffers)?;
-        let mut table_desc = TableDesc::default();
+        let mut table_desc = DmColumnDesc::default();
 
         while let Some(batch) = row_set_cursor.fetch()? {
             for row_index in 0..batch.num_rows() {
@@ -63,7 +63,7 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
                     .into_iter()
                     .map(|x| String::from_utf8_lossy(x))
                     .collect();
-                table_desc.inner.push(TableInner::new(
+                table_desc.inner.push(DmColumnInner::new(
                     row_data.remove(0).to_string(),
                     DataType::from_str(row_data.remove(0).as_ref())?,
                 ));
