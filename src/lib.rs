@@ -13,6 +13,7 @@ pub mod extension;
 
 pub use dameng_helper::*;
 pub use debug::print_all_tables;
+pub use pg_helper::*;
 
 pub trait Convert<T>: Sized {
     fn convert(self) -> T;

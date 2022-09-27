@@ -28,5 +28,5 @@ bytes = "1.2.1"
 either = "1.8.0"
 time = { version = "0.3.14", features = ["macros", "parsing"] }
 async-trait = "0.1.57"
-dameng-helper = { path = "dameng-helper" }
-pg-helper = { path = "pg-helper" }
+dameng-helper = { path = "dameng-helper", version = "0.1.0" }
+pg-helper = { path = "pg-helper", version = "0.1.0" }
