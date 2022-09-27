@@ -409,22 +409,6 @@ impl TryConvert<time::Time> for Time {
     }
 }
 
-/// Convert `odbc_api::sys::Time` to `time::Time`
-///
-/// # Example
-///
-/// ```rust
-/// # use time::{Date, macros::time};
-/// # use odbc_api::sys::Time as OdbcTime;
-/// use odbc_api_helper::TryConvert;
-///
-/// let odbc_time = OdbcTime { hour: 3,minute: 1,second: 1 };
-/// assert_eq!(time!(03 : 01: 01), odbc_time.try_convert().unwrap());
-///
-/// let odbc_time = OdbcTime { hour: 19,minute: 31,second: 59 };
-/// assert_eq!(time!(19 : 31 : 59), odbc_time.try_convert().unwrap());
-///
-/// ```
 impl TryConvert<time::Time> for (Time, u32) {
     type Error = time::Error;
     fn try_convert(self) -> Result<time::Time, Self::Error> {
