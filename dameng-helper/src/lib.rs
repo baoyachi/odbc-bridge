@@ -22,7 +22,10 @@ pub struct DmColumnInner {
 
 impl DmColumnInner {
     fn new(name: String, data_type: DataType) -> Self {
-        Self { _name: name, _data_type: data_type }
+        Self {
+            _name: name,
+            _data_type: data_type,
+        }
     }
 }
 
