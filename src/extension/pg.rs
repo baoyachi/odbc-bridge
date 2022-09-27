@@ -12,7 +12,7 @@ use postgres_protocol::types as pp_type;
 use postgres_types::{Oid, Type as PgType};
 use std::collections::HashMap;
 
-use time::{format_description, Date, PrimitiveDateTime, Time};
+use time::{Date, PrimitiveDateTime, Time};
 
 pub enum PgValueInput {
     INT2(i16),
@@ -144,7 +144,7 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
             ),
             OdbcColumnItem::Time(v) => (
                 v.map(|x| {
-                    let time:Time = x.try_convert().unwrap();
+                    let time: Time = x.try_convert().unwrap();
 
                     let delta = time - Time::MIDNIGHT;
                     let time = i64::try_from(delta.whole_microseconds()).unwrap();
@@ -152,13 +152,20 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
                 }),
                 PgType::TIME,
             ),
-            OdbcColumnItem::Timestamp(_) => {
-                panic!("not coverage Timestamp");
-                // (v.map(|x| {
-                //     let date = format!("{}:{}:{}", x.hour, x.minute, x.second).parse::<Time>().unwrap();
-                //     pp_type::time_to_sql(*date, &mut buf);
-                // }), PgType::Timestamp)
-            }
+            OdbcColumnItem::Timestamp(v) => (
+                v.map(|x| {
+                    let base = || -> PrimitiveDateTime {
+                        PrimitiveDateTime::new(
+                            Date::from_ordinal_date(2000, 1).unwrap(),
+                            Time::MIDNIGHT,
+                        )
+                    };
+
+                    let date_time:PrimitiveDateTime = x.try_convert().unwrap();
+                    let time = i64::try_from((date_time - base()).whole_microseconds()).unwrap();
+                    pp_type::timestamp_to_sql(time, &mut buf);
+                }), PgType::TIMESTAMP,
+            ),
             OdbcColumnItem::F64(v) => (
                 v.map(|x| pp_type::float8_to_sql(x, &mut buf)),
                 PgType::FLOAT8,
