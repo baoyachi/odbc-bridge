@@ -1,3 +1,5 @@
+#![deny(missing_debug_implementations)]
+
 mod parser;
 
 use postgres_types::Type as PgType;

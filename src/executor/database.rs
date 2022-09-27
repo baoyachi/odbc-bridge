@@ -35,6 +35,7 @@ pub trait ConnectionTrait {
     fn rollback(&self) -> anyhow::Result<()>;
 }
 
+#[allow(missing_debug_implementations)]
 pub struct OdbcDbConnection<'a> {
     conn: Connection<'a>,
     max_batch_size: usize,
