@@ -14,15 +14,15 @@ jobs:
       max-parallel: 1
       matrix:
         package:
-          - name: odbc-api-helper
-            registryName: odbc-api-helper
-            path: .
           - name: pg-helper
             registryName: pg-helper
             path: pg-helper
           - name: dameng-helper
             registryName: dameng-helper
             path: dameng-helper
+          - name: odbc-api-helper
+            registryName: odbc-api-helper
+            path: .
     steps:
       - uses: actions-rs/toolchain@v1
         with:
