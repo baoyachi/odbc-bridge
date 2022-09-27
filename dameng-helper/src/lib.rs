@@ -16,13 +16,13 @@ pub struct DmColumnDesc {
 
 #[derive(Debug)]
 pub struct DmColumnInner {
-    name: String,
-    data_type: DataType,
+    _name: String,
+    _data_type: DataType,
 }
 
 impl DmColumnInner {
     fn new(name: String, data_type: DataType) -> Self {
-        Self { name, data_type }
+        Self { _name: name, _data_type: data_type }
     }
 }
 
