@@ -1,7 +1,7 @@
 use crate::executor::query::QueryResult;
 use crate::executor::statement::SqlValue;
 use crate::extension::odbc::{OdbcColumn, OdbcColumnItem};
-use crate::Convert;
+use crate::{Convert, TryConvert};
 use bytes::BytesMut;
 use either::Either;
 use odbc_api::buffers::BufferKind;
@@ -126,16 +126,7 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
             ),
             OdbcColumnItem::Date(v) => (
                 v.map(|x| {
-                    let format = format_description::parse("[year]-[month]-[day]").unwrap();
-                    let date_value = format!(
-                        "{:0width$}-{:02}-{:02}",
-                        x.year,
-                        x.month as u8,
-                        x.day,
-                        width = 4 + (x.year < 0) as usize
-                    );
-
-                    let date = Date::parse(&date_value, &format).unwrap();
+                    let date = x.try_convert().unwrap();
 
                     let base = || -> PrimitiveDateTime {
                         PrimitiveDateTime::new(
@@ -153,12 +144,8 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
             ),
             OdbcColumnItem::Time(v) => (
                 v.map(|x| {
-                    let format = format_description::parse("[hour]:[minute]:[second]").unwrap();
-                    let time = Time::parse(
-                        format!("{}:{}:{}", x.hour, x.minute, x.second).as_str(),
-                        &format,
-                    )
-                    .unwrap();
+                    let time:Time = x.try_convert().unwrap();
+
                     let delta = time - Time::MIDNIGHT;
                     let time = i64::try_from(delta.whole_microseconds()).unwrap();
                     pp_type::time_to_sql(time, &mut buf);

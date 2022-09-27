@@ -378,16 +378,11 @@ impl TryConvert<time::Date> for Date {
     type Error = time::Error;
 
     fn try_convert(self) -> Result<time::Date, Self::Error> {
-        let format = time::format_description::parse("[year]-[month]-[day]")?;
-        let value = format!(
-            "{:0width$}-{:02}-{:02}",
-            self.year,
-            self.month as u8,
-            self.day,
-            width = 4 + (self.year < 0) as usize
-        );
-
-        Ok(time::Date::parse(&value, &format)?)
+        Ok(time::Date::from_calendar_date(
+            self.year as i32,
+            time::Month::try_from(self.month as u8)?,
+            self.day as u8,
+        )?)
     }
 }
 
@@ -409,14 +404,69 @@ impl TryConvert<time::Date> for Date {
 /// ```
 impl TryConvert<time::Time> for Time {
     type Error = time::Error;
-
     fn try_convert(self) -> Result<time::Time, Self::Error> {
-        let format = time::format_description::parse("[hour]:[minute]:[second]")?;
-        let value = format!(
-            "{:02}:{:02}:{:02}",
-            self.hour as u8, self.minute as u8, self.second as u8
-        );
+        Ok(time::Time::from_hms(self.hour as u8, self.minute as u8, self.second as u8)?)
+    }
+}
 
-        Ok(time::Time::parse(&value, &format)?)
+/// Convert `odbc_api::sys::Time` to `time::Time`
+///
+/// # Example
+///
+/// ```rust
+/// # use time::{Date, macros::time};
+/// # use odbc_api::sys::Time as OdbcTime;
+/// use odbc_api_helper::TryConvert;
+///
+/// let odbc_time = OdbcTime { hour: 3,minute: 1,second: 1 };
+/// assert_eq!(time!(03 : 01: 01), odbc_time.try_convert().unwrap());
+///
+/// let odbc_time = OdbcTime { hour: 19,minute: 31,second: 59 };
+/// assert_eq!(time!(19 : 31 : 59), odbc_time.try_convert().unwrap());
+///
+/// ```
+impl TryConvert<time::Time> for (Time, u32) {
+    type Error = time::Error;
+    fn try_convert(self) -> Result<time::Time, Self::Error> {
+        let time = self.0;
+        let nanosecond = self.1;
+
+        Ok(time::Time::from_hms_nano(
+            time.hour as u8,
+            time.minute as u8,
+            time.second as u8,
+            nanosecond,
+        )?)
+    }
+}
+
+
+impl TryConvert<(time::Date, time::Time)> for Timestamp {
+    type Error = time::Error;
+
+    fn try_convert(self) -> Result<(time::Date, time::Time), Self::Error> {
+        let date = Date {
+            year: self.year,
+            month: self.month,
+            day: self.day,
+        }.try_convert()?;
+        let time = Time {
+            hour: self.hour,
+            minute: self.minute,
+            second: self.second,
+        };
+        let nanosecond = self.fraction as u32;
+        let time = (time, nanosecond).try_convert()?;
+        Ok((date, time))
+    }
+}
+
+
+impl TryConvert<time::PrimitiveDateTime> for Timestamp {
+    type Error = time::Error;
+
+    fn try_convert(self) -> Result<time::PrimitiveDateTime, Self::Error> {
+        let (date,time) = self.try_convert()?;
+        Ok(time::PrimitiveDateTime::new(date, time))
     }
 }
