@@ -127,13 +127,15 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
             OdbcColumnItem::Date(v) => (
                 v.map(|x| {
                     let format = format_description::parse("[year]-[month]-[day]").unwrap();
-                    let date_value = format!("{:0width$}-{:02}-{:02}",
-                                             x.year,
-                                             x.month as u8,
-                                             x.day,
-                                             width = 4 + (x.year < 0) as usize);
+                    let date_value = format!(
+                        "{:0width$}-{:02}-{:02}",
+                        x.year,
+                        x.month as u8,
+                        x.day,
+                        width = 4 + (x.year < 0) as usize
+                    );
 
-                    let date = Date::parse(&date_value, &format ).unwrap();
+                    let date = Date::parse(&date_value, &format).unwrap();
 
                     let base = || -> PrimitiveDateTime {
                         PrimitiveDateTime::new(
@@ -182,7 +184,10 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
             OdbcColumnItem::I16(v) => (v.map(|x| pp_type::int2_to_sql(x, &mut buf)), PgType::INT2),
             OdbcColumnItem::I32(v) => (v.map(|x| pp_type::int4_to_sql(x, &mut buf)), PgType::INT4),
             OdbcColumnItem::I64(v) => (v.map(|x| pp_type::int8_to_sql(x, &mut buf)), PgType::INT8),
-            OdbcColumnItem::U8(v) => (v.map(|x| pp_type::char_to_sql(x as i8, &mut buf)), PgType::CHAR),
+            OdbcColumnItem::U8(v) => (
+                v.map(|x| pp_type::char_to_sql(x as i8, &mut buf)),
+                PgType::CHAR,
+            ),
             OdbcColumnItem::Bit(v) => (v.map(|x| pp_type::bool_to_sql(x, &mut buf)), PgType::BOOL),
         };
         PgColumnItem::new(buf, t)
