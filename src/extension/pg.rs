@@ -127,11 +127,13 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
             OdbcColumnItem::Date(v) => (
                 v.map(|x| {
                     let format = format_description::parse("[year]-[month]-[day]").unwrap();
-                    let date = Date::parse(
-                        format!("{}-{}-{}", x.year, x.month, x.day).as_str(),
-                        &format,
-                    )
-                    .unwrap();
+                    let date_value = format!("{:0width$}-{:02}-{:02}",
+                                             x.year,
+                                             x.month as u8,
+                                             x.day,
+                                             width = 4 + (x.year < 0) as usize);
+
+                    let date = Date::parse(&date_value, &format ).unwrap();
 
                     let base = || -> PrimitiveDateTime {
                         PrimitiveDateTime::new(
@@ -143,7 +145,6 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
                     if date > i64::from(i32::max_value()) || date < i64::from(i32::min_value()) {
                         panic!("value too large to transmit");
                     }
-
                     pp_type::date_to_sql(date as i32, &mut buf);
                 }),
                 PgType::DATE,
