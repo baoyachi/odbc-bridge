@@ -1,6 +1,7 @@
 use crate::TryConvert;
 use either::Either;
 use odbc_api::parameter::InputParameter;
+use std::fmt::Debug;
 
 pub trait StatementInput {
     type Item: SqlValue;
@@ -13,7 +14,8 @@ pub trait SqlValue {
     fn to_value(&self) -> Either<Box<dyn InputParameter>, ()>;
 }
 
-pub struct Statement<T> {
+#[derive(Debug)]
+pub struct Statement<T: Debug> {
     /// The SQL query
     pub sql: String,
     /// The values for the SQL statement's parameters
@@ -22,7 +24,7 @@ pub struct Statement<T> {
 
 impl<T> Statement<T>
 where
-    T: SqlValue,
+    T: SqlValue + Debug,
 {
     pub fn new<S: Into<String>>(sql: S, values: Vec<T>) -> Self {
         Statement {
@@ -46,7 +48,7 @@ impl SqlValue for String {
 
 impl<T> StatementInput for Statement<T>
 where
-    T: SqlValue,
+    T: SqlValue + Debug,
 {
     type Item = T;
 

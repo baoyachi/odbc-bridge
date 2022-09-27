@@ -1,3 +1,5 @@
+#![deny(missing_debug_implementations)]
+
 #[allow(non_camel_case_types)]
 pub mod data_type;
 pub mod error;
