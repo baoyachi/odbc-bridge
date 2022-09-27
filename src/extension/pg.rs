@@ -14,6 +14,7 @@ use std::collections::HashMap;
 
 use time::{Date, PrimitiveDateTime, Time};
 
+#[derive(Debug)]
 pub enum PgValueInput {
     INT2(i16),
     INT4(i32),
