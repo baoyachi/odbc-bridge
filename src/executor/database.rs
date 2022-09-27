@@ -3,7 +3,6 @@ use crate::executor::query::QueryResult;
 use crate::executor::statement::StatementInput;
 use crate::extension::odbc::OdbcColumn;
 use crate::{Convert, TryConvert};
-use dameng_helper::DmAdapter;
 use either::Either;
 use odbc_api::buffers::{AnyColumnView, BufferDescription, ColumnarAnyBuffer};
 use odbc_api::handles::StatementImpl;
@@ -11,8 +10,6 @@ use odbc_api::{
     ColumnDescription, Connection, Cursor, CursorImpl, ParameterCollectionRef, ResultSetMetadata,
 };
 use std::ops::IndexMut;
-
-use crate::extension::ColumnInto;
 
 pub trait ConnectionTrait {
     /// Execute a [Statement]  INSETT,UPDATE,DELETE
