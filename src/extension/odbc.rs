@@ -1,4 +1,4 @@
-use crate::Convert;
+use crate::{Convert, TryConvert};
 use odbc_api::buffers::{AnyColumnView, BufferDescription, BufferKind};
 use odbc_api::sys::{Date, Time, Timestamp, NULL_DATA};
 use odbc_api::DataType;
@@ -355,5 +355,68 @@ impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
                     .collect();
             }
         };
+    }
+}
+
+/// Convert `odbc_api::sys::Date` to `time::Date`
+///
+/// # Example
+///
+/// ```rust
+/// # use time::{Date, macros::date};
+/// # use odbc_api::sys::Date as OdbcDate;
+/// use odbc_api_helper::TryConvert;
+///
+/// let odbc_data = OdbcDate{year: 2020,month: 1,day: 1};
+/// assert_eq!(date!(2020 - 01 - 01), odbc_data.try_convert().unwrap());
+///
+/// let odbc_data = OdbcDate{year: 2022,month: 12,day: 31};
+/// assert_eq!(date!(2022 - 12 - 31), odbc_data.try_convert().unwrap());
+///
+/// ```
+impl TryConvert<time::Date> for Date {
+    type Error = time::Error;
+
+    fn try_convert(self) -> Result<time::Date, Self::Error> {
+        let format = time::format_description::parse("[year]-[month]-[day]")?;
+        let value = format!(
+            "{:0width$}-{:02}-{:02}",
+            self.year,
+            self.month as u8,
+            self.day,
+            width = 4 + (self.year < 0) as usize
+        );
+
+        Ok(time::Date::parse(&value, &format)?)
+    }
+}
+
+/// Convert `odbc_api::sys::Time` to `time::Time`
+///
+/// # Example
+///
+/// ```rust
+/// # use time::{Date, macros::time};
+/// # use odbc_api::sys::Time as OdbcTime;
+/// use odbc_api_helper::TryConvert;
+///
+/// let odbc_time = OdbcTime { hour: 3,minute: 1,second: 1 };
+/// assert_eq!(time!(03 : 01: 01), odbc_time.try_convert().unwrap());
+///
+/// let odbc_time = OdbcTime { hour: 19,minute: 31,second: 59 };
+/// assert_eq!(time!(19 : 31 : 59), odbc_time.try_convert().unwrap());
+///
+/// ```
+impl TryConvert<time::Time> for Time {
+    type Error = time::Error;
+
+    fn try_convert(self) -> Result<time::Time, Self::Error> {
+        let format = time::format_description::parse("[hour]:[minute]:[second]")?;
+        let value = format!(
+            "{:02}:{:02}:{:02}",
+            self.hour as u8, self.minute as u8, self.second as u8
+        );
+
+        Ok(time::Time::parse(&value, &format)?)
     }
 }
