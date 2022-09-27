@@ -161,10 +161,11 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
                         )
                     };
 
-                    let date_time:PrimitiveDateTime = x.try_convert().unwrap();
+                    let date_time: PrimitiveDateTime = x.try_convert().unwrap();
                     let time = i64::try_from((date_time - base()).whole_microseconds()).unwrap();
                     pp_type::timestamp_to_sql(time, &mut buf);
-                }), PgType::TIMESTAMP,
+                }),
+                PgType::TIMESTAMP,
             ),
             OdbcColumnItem::F64(v) => (
                 v.map(|x| pp_type::float8_to_sql(x, &mut buf)),
