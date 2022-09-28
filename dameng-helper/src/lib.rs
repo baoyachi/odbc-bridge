@@ -92,9 +92,10 @@ pub trait DmAdapter {
 
 impl DmAdapter for CursorImpl<StatementImpl<'_>> {
     fn get_table_sql(table_name: &str) -> String {
-        // use sql: select a.name,a.type$ as data_type,a.id as table_id from SYSCOLUMNS as a left join SYSOBJECTS as b on a.id = b.id where b.name = '?'
+        // Use sql: `SELECT A.*, B.NAME AS TABLE_NAME FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ("X")`;
+        // The X is table name;
         format!(
-            r#"select a.name,a.type$ as data_type,a.id as table_id from SYSCOLUMNS as a left join SYSOBJECTS as b on a.id = b.id where b.name = '{}'"#,
+            r#"SELECT A.*, B.NAME AS TABLE_NAME FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ({});"#,
             table_name
         )
     }
@@ -102,6 +103,7 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
     fn get_table_desc(mut self) -> anyhow::Result<DmColumnDesc> {
         let headers = self.column_names()?.collect::<Result<Vec<String>, _>>()?;
 
+        //TODO remove
         assert_eq!(headers, vec!["name", "data_type", "table_id"]);
 
         let mut buffers = TextRowSet::for_cursor(1024, &mut self, Some(4096))?;
@@ -111,7 +113,11 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
         while let Some(batch) = row_set_cursor.fetch()? {
             for row_index in 0..batch.num_rows() {
                 let num_cols = batch.num_cols();
+
+                //TODO below need change
+
                 assert_eq!(num_cols, headers.len());
+
 
                 let mut row_data: Vec<_> = (0..num_cols)
                     .map(|col_index| batch.at(col_index, row_index).unwrap_or(&[]))
