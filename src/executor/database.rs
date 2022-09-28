@@ -37,7 +37,7 @@ pub trait ConnectionTrait {
 
 #[allow(missing_debug_implementations)]
 pub struct OdbcDbConnection<'a> {
-    conn: Connection<'a>,
+    pub conn: Connection<'a>,
     max_batch_size: usize,
 }
 

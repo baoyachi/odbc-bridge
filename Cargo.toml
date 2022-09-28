@@ -3,7 +3,7 @@ members = [".", "pg-helper", "dameng-helper"]
 
 [package]
 name = "odbc-api-helper"
-version = "0.1.22"
+version = "0.1.23"
 authors = ["baoyachi <liaoymxsdl@gmail.com>"]
 edition = "2021"
 description = "odbc-api helper"
