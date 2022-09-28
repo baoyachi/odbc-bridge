@@ -10,7 +10,6 @@ use odbc_api::Bit;
 use odbc_api::IntoParameter;
 use postgres_protocol::types as pp_type;
 use postgres_types::{Oid, Type as PgType};
-use std::collections::HashMap;
 
 use time::{Date, PrimitiveDateTime, Time};
 

@@ -1,12 +1,9 @@
 use crate::executor::Print;
 use crate::extension::odbc::{OdbcColumn, OdbcColumnItem};
 use nu_table::{StyledString, Table, TableTheme, TextStyle};
-use std::collections::HashMap;
 
 #[derive(Debug, Default)]
 pub struct QueryResult {
-    // record table column name with index
-    pub column_names: HashMap<String, usize>,
     // table columns header
     pub columns: Vec<OdbcColumn>,
     // table columns data
