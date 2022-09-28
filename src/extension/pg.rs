@@ -51,7 +51,6 @@ impl SqlValue for PgValueInput {
 
 #[derive(Debug, Default)]
 pub struct PgQueryResult {
-    pub column_names: HashMap<String, usize>,
     pub columns: Vec<PgColumn>,
     pub data: Vec<Vec<PgColumnItem>>,
 }
@@ -193,7 +192,6 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
 impl From<QueryResult> for PgQueryResult {
     fn from(result: QueryResult) -> Self {
         PgQueryResult {
-            column_names: result.column_names,
             columns: result.columns.into_iter().map(|x| x.convert()).collect(),
             data: result
                 .data
