@@ -4,31 +4,85 @@
 pub mod data_type;
 pub mod error;
 
+use std::collections::HashMap;
 pub use data_type::*;
 use odbc_api::buffers::TextRowSet;
 use odbc_api::handles::StatementImpl;
 use odbc_api::{Cursor, CursorImpl, ResultSetMetadata};
 use std::str::FromStr;
+use enumset::{EnumSet, EnumSetType};
 
 #[derive(Debug, Default)]
 pub struct DmColumnDesc {
     table_id: Option<usize>,
-    inner: Vec<DmColumnInner>,
+    // inner: Vec<DmColumnInner>,
 }
 
 #[derive(Debug)]
-pub struct DmColumnInner {
-    _name: String,
-    _data_type: DataType,
+pub struct DmTable {
+    // const name: &'static str = "name";
+    // alias_column_name:
+    // alias_column_names: HashMap<ColName, String>,
+    // table:DmTable,
 }
 
-impl DmColumnInner {
-    fn new(name: String, data_type: DataType) -> Self {
-        Self {
-            _name: name,
-            _data_type: data_type,
-        }
+impl DmTable{
+
+}
+
+#[derive(EnumSetType, Debug,Hash)]
+pub enum ColNameEnum {
+    Name,
+    Id,
+    Colid,
+    Type,
+    Length,
+    Scale,
+    Nullable,
+    DefaultVal,
+    TableName,
+}
+
+
+impl ToString for ColNameEnum {
+    fn to_string(&self) -> String {
+        match self {
+            ColNameEnum::Name => "NAME",
+            ColNameEnum::Id => "ID",
+            ColNameEnum::Colid => "COLID",
+            ColNameEnum::Type => "TYPE$",
+            ColNameEnum::Length => "LENGTH$",
+            ColNameEnum::Scale => "SCALE",
+            ColNameEnum::Nullable => "NULLABLE$",
+            ColNameEnum::DefaultVal => "DEFVAL",
+            ColNameEnum::TableName => "TABLE_NAME",
+        }.to_string()
     }
+}
+
+impl ColNameEnum{
+    fn column_name() -> HashMap<Self,String>{
+        let set:EnumSet<ColNameEnum> = EnumSet::all();
+        set.iter().fold(HashMap::new(), |mut map, col_name| {
+            map.insert(col_name, col_name.to_string());
+            map
+        })
+    }
+}
+
+
+
+#[derive(Debug)]
+pub struct DmColumnX {
+    name: String,
+    id: usize,
+    colid: usize,
+    r#type: usize,
+    length: usize,
+    scale: usize,
+    nullable: bool,
+    default_val: String,
+    table_name: String,
 }
 
 pub trait DmAdapter {
@@ -64,10 +118,10 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
                     .into_iter()
                     .map(String::from_utf8_lossy)
                     .collect();
-                table_desc.inner.push(DmColumnInner::new(
-                    row_data.remove(0).to_string(),
-                    DataType::from_str(row_data.remove(0).as_ref())?,
-                ));
+                // table_desc.inner.push(DmColumnInner::new(
+                //     row_data.remove(0).to_string(),
+                //     DataType::from_str(row_data.remove(0).as_ref())?,
+                // ));
                 if table_desc.table_id.is_none() {
                     table_desc.table_id = Some(row_data.remove(0).parse::<usize>()?);
                 }
