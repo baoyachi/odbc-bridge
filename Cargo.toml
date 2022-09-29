@@ -3,7 +3,7 @@ members = [".", "pg-helper", "dameng-helper"]
 
 [package]
 name = "odbc-api-helper"
-version = "0.1.22"
+version = "0.1.24"
 authors = ["baoyachi <liaoymxsdl@gmail.com>"]
 edition = "2021"
 description = "odbc-api helper"
@@ -18,8 +18,8 @@ license = "Apache-2.0"
 
 [dependencies]
 log = "0.4.17"
-nu-table = "0.68.0"
-nu-protocol = "0.68.0"
+nu-table = "0.69.1"
+nu-protocol = "0.69.1"
 odbc-api = "0.49.0"
 anyhow = "1.0.64"
 postgres-types = "0.2.4"

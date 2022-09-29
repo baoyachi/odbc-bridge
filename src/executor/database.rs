@@ -37,7 +37,7 @@ pub trait ConnectionTrait {
 
 #[allow(missing_debug_implementations)]
 pub struct OdbcDbConnection<'a> {
-    conn: Connection<'a>,
+    pub conn: Connection<'a>,
     max_batch_size: usize,
 }
 
@@ -138,13 +138,15 @@ impl<'a> OdbcDbConnection<'a> {
             .ok_or_else(|| anyhow!("query error"))?;
 
         let mut query_result = Self::get_cursor_columns(&mut cursor)?;
+        debug!("columns:{:?}", query_result.columns);
 
         let descs = query_result
             .columns
             .iter()
             .map(|c| <&OdbcColumn as TryInto<BufferDescription>>::try_into(c).unwrap());
 
-        let row_set_buffer = ColumnarAnyBuffer::from_description(self.max_batch_size, descs);
+        let row_set_buffer =
+            ColumnarAnyBuffer::try_from_description(self.max_batch_size, descs).unwrap();
 
         let mut row_set_cursor = cursor.bind_buffer(row_set_buffer).unwrap();
 
