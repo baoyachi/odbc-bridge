@@ -2,9 +2,9 @@ use crate::DataType;
 use std::collections::BTreeMap;
 use strum::{Display, EnumString};
 
-/// The table data
+/// The table data. Execute sql get table describe
 /// ```bash
-/// > run you code...
+/// > SELECT A.*, B.NAME AS TABLE_NAME FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ('Text_len','T2','test_type');
 /// NAME             |ID  |COLID|TYPE$                         |LENGTH$   |SCALE|NULLABLE$|DEFVAL            |INFO1|INFO2|TABLE_NAME|
 /// -----------------+----+-----+------------------------------+----------+-----+---------+------------------+-----+-----+----------+
 /// id               |1145|    0|INT                           |         4|    0|Y        |                  |    0|    0|test_type |
