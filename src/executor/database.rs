@@ -12,12 +12,12 @@ use odbc_api::{
 use std::ops::IndexMut;
 
 pub trait ConnectionTrait {
-    /// Execute a [Statement]  INSETT,UPDATE,DELETE
+    /// Execute a `[Statement]`  INSETT,UPDATE,DELETE
     fn execute<S>(&self, stmt: S) -> anyhow::Result<ExecResult>
     where
         S: StatementInput;
 
-    /// Execute a [Statement] and return a collection Vec<[QueryResult]> on success
+    /// Execute a `[Statement]` and return a collection Vec<[QueryResult]> on success
     fn query<S>(&self, stmt: S) -> anyhow::Result<QueryResult>
     where
         S: StatementInput;
