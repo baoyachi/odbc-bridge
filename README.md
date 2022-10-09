@@ -15,6 +15,7 @@ Extension based on **[odbc-api](https://github.com/pacman82/odbc-api)**
 - [x] Print database columns table
 - [ ] Rust Asynchronous
 - [ ] Convert Postgres Database
+- [ ] Support Dameng database 
 
 
  
