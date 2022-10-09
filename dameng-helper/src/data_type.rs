@@ -91,7 +91,7 @@ impl FromStr for DataType {
             "NUMBER" => Self::NUMBER,
             "DECIMAL" => Self::DECIMAL,
             "BIT" => Self::BIT,
-            "INTEGER" | "PLS_INTEGER" => Self::INTEGER,
+            "INT" | "INTEGER" | "PLS_INTEGER" => Self::INTEGER,
             "BIGINT" => Self::BIGINT,
             "TINYINT" => Self::TINYINT,
             "BYTE" => Self::BYTE,
