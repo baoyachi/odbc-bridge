@@ -107,7 +107,7 @@ impl Convert<PgColumn> for OdbcColumn {
     }
 }
 
-/// referring to link:https://docs.rs/postgres-protocol/0.6.4/postgres_protocol/types/index.html#functions
+/// referring to link:`<https://docs.rs/postgres-protocol/0.6.4/postgres_protocol/types/index.html#functions>`
 impl Convert<PgColumnItem> for OdbcColumnItem {
     fn convert(self) -> PgColumnItem {
         let mut buf = BytesMut::new();
