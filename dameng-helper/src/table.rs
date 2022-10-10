@@ -1,6 +1,6 @@
 use crate::DataType;
-use std::str::FromStr;
 use std::collections::BTreeMap;
+use std::str::FromStr;
 use strum::{Display, EnumString};
 
 /// The table data. Execute sql get table describe
@@ -57,13 +57,13 @@ impl DmTableDesc {
         }
 
         let headers = headers
-                .iter()
-                .enumerate()
-                .map(|(index,x)| (index,ColNameEnum::from_str(x).unwrap()))
-                .fold(BTreeMap::default(), |mut m, (index, x)| {
-                    m.insert(index, x);
-                    m
-                });
+            .iter()
+            .enumerate()
+            .map(|(index, x)| (index, ColNameEnum::from_str(x).unwrap()))
+            .fold(BTreeMap::default(), |mut m, (index, x)| {
+                m.insert(index, x);
+                m
+            });
 
         let mut data_map: BTreeMap<String, Vec<DmTableItem>> = Default::default();
 
@@ -74,10 +74,10 @@ impl DmTableDesc {
             for (index, val) in rols.into_iter().enumerate() {
                 match headers.get(&index).unwrap() {
                     ColNameEnum::Name => item.name = val,
-                    ColNameEnum::Id => item.id = to_type!(val, usize)?,
-                    ColNameEnum::Colid => item.colid = to_type!(val, usize)?,
-                    ColNameEnum::Type => item.type_ = Some(to_type!(val, DataType)?),
-                    ColNameEnum::Length => item.length_ = to_type!(val, usize)?,
+                    ColNameEnum::Id => item.table_id = to_type!(val, usize)?,
+                    ColNameEnum::Colid => item.col_index = to_type!(val, usize)?,
+                    ColNameEnum::Type => item.r#type = to_type!(val, DataType)?,
+                    ColNameEnum::Length => item.length = to_type!(val, usize)?,
                     ColNameEnum::Scale => item.scale = to_type!(val, usize)?,
                     ColNameEnum::Nullable => match val.to_uppercase().as_ref() {
                         "Y" => item.nullable = true,
@@ -97,7 +97,7 @@ impl DmTableDesc {
             }
         }
         Ok(DmTableDesc {
-            headers:headers,
+            headers,
             data: data_map,
         })
     }
@@ -106,10 +106,10 @@ impl DmTableDesc {
 #[derive(Debug, Default)]
 pub struct DmTableItem {
     name: String,
-    id: usize,
-    colid: usize,
-    type_: Option<DataType>,
-    length_: usize,
+    table_id: usize,
+    col_index: usize,
+    r#type: DataType,
+    length: usize,
     scale: usize,
     nullable: bool,
     default_val: Option<String>,
