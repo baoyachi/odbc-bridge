@@ -16,6 +16,7 @@ Extension based on **[odbc-api](https://github.com/pacman82/odbc-api)**
 - [ ] Rust Asynchronous
 - [ ] Convert Postgres Database
 - [ ] Support Dameng database 
+- [ ] Embed ORM framework 
 
 
  
