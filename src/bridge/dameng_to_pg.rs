@@ -1,4 +1,3 @@
-use anyhow::Ok;
 use pg_helper::PgType;
 use dameng_helper::{DataType as DmDateType, DataType};
 use crate::TryConvert;
@@ -7,7 +6,6 @@ impl TryConvert<PgType> for DmDateType{
     type Error = anyhow::Error;
 
     fn try_convert(self) -> Result<PgType, Self::Error> {
-        //TODO to be completed
         match self{
             DataType::NUMERIC => {
                 Ok(PgType::NUMERIC)
@@ -97,7 +95,7 @@ impl TryConvert<PgType> for DmDateType{
                 Ok(PgType::BOOL)
             }
             DataType::Unknown => {
-                OK(PgType::UNKNOWN)
+                Ok(PgType::UNKNOWN)
             }
         }
     }
