@@ -1,6 +1,7 @@
 use crate::executor::execute::ExecResult;
 use crate::executor::query::QueryResult;
 use crate::executor::statement::StatementInput;
+use crate::executor::table::TableDescResult;
 use crate::executor::SupportDatabase;
 use crate::extension::odbc::OdbcColumn;
 use crate::{Convert, TryConvert};
@@ -12,7 +13,6 @@ use odbc_api::{
     ColumnDescription, Connection, Cursor, CursorImpl, ParameterCollectionRef, ResultSetMetadata,
 };
 use std::ops::IndexMut;
-use crate::executor::table::TableDescResult;
 
 pub trait ConnectionTrait {
     /// Execute a `[Statement]`  INSETT,UPDATE,DELETE

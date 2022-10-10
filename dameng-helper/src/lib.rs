@@ -16,7 +16,7 @@ use table::DmTableDesc;
 
 pub trait DmAdapter {
     fn get_table_sql(table_name: Vec<String>) -> String;
-    fn get_table_desc(self) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> ;
+    fn get_table_desc(self) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)>;
 }
 
 impl DmAdapter for CursorImpl<StatementImpl<'_>> {
