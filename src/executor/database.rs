@@ -12,6 +12,7 @@ use odbc_api::{
     ColumnDescription, Connection, Cursor, CursorImpl, ParameterCollectionRef, ResultSetMetadata,
 };
 use std::ops::IndexMut;
+use crate::executor::table::TableDescResult;
 
 pub trait ConnectionTrait {
     /// Execute a `[Statement]`  INSETT,UPDATE,DELETE
@@ -24,7 +25,7 @@ pub trait ConnectionTrait {
     where
         S: StatementInput;
 
-    fn show_table(&self, table_name: Vec<String>) -> anyhow::Result<QueryResult>;
+    fn show_table(&self, table_name: Vec<String>) -> anyhow::Result<TableDescResult>;
 
     // begin transaction
     fn begin(&self) -> anyhow::Result<()>;
@@ -74,7 +75,7 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
         }
     }
 
-    fn show_table(&self, table_name: Vec<String>) -> anyhow::Result<QueryResult> {
+    fn show_table(&self, table_name: Vec<String>) -> anyhow::Result<TableDescResult> {
         self.table_desc(table_name)
     }
 
@@ -191,7 +192,7 @@ impl<'a> OdbcDbConnection<'a> {
         Ok(query_result)
     }
 
-    fn table_desc(&self, table_names: Vec<String>) -> anyhow::Result<QueryResult> {
+    fn table_desc(&self, table_names: Vec<String>) -> anyhow::Result<TableDescResult> {
         let db = &self.options.database;
         match db {
             SupportDatabase::Dameng => {
@@ -200,9 +201,7 @@ impl<'a> OdbcDbConnection<'a> {
                     .conn
                     .execute(&sql, ())?
                     .ok_or_else(|| anyhow!("query error"))?;
-                //TODO
-                // let x = cursor.get_table_desc()?;
-                Self::get_cursor_columns(&mut cursor)
+                cursor.get_table_desc()
             }
             _ => {
                 bail!("current not support database:{:?}", db)

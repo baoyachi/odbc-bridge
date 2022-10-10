@@ -1,4 +1,5 @@
 use crate::DataType;
+use std::str::FromStr;
 use std::collections::BTreeMap;
 use strum::{Display, EnumString};
 
@@ -48,15 +49,21 @@ pub struct DmTableDesc {
 }
 
 impl DmTableDesc {
-    pub fn new(
-        headers: BTreeMap<usize, ColNameEnum>,
-        data: Vec<Vec<String>>,
-    ) -> anyhow::Result<Self> {
+    pub fn new(headers: Vec<String>, data: Vec<Vec<String>>) -> anyhow::Result<Self> {
         macro_rules! to_type {
             ($val:expr,$t:ident) => {
                 $val.parse::<$t>()
             };
         }
+
+        let headers = headers
+                .iter()
+                .enumerate()
+                .map(|(index,x)| (index,ColNameEnum::from_str(x).unwrap()))
+                .fold(BTreeMap::default(), |mut m, (index, x)| {
+                    m.insert(index, x);
+                    m
+                });
 
         let mut data_map: BTreeMap<String, Vec<DmTableItem>> = Default::default();
 
@@ -91,7 +98,7 @@ impl DmTableDesc {
             }
         }
         Ok(DmTableDesc {
-            headers,
+            headers:headers,
             data: data_map,
         })
     }
