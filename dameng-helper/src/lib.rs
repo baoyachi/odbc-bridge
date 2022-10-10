@@ -16,7 +16,7 @@ use table::DmTableDesc;
 
 pub trait DmAdapter {
     fn get_table_sql(table_name: Vec<String>) -> String;
-    fn get_table_desc(self) -> anyhow::Result<DmTableDesc>;
+    fn get_table_desc(self) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> ;
 }
 
 impl DmAdapter for CursorImpl<StatementImpl<'_>> {
@@ -34,17 +34,8 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
         )
     }
 
-    fn get_table_desc(mut self) -> anyhow::Result<DmTableDesc> {
-        let headers = self
-            .column_names()?
-            .map(|x| x.map(|x| ColNameEnum::from_str(&x).unwrap()))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .enumerate()
-            .fold(BTreeMap::default(), |mut m, (index, x)| {
-                m.insert(index, x);
-                m
-            });
+    fn get_table_desc(mut self) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
+        let headers = self.column_names()?.collect::<Result<Vec<_>, _>>()?;
 
         let mut buffers = TextRowSet::for_cursor(1024, &mut self, Some(4096))?;
         let mut row_set_cursor = self.bind_buffer(&mut buffers)?;
@@ -62,6 +53,6 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
                 data.push(row_data);
             }
         }
-        DmTableDesc::new(headers, data)
+        Ok((headers, data))
     }
 }

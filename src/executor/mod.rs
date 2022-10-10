@@ -2,6 +2,7 @@ pub mod database;
 pub mod execute;
 pub mod query;
 pub mod statement;
+pub mod table;
 
 use nu_protocol::Config;
 use nu_table::{Alignments, Table};
