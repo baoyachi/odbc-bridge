@@ -15,14 +15,19 @@ use std::str::FromStr;
 use table::DmTableDesc;
 
 pub trait DmAdapter {
-    fn get_table_sql(table_name: &str) -> String;
+    fn get_table_sql(table_name: Vec<String>) -> String;
     fn get_table_desc(self) -> anyhow::Result<DmTableDesc>;
 }
 
 impl DmAdapter for CursorImpl<StatementImpl<'_>> {
-    fn get_table_sql(table_name: &str) -> String {
+    fn get_table_sql(table_name: Vec<String>) -> String {
         // Use sql: `SELECT A.*, B.NAME AS TABLE_NAME FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ("X")`;
         // The X is table name;
+        let table_name = table_name
+            .iter()
+            .map(|x| format!("'{}'", x))
+            .collect::<Vec<_>>()
+            .join(",");
         format!(
             r#"SELECT A.*, B.NAME AS TABLE_NAME FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ({});"#,
             table_name

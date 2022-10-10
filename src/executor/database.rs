@@ -1,8 +1,10 @@
 use crate::executor::execute::ExecResult;
 use crate::executor::query::QueryResult;
 use crate::executor::statement::StatementInput;
+use crate::executor::SupportDatabase;
 use crate::extension::odbc::OdbcColumn;
 use crate::{Convert, TryConvert};
+use dameng_helper::DmAdapter;
 use either::Either;
 use odbc_api::buffers::{AnyColumnView, BufferDescription, ColumnarAnyBuffer};
 use odbc_api::handles::StatementImpl;
@@ -22,7 +24,7 @@ pub trait ConnectionTrait {
     where
         S: StatementInput;
 
-    fn show_table(&self, table_name: &str) -> anyhow::Result<QueryResult>;
+    fn show_table(&self, table_name: Vec<String>) -> anyhow::Result<QueryResult>;
 
     // begin transaction
     fn begin(&self) -> anyhow::Result<()>;
@@ -38,7 +40,14 @@ pub trait ConnectionTrait {
 #[allow(missing_debug_implementations)]
 pub struct OdbcDbConnection<'a> {
     pub conn: Connection<'a>,
+    pub options: Options,
+}
+
+#[derive(Debug)]
+pub struct Options {
+    database: SupportDatabase,
     max_batch_size: usize,
+    text_max_len: usize,
 }
 
 impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
@@ -65,8 +74,8 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
         }
     }
 
-    fn show_table(&self, table_name: &str) -> anyhow::Result<QueryResult> {
-        self.desc_table(table_name)
+    fn show_table(&self, table_name: Vec<String>) -> anyhow::Result<QueryResult> {
+        self.table_desc(table_name)
     }
 
     fn begin(&self) -> anyhow::Result<()> {
@@ -93,24 +102,19 @@ impl<'a> OdbcDbConnection<'a> {
     // Max Buffer Size 256
     pub const MAX_BATCH_SIZE: usize = 1 << 8;
 
-    pub fn new(conn: Connection<'a>) -> anyhow::Result<Self> {
-        let connection = Self {
-            conn,
-            max_batch_size: Self::MAX_BATCH_SIZE,
-        };
+    pub fn new(conn: Connection<'a>, options: Options) -> anyhow::Result<Self> {
+        let connection = Self { conn, options };
         Ok(connection)
     }
 
-    pub fn max_batch_size(self, size: usize) -> Self {
+    pub fn max_batch_size(mut self, size: usize) -> Self {
         let size = if size == 0 {
             Self::MAX_BATCH_SIZE
         } else {
             size
         };
-        Self {
-            max_batch_size: size,
-            ..self
-        }
+        self.options.max_batch_size = size;
+        self
     }
 
     fn exec_result<S: Into<String>>(
@@ -146,7 +150,7 @@ impl<'a> OdbcDbConnection<'a> {
             .map(|c| <&OdbcColumn as TryInto<BufferDescription>>::try_into(c).unwrap());
 
         let row_set_buffer =
-            ColumnarAnyBuffer::try_from_description(self.max_batch_size, descs).unwrap();
+            ColumnarAnyBuffer::try_from_description(self.options.max_batch_size, descs).unwrap();
 
         let mut row_set_cursor = cursor.bind_buffer(row_set_buffer).unwrap();
 
@@ -187,11 +191,22 @@ impl<'a> OdbcDbConnection<'a> {
         Ok(query_result)
     }
 
-    fn desc_table(&self, sql: &str) -> anyhow::Result<QueryResult> {
-        let mut cursor = self
-            .conn
-            .execute(sql, ())?
-            .ok_or_else(|| anyhow!("query error"))?;
-        Self::get_cursor_columns(&mut cursor)
+    fn table_desc(&self, table_names: Vec<String>) -> anyhow::Result<QueryResult> {
+        let db = &self.options.database;
+        match db {
+            SupportDatabase::Dameng => {
+                let sql = CursorImpl::get_table_sql(table_names);
+                let mut cursor = self
+                    .conn
+                    .execute(&sql, ())?
+                    .ok_or_else(|| anyhow!("query error"))?;
+                //TODO
+                // let x = cursor.get_table_desc()?;
+                Self::get_cursor_columns(&mut cursor)
+            }
+            _ => {
+                bail!("current not support database:{:?}", db)
+            }
+        }
     }
 }
