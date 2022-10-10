@@ -8,7 +8,6 @@ extern crate log;
 
 pub use odbc_api;
 
-pub mod bridge;
 pub mod debug;
 pub mod error;
 pub mod executor;
