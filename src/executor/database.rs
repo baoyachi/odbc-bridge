@@ -46,9 +46,9 @@ pub struct OdbcDbConnection<'a> {
 
 #[derive(Debug)]
 pub struct Options {
-    database: SupportDatabase,
-    max_batch_size: usize,
-    text_max_len: usize,
+    pub database: SupportDatabase,
+    pub max_batch_size: usize,
+    pub text_max_len: usize,
 }
 
 impl<'a> ConnectionTrait for OdbcDbConnection<'a> {

@@ -1,7 +1,7 @@
 use crate::error::DmError;
 use std::str::FromStr;
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub enum DataType {
     /// `NUMERIC 数据类型用于存储零、正负定点数。其中:精度是一个无符号整数，
     /// 定义 了总的数字数，精度范围是 1至38，标度定义了小数点右边的数字位数，定义时如省略 精度，则默认是 16。
