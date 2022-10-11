@@ -10,7 +10,7 @@ impl TryConvert<PgType> for DmDateType {
             DmDateType::NUMERIC => Ok(PgType::NUMERIC),
             DmDateType::NUMBER => Ok(PgType::NUMERIC),
             DmDateType::DECIMAL => Ok(PgType::NUMERIC),
-            DmDateType::BIT => Ok(PgType::BIT),
+            DmDateType::BIT => Ok(PgType::BOOL),
             DmDateType::INTEGER => Ok(PgType::INT4),
             DmDateType::BIGINT => Ok(PgType::INT8),
             DmDateType::TINYINT => Ok(PgType::INT2),
