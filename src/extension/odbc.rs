@@ -1,5 +1,5 @@
 use crate::{Convert, TryConvert};
-use odbc_api::buffers::{AnyColumnView, BufferDescription, BufferKind};
+use odbc_api::buffers::{AnySlice, BufferDescription, BufferKind};
 use odbc_api::sys::{Date, Time, Timestamp, NULL_DATA};
 use odbc_api::DataType;
 use std::char::decode_utf16;
@@ -59,10 +59,10 @@ impl ToString for OdbcColumnItem {
     }
 }
 
-impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
+impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
     fn convert(self) -> Vec<OdbcColumnItem> {
         match self {
-            AnyColumnView::Text(view) => {
+            AnySlice::Text(view) => {
                 let mut buffer = Vec::with_capacity(view.len());
                 for v in view.iter() {
                     if let Some(x) = v {
@@ -74,7 +74,7 @@ impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
                 }
                 buffer
             }
-            AnyColumnView::WText(view) => {
+            AnySlice::WText(view) => {
                 let mut buffer = Vec::with_capacity(view.len());
                 for value in view.iter() {
                     if let Some(utf16) = value {
@@ -89,7 +89,7 @@ impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
                 }
                 buffer
             }
-            AnyColumnView::Binary(view) => {
+            AnySlice::Binary(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
                     if let Some(bytes) = value {
@@ -100,35 +100,35 @@ impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
                 }
                 buffer
             }
-            AnyColumnView::Date(view) => {
+            AnySlice::Date(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
                     buffer.push(OdbcColumnItem::Date(Some(*value)))
                 }
                 buffer
             }
-            AnyColumnView::Timestamp(view) => {
+            AnySlice::Timestamp(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
                     buffer.push(OdbcColumnItem::Timestamp(Some(*value)))
                 }
                 buffer
             }
-            AnyColumnView::Time(view) => {
+            AnySlice::Time(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
                     buffer.push(OdbcColumnItem::Time(Some(*value)))
                 }
                 buffer
             }
-            AnyColumnView::I32(view) => {
+            AnySlice::I32(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
                     buffer.push(OdbcColumnItem::I32(Some(*value)))
                 }
                 buffer
             }
-            AnyColumnView::Bit(view) => {
+            AnySlice::Bit(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
                     buffer.push(OdbcColumnItem::Bit(Some(value.as_bool())))
@@ -136,49 +136,49 @@ impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
                 buffer
             }
 
-            AnyColumnView::F64(view) => {
+            AnySlice::F64(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
                     buffer.push(OdbcColumnItem::F64(Some(*value)))
                 }
                 buffer
             }
-            AnyColumnView::F32(view) => {
+            AnySlice::F32(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
                     buffer.push(OdbcColumnItem::F32(Some(*value)))
                 }
                 buffer
             }
-            AnyColumnView::I8(view) => {
+            AnySlice::I8(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
                     buffer.push(OdbcColumnItem::I8(Some(*value)))
                 }
                 buffer
             }
-            AnyColumnView::I16(view) => {
+            AnySlice::I16(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
                     buffer.push(OdbcColumnItem::I16(Some(*value)))
                 }
                 buffer
             }
-            AnyColumnView::I64(view) => {
+            AnySlice::I64(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
                     buffer.push(OdbcColumnItem::I64(Some(*value)))
                 }
                 buffer
             }
-            AnyColumnView::U8(view) => {
+            AnySlice::U8(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
                     buffer.push(OdbcColumnItem::U8(Some(*value)))
                 }
                 buffer
             }
-            AnyColumnView::NullableDate(view) => {
+            AnySlice::NullableDate(view) => {
                 let (values, indicators) = view.raw_values();
                 let values = values.to_vec();
 
@@ -194,7 +194,7 @@ impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
                     })
                     .collect()
             }
-            AnyColumnView::NullableTime(view) => {
+            AnySlice::NullableTime(view) => {
                 let (values, indicators) = view.raw_values();
                 let values = values.to_vec();
 
@@ -210,7 +210,7 @@ impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
                     })
                     .collect()
             }
-            AnyColumnView::NullableTimestamp(view) => {
+            AnySlice::NullableTimestamp(view) => {
                 let (values, indicators) = view.raw_values();
                 let values = values.to_vec();
 
@@ -226,7 +226,7 @@ impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
                     })
                     .collect()
             }
-            AnyColumnView::NullableF64(view) => {
+            AnySlice::NullableF64(view) => {
                 let (values, indicators) = view.raw_values();
                 let values = values.to_vec();
 
@@ -242,7 +242,7 @@ impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
                     })
                     .collect()
             }
-            AnyColumnView::NullableF32(view) => {
+            AnySlice::NullableF32(view) => {
                 let (values, indicators) = view.raw_values();
                 let values = values.to_vec();
 
@@ -258,7 +258,7 @@ impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
                     })
                     .collect()
             }
-            AnyColumnView::NullableI8(view) => {
+            AnySlice::NullableI8(view) => {
                 let (values, indicators) = view.raw_values();
                 let values = values.to_vec();
 
@@ -274,7 +274,7 @@ impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
                     })
                     .collect()
             }
-            AnyColumnView::NullableI16(view) => {
+            AnySlice::NullableI16(view) => {
                 let (values, indicators) = view.raw_values();
                 let values = values.to_vec();
 
@@ -290,7 +290,7 @@ impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
                     })
                     .collect()
             }
-            AnyColumnView::NullableI32(view) => {
+            AnySlice::NullableI32(view) => {
                 let (values, indicators) = view.raw_values();
                 let values = values.to_vec();
 
@@ -306,7 +306,7 @@ impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
                     })
                     .collect()
             }
-            AnyColumnView::NullableI64(view) => {
+            AnySlice::NullableI64(view) => {
                 let (values, indicators) = view.raw_values();
                 let values = values.to_vec();
 
@@ -322,7 +322,7 @@ impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
                     })
                     .collect()
             }
-            AnyColumnView::NullableU8(view) => {
+            AnySlice::NullableU8(view) => {
                 let (values, indicators) = view.raw_values();
                 let values = values.to_vec();
 
@@ -338,7 +338,7 @@ impl Convert<Vec<OdbcColumnItem>> for AnyColumnView<'_> {
                     })
                     .collect()
             }
-            AnyColumnView::NullableBit(view) => {
+            AnySlice::NullableBit(view) => {
                 let (values, indicators) = view.raw_values();
                 let values = values.to_vec();
 

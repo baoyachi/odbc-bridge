@@ -1,5 +1,5 @@
 use crate::TryConvert;
-use dameng_helper::{DataType as DmDateType, DataType};
+use dameng_helper::DataType as DmDateType;
 use pg_helper::PgType;
 
 impl TryConvert<PgType> for DmDateType {
@@ -7,36 +7,36 @@ impl TryConvert<PgType> for DmDateType {
 
     fn try_convert(self) -> Result<PgType, Self::Error> {
         match self {
-            DataType::NUMERIC => Ok(PgType::NUMERIC),
-            DataType::NUMBER => Ok(PgType::NUMERIC),
-            DataType::DECIMAL => Ok(PgType::NUMERIC),
-            DataType::BIT => Ok(PgType::BIT),
-            DataType::INTEGER => Ok(PgType::INT4),
-            DataType::BIGINT => Ok(PgType::INT8),
-            DataType::TINYINT => Ok(PgType::INT2),
-            DataType::BYTE => Ok(PgType::INT2),
-            DataType::SMALLINT => Ok(PgType::INT2),
-            DataType::BINARY => Ok(PgType::BYTEA),
-            DataType::VARBINARY => Ok(PgType::VARBIT),
-            DataType::REAL => Ok(PgType::FLOAT4),
-            DataType::FLOAT => Ok(PgType::FLOAT4),
-            DataType::DOUBLE => Ok(PgType::FLOAT4),
-            DataType::DOUBLE_PRECISION => Ok(PgType::FLOAT8),
-            DataType::CHAR => Ok(PgType::CHAR),
-            DataType::VARCHAR => Ok(PgType::VARCHAR),
-            DataType::TEXT => Ok(PgType::TEXT),
-            DataType::IMAGE => Ok(PgType::BYTEA),
-            DataType::BLOB => Ok(PgType::BYTEA),
-            DataType::CLOB => Ok(PgType::TEXT),
-            DataType::BFILE => Ok(PgType::BYTEA),
-            DataType::DATE => Ok(PgType::DATE),
-            DataType::TIME => Ok(PgType::TIME),
-            DataType::TIMESTAMP => Ok(PgType::TIMESTAMP),
-            DataType::TIME_WITH_TIME_ZONE => Ok(PgType::TIMETZ),
-            DataType::TIMESTAMP_WITH_TIME_ZONE => Ok(PgType::TIMESTAMPTZ),
-            DataType::TIMESTAMP_WITH_LOCAL_TIME_ZONE => Ok(PgType::TIMESTAMPTZ),
-            DataType::BOOL => Ok(PgType::BOOL),
-            DataType::Unknown => Ok(PgType::UNKNOWN),
+            DmDateType::NUMERIC => Ok(PgType::NUMERIC),
+            DmDateType::NUMBER => Ok(PgType::NUMERIC),
+            DmDateType::DECIMAL => Ok(PgType::NUMERIC),
+            DmDateType::BIT => Ok(PgType::BIT),
+            DmDateType::INTEGER => Ok(PgType::INT4),
+            DmDateType::BIGINT => Ok(PgType::INT8),
+            DmDateType::TINYINT => Ok(PgType::INT2),
+            DmDateType::BYTE => Ok(PgType::INT2),
+            DmDateType::SMALLINT => Ok(PgType::INT2),
+            DmDateType::BINARY => Ok(PgType::BYTEA),
+            DmDateType::VARBINARY => Ok(PgType::VARBIT),
+            DmDateType::REAL => Ok(PgType::FLOAT4),
+            DmDateType::FLOAT => Ok(PgType::FLOAT4),
+            DmDateType::DOUBLE => Ok(PgType::FLOAT4),
+            DmDateType::DOUBLE_PRECISION => Ok(PgType::FLOAT8),
+            DmDateType::CHAR => Ok(PgType::CHAR),
+            DmDateType::VARCHAR => Ok(PgType::VARCHAR),
+            DmDateType::TEXT => Ok(PgType::TEXT),
+            DmDateType::IMAGE => Ok(PgType::BYTEA),
+            DmDateType::BLOB => Ok(PgType::BYTEA),
+            DmDateType::CLOB => Ok(PgType::TEXT),
+            DmDateType::BFILE => Ok(PgType::BYTEA),
+            DmDateType::DATE => Ok(PgType::DATE),
+            DmDateType::TIME => Ok(PgType::TIME),
+            DmDateType::TIMESTAMP => Ok(PgType::TIMESTAMP),
+            DmDateType::TIME_WITH_TIME_ZONE => Ok(PgType::TIMETZ),
+            DmDateType::TIMESTAMP_WITH_TIME_ZONE => Ok(PgType::TIMESTAMPTZ),
+            DmDateType::TIMESTAMP_WITH_LOCAL_TIME_ZONE => Ok(PgType::TIMESTAMPTZ),
+            DmDateType::BOOL => Ok(PgType::BOOL),
+            DmDateType::Unknown => Ok(PgType::UNKNOWN),
         }
     }
 }
