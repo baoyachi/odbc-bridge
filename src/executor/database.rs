@@ -7,7 +7,7 @@ use crate::extension::odbc::OdbcColumn;
 use crate::{Convert, TryConvert};
 use dameng_helper::DmAdapter;
 use either::Either;
-use odbc_api::buffers::{AnyColumnView, BufferDescription, ColumnarAnyBuffer};
+use odbc_api::buffers::{AnySlice, BufferDescription, ColumnarAnyBuffer};
 use odbc_api::handles::StatementImpl;
 use odbc_api::{
     ColumnDescription, Connection, Cursor, CursorImpl, ParameterCollectionRef, ResultSetMetadata,
@@ -158,7 +158,7 @@ impl<'a> OdbcDbConnection<'a> {
         let mut total_row = vec![];
         while let Some(row_set) = row_set_cursor.fetch()? {
             for index in 0..query_result.columns.len() {
-                let column_view: AnyColumnView = row_set.column(index);
+                let column_view: AnySlice = row_set.column(index);
                 let column_types: Vec<_> = column_view.convert();
                 if index == 0 {
                     for c in column_types.into_iter() {
@@ -197,7 +197,7 @@ impl<'a> OdbcDbConnection<'a> {
         match db {
             SupportDatabase::Dameng => {
                 let sql = CursorImpl::get_table_sql(table_names);
-                let mut cursor = self
+                let cursor = self
                     .conn
                     .execute(&sql, ())?
                     .ok_or_else(|| anyhow!("query error"))?;
