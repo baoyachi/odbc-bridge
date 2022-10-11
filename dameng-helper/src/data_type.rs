@@ -112,7 +112,7 @@ impl FromStr for DataType {
             "DOUBLE" => Self::DOUBLE,
             "DOUBLE PRECISION" => Self::DOUBLE_PRECISION,
             "CHAR" => Self::CHAR,
-            "VARCHAR" => Self::VARCHAR,
+            "VARCHAR" | "CHARACTER VARYING" => Self::VARCHAR,
             "TEXT" => Self::TEXT,
             "IMAGE" => Self::IMAGE,
             "BLOB" => Self::BLOB,
