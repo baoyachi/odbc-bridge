@@ -14,7 +14,7 @@ impl TryConvert<PgType> for DmDateType {
             DataType::INTEGER => Ok(PgType::INT4),
             DataType::BIGINT => Ok(PgType::INT8),
             DataType::TINYINT => Ok(PgType::INT2),
-            DataType::BYTE => Ok(PgType::BYTEA),
+            DataType::BYTE => Ok(PgType::INT2),
             DataType::SMALLINT => Ok(PgType::INT2),
             DataType::BINARY => Ok(PgType::BYTEA),
             DataType::VARBINARY => Ok(PgType::VARBIT),
