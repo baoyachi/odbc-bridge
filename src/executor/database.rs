@@ -46,9 +46,35 @@ pub struct OdbcDbConnection<'a> {
 
 #[derive(Debug)]
 pub struct Options {
-    database: SupportDatabase,
-    max_batch_size: usize,
-    text_max_len: usize,
+    pub database: SupportDatabase,
+    pub max_batch_size: usize,
+    pub max_str_len: usize,
+}
+
+impl Options {
+    // Max Buffer Size 256
+    pub const MAX_BATCH_SIZE: usize = 1 << 8;
+    pub const MAX_STR_LEN: usize = 1 << 8;
+
+    pub fn new(database: SupportDatabase) -> Self {
+        Options {
+            database,
+            max_batch_size: Self::MAX_BATCH_SIZE,
+            max_str_len: Self::MAX_STR_LEN,
+        }
+    }
+
+    fn check(mut self) -> Self {
+        if self.max_batch_size == 0 {
+            self.max_str_len = Self::MAX_BATCH_SIZE
+        }
+
+        if self.max_str_len == 0 {
+            // Add default size:1MB
+            self.max_str_len = 1 * 1024 * 1024
+        }
+        self
+    }
 }
 
 impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
@@ -100,22 +126,10 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
 }
 
 impl<'a> OdbcDbConnection<'a> {
-    // Max Buffer Size 256
-    pub const MAX_BATCH_SIZE: usize = 1 << 8;
-
     pub fn new(conn: Connection<'a>, options: Options) -> anyhow::Result<Self> {
+        let options = options.check();
         let connection = Self { conn, options };
         Ok(connection)
-    }
-
-    pub fn max_batch_size(mut self, size: usize) -> Self {
-        let size = if size == 0 {
-            Self::MAX_BATCH_SIZE
-        } else {
-            size
-        };
-        self.options.max_batch_size = size;
-        self
     }
 
     fn exec_result<S: Into<String>>(
@@ -145,10 +159,13 @@ impl<'a> OdbcDbConnection<'a> {
         let mut query_result = Self::get_cursor_columns(&mut cursor)?;
         debug!("columns:{:?}", query_result.columns);
 
-        let descs = query_result
-            .columns
-            .iter()
-            .map(|c| <&OdbcColumn as TryInto<BufferDescription>>::try_into(c).unwrap());
+        let descs = query_result.columns.iter().map(|c| {
+            <(&OdbcColumn, &Options) as TryConvert<BufferDescription>>::try_convert((
+                c,
+                &self.options,
+            ))
+            .unwrap()
+        });
 
         let row_set_buffer =
             ColumnarAnyBuffer::try_from_description(self.options.max_batch_size, descs).unwrap();
