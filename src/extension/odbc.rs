@@ -44,6 +44,11 @@ impl TryConvert<BufferDescription> for (&OdbcColumn, &Options) {
                     max_str_len: option.max_str_len,
                 };
             }
+            BufferKind::WText { .. } => {
+                description.kind = BufferKind::WText {
+                    max_str_len: option.max_str_len,
+                };
+            }
             _ => {}
         }
 
