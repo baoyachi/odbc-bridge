@@ -10,9 +10,9 @@ use std::collections::HashMap;
 
 #[derive(Debug)]
 pub enum SupportDatabase {
-   Dameng,
-   Pg,
-   Mysql,
+    Dameng,
+    Pg,
+    Mysql,
 }
 
 pub trait Print {
