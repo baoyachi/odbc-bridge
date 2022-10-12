@@ -1,3 +1,4 @@
+use crate::executor::database::Options;
 use crate::{Convert, TryConvert};
 use odbc_api::buffers::{AnySlice, BufferDescription, BufferKind};
 use odbc_api::sys::{Date, Time, Timestamp, NULL_DATA};
@@ -22,15 +23,35 @@ impl OdbcColumn {
     }
 }
 
-impl TryFrom<&OdbcColumn> for BufferDescription {
+impl TryConvert<BufferDescription> for (&OdbcColumn, &Options) {
     type Error = String;
 
-    fn try_from(c: &OdbcColumn) -> Result<Self, Self::Error> {
-        let description = BufferDescription {
+    fn try_convert(self) -> Result<BufferDescription, Self::Error> {
+        let c = self.0;
+        let option = self.1;
+        let mut description = BufferDescription {
             nullable: c.nullable,
             kind: BufferKind::from_data_type(c.data_type)
                 .ok_or_else(|| format!("covert DataType:{:?} to BufferKind error", c.data_type))?,
         };
+
+        // When use `BufferKind::from_data_type` get result with `BufferKind::Text`
+        // It's maybe caused panic,it need use `Option.max_str_len` to readjust size.
+        // Link: <https://github.com/baoyachi/odbc-api-helper/issues/35>
+        match description.kind {
+            BufferKind::Text { .. } => {
+                description.kind = BufferKind::Text {
+                    max_str_len: option.max_str_len,
+                };
+            }
+            BufferKind::WText { .. } => {
+                description.kind = BufferKind::WText {
+                    max_str_len: option.max_str_len,
+                };
+            }
+            _ => {}
+        }
+
         Ok(description)
     }
 }

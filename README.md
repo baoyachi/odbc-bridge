@@ -7,7 +7,6 @@ Extension based on **[odbc-api](https://github.com/pacman82/odbc-api)**
 [![Docs.rs](https://docs.rs/odbc-api-helper/badge.svg)](https://docs.rs/odbc-api-helper)
 [![Download](https://img.shields.io/crates/d/odbc-api-helper)](https://crates.io/crates/odbc-api-helper)
 [![DepStatus](https://deps.rs/repo/github/baoyachi/odbc-api-helper/status.svg)](https://deps.rs/repo/github/baoyachi/odbc-api-helper)
-[![Gitter](https://badges.gitter.im/odbc-api-helper/community.svg)](https://gitter.im/odbc-api-helper/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 [![Coverage Status](https://coveralls.io/repos/github/baoyachi/odbc-api-helper/badge.svg)](https://coveralls.io/github/baoyachi/odbc-api-helper)
 [![CodeLine](https://tokei.rs/b1/github/baoyachi/odbc-api-helper?category=lines)](https://github.com/baoyachi/odbc-api-helper)
 
@@ -16,6 +15,7 @@ Extension based on **[odbc-api](https://github.com/pacman82/odbc-api)**
 - [ ] Rust Asynchronous
 - [ ] Convert Postgres Database
 - [ ] Support Dameng database 
+- [ ] Embed ORM framework 
 
 
  

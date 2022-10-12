@@ -1,4 +1,5 @@
 #![deny(missing_debug_implementations)]
+#![allow(dead_code)]
 
 mod parser;
 mod table;
