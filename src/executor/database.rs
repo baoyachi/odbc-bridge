@@ -71,7 +71,7 @@ impl Options {
 
         if self.max_str_len == 0 {
             // Add default size:1MB
-            self.max_str_len = 1 * 1024 * 1024
+            self.max_str_len = 1024 * 1024
         }
         self
     }

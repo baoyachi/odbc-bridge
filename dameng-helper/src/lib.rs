@@ -5,14 +5,10 @@ pub mod data_type;
 pub mod error;
 pub mod table;
 
-use crate::table::ColNameEnum;
 pub use data_type::*;
 use odbc_api::buffers::TextRowSet;
 use odbc_api::handles::StatementImpl;
 use odbc_api::{Cursor, CursorImpl, ResultSetMetadata};
-use std::collections::BTreeMap;
-use std::str::FromStr;
-use table::DmTableDesc;
 
 pub trait DmAdapter {
     fn get_table_sql(table_name: Vec<String>) -> String;
