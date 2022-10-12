@@ -105,16 +105,16 @@ impl DmTableDesc {
 
 #[derive(Debug, Default)]
 pub struct DmTableItem {
-    name: String,
-    table_id: usize,
-    col_index: usize,
-    r#type: DataType,
-    length: usize,
-    scale: usize,
-    nullable: bool,
-    default_val: Option<String>,
-    table_name: String,
-    create_time: String,
+    pub name: String,
+    pub table_id: usize,
+    pub col_index: usize,
+    pub r#type: DataType,
+    pub length: usize,
+    pub scale: usize,
+    pub nullable: bool,
+    pub default_val: Option<String>,
+    pub table_name: String,
+    pub create_time: String,
 }
 
 #[derive(Debug, EnumString, Display)]
