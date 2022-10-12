@@ -80,6 +80,15 @@ pub enum DataType {
     /// 布尔数据类型:TRUE 和 FALSE。DMSQL 程序的布尔类型和 INT 类型可以相互转化。 如果变量或方法返回的类型是布尔类型，则返回值为 0 或 1。TRUE 和非 0 值的返回值为 1，FALSE 和 0 值返回为 0。
     BOOL,
     // TODO 时间间隔数据类型
+
+    //未知类型
+    Unknown,
+}
+
+impl Default for DataType {
+    fn default() -> Self {
+        Self::Unknown
+    }
 }
 
 impl FromStr for DataType {
@@ -103,7 +112,7 @@ impl FromStr for DataType {
             "DOUBLE" => Self::DOUBLE,
             "DOUBLE PRECISION" => Self::DOUBLE_PRECISION,
             "CHAR" => Self::CHAR,
-            "VARCHAR" => Self::VARCHAR,
+            "VARCHAR" | "CHARACTER VARYING" => Self::VARCHAR,
             "TEXT" => Self::TEXT,
             "IMAGE" => Self::IMAGE,
             "BLOB" => Self::BLOB,

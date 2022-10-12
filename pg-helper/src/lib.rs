@@ -1,8 +1,10 @@
 #![deny(missing_debug_implementations)]
+#![allow(dead_code)]
 
 mod parser;
+mod table;
 
-use postgres_types::Type as PgType;
+pub use postgres_types::Type as PgType;
 
 pub fn oid_typlen(pg_type: PgType) -> i16 {
     match pg_type {
