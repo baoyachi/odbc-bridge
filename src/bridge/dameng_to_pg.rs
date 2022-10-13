@@ -1,8 +1,10 @@
 use crate::TryConvert;
-use dameng_helper::DataType as DmDateType;
+use dameng_helper::table::DmTableItem;
+use dameng_helper::{DataType as DmDateType, DataType};
+use pg_helper::table::PgTableItem;
 use pg_helper::PgType;
 
-impl TryConvert<PgType> for DmDateType {
+impl TryConvert<PgType> for DataType {
     type Error = anyhow::Error;
 
     fn try_convert(self) -> Result<PgType, Self::Error> {
@@ -38,5 +40,25 @@ impl TryConvert<PgType> for DmDateType {
             DmDateType::BOOL => Ok(PgType::BOOL),
             DmDateType::Unknown => Ok(PgType::UNKNOWN),
         }
+    }
+}
+
+impl TryConvert<PgTableItem> for DmTableItem {
+    type Error = anyhow::Error;
+
+    fn try_convert(self) -> Result<PgTableItem, Self::Error> {
+        let pg_type: PgType = self.r#type.try_convert()?;
+        Ok(PgTableItem {
+            name: self.name.to_string(),
+            table_id: self.table_id,
+            col_index: self.col_index,
+            r#type: pg_type,
+            length: self.length,
+            scale: self.scale,
+            nullable: self.nullable,
+            default_val: self.default_val,
+            table_name: self.table_name,
+            create_time: self.create_time,
+        })
     }
 }
