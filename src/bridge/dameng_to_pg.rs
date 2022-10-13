@@ -1,5 +1,5 @@
 use crate::TryConvert;
-use dameng_helper::table::{DmTableItem, DmDateType};
+use dameng_helper::table::{DmDateType, DmTableItem};
 use pg_helper::table::PgTableItem;
 use pg_helper::PgType;
 
@@ -7,7 +7,6 @@ impl TryConvert<PgType> for DmDateType {
     type Error = anyhow::Error;
 
     fn try_convert(self) -> Result<PgType, Self::Error> {
-
         match self {
             DmDateType::NUMERIC => Ok(PgType::NUMERIC),
             DmDateType::NUMBER => Ok(PgType::NUMERIC),
