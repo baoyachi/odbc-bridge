@@ -1,12 +1,12 @@
 use crate::PgType;
 use std::collections::BTreeMap;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct PgTableDesc {
     pub data: BTreeMap<String, Vec<PgTableItem>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PgTableItem {
     // column name
     pub name: String,
