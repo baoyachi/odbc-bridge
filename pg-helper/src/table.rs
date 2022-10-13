@@ -1,21 +1,44 @@
 use crate::PgType;
+use std::collections::BTreeMap;
+
+#[derive(Debug, Default)]
+pub struct PgTableDesc {
+    pub data: BTreeMap<String, Vec<PgTableItem>>,
+}
 
 #[derive(Debug)]
 pub struct PgTableItem {
     // column name
-    name: String,
+    pub name: String,
     // pg table id
-    table_id: usize,
+    pub table_id: usize,
     // column index
-    col_index: usize,
+    pub col_index: usize,
     // pg data type
-    r#type: PgType,
+    pub r#type: PgType,
     // column date type length
-    length: usize,
+    pub length: usize,
     // column date type scale
-    scale: usize,
-    nullable: bool,
-    default_val: Option<String>,
-    table_name: String,
-    create_time: String,
+    pub scale: usize,
+    pub nullable: bool,
+    pub default_val: Option<String>,
+    pub table_name: String,
+    pub create_time: String,
+}
+
+impl Default for PgTableItem {
+    fn default() -> Self {
+        PgTableItem {
+            name: "".to_string(),
+            table_id: 0,
+            col_index: 0,
+            r#type: PgType::UNKNOWN,
+            length: 0,
+            scale: 0,
+            nullable: false,
+            default_val: None,
+            table_name: "".to_string(),
+            create_time: "".to_string(),
+        }
+    }
 }
