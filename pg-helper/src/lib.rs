@@ -2,7 +2,7 @@
 #![allow(dead_code)]
 
 mod parser;
-mod table;
+pub mod table;
 
 pub use postgres_types::Type as PgType;
 
