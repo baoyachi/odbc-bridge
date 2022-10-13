@@ -3,6 +3,8 @@ use std::collections::BTreeMap;
 use std::str::FromStr;
 use strum::{Display, EnumString};
 
+pub type DmDateType = DataType;
+
 /// The table data. Execute sql get table describe
 /// ```bash
 /// > SELECT A.NAME,A.ID,A.COLID,A.TYPE$ , A.LENGTH$,A.SCALE,A.NULLABLE$,A.DEFVAL,B.NAME AS TABLE_NAME, B.CRTDATE  FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ('Text_len','T2','test_type');
@@ -108,7 +110,7 @@ pub struct DmTableItem {
     pub name: String,
     pub table_id: usize,
     pub col_index: usize,
-    pub r#type: DataType,
+    pub r#type: DmDateType,
     pub length: usize,
     pub scale: usize,
     pub nullable: bool,
