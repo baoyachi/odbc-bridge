@@ -224,7 +224,7 @@ pub fn oid_typlen<C: Convert<PgType>>(c: C) -> i16 {
     pg_helper::oid_typlen(pg_type)
 }
 
-impl TryConvert<PgTableDesc> for (TableDescResult, Options) {
+impl TryConvert<PgTableDesc> for (TableDescResult, &Options) {
     type Error = anyhow::Error;
 
     fn try_convert(self) -> Result<PgTableDesc, Self::Error> {
