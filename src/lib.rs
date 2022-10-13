@@ -6,6 +6,9 @@ extern crate anyhow;
 #[macro_use]
 extern crate log;
 
+pub extern crate dameng_helper;
+pub extern crate pg_helper;
+
 pub use odbc_api;
 
 mod bridge;
@@ -14,9 +17,7 @@ pub mod error;
 pub mod executor;
 pub mod extension;
 
-pub use dameng_helper::*;
 pub use debug::print_all_tables;
-pub use pg_helper::*;
 
 pub trait Convert<T>: Sized {
     fn convert(self) -> T;
