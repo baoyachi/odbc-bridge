@@ -10,7 +10,13 @@ use odbc_api::Bit;
 use odbc_api::IntoParameter;
 use postgres_protocol::types as pp_type;
 use postgres_types::{Oid, Type as PgType};
+use std::collections::BTreeMap;
 
+use crate::executor::database::Options;
+use crate::executor::table::TableDescResult;
+use crate::executor::SupportDatabase;
+use dameng_helper::table::DmTableDesc;
+use pg_helper::table::PgTableDesc;
 use time::{Date, PrimitiveDateTime, Time};
 
 #[derive(Debug)]
@@ -216,4 +222,28 @@ impl Convert<PgType> for PgType {
 pub fn oid_typlen<C: Convert<PgType>>(c: C) -> i16 {
     let pg_type = c.convert();
     pg_helper::oid_typlen(pg_type)
+}
+
+impl TryConvert<PgTableDesc> for (TableDescResult, Options) {
+    type Error = anyhow::Error;
+
+    fn try_convert(self) -> Result<PgTableDesc, Self::Error> {
+        let pg = match self.1.database {
+            SupportDatabase::Dameng => {
+                let dm = DmTableDesc::new(self.0 .0, self.0 .1)?;
+                let mut pg = BTreeMap::new();
+                for (k, v) in dm.data.into_iter() {
+                    let mut pg_item = Vec::new();
+                    for dm in v {
+                        pg_item.push(dm.try_convert()?)
+                    }
+                    pg.insert(k.to_string(), pg_item);
+                }
+                PgTableDesc { data: pg }
+            }
+            _ => PgTableDesc::default(),
+        };
+
+        Ok(pg)
+    }
 }
