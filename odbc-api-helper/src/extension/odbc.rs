@@ -36,7 +36,7 @@ impl TryConvert<BufferDescription> for (&OdbcColumn, &Options) {
 
         // When use `BufferKind::from_data_type` get result with `BufferKind::Text`
         // It's maybe caused panic,it need use `Option.max_str_len` to readjust size.
-        // Link: <https://github.com/baoyachi/odbc-api-helper/issues/35>
+        // Link: <https://github.com/pacman82/odbc-api/issues/268>
         match description.kind {
             BufferKind::Text { .. } => {
                 description.kind = BufferKind::Text {
