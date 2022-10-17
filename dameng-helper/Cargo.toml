@@ -6,9 +6,9 @@ authors = ["baoyachi <liaoymxsdl@gmail.com>"]
 description = "dameng database helper"
 keywords = ["dameng", "odbc", "orm", "dameng-odbc", "dm"]
 readme = "README.md"
-repository = "https://github.com/baoyachi/odbc-api-helper"
+repository = "https://github.com/baoyachi/odbc-bridge"
 documentation = "https://docs.rs/dameng-helper"
-homepage = "https://github.com/baoyachi/odbc-api-helper"
+homepage = "https://github.com/baoyachi/odbc-bridge"
 license = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
