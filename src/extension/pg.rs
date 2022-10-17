@@ -459,20 +459,11 @@ impl TryConvert<PgQueryResult> for (&QueryResult, &Vec<PgTableItem>, &Options) {
         let res = self.0;
         let pg_all_columns = self.1;
         let option = self.2;
-
-        let mut result = PgQueryResult::default();
-        result.columns =
-            <(&Vec<OdbcColumn>, &Vec<PgTableItem>) as TryConvert<Vec<PgColumn>>>::try_convert((
-                &res.columns,
-                pg_all_columns,
-            ))
-            .unwrap();
-
         let mut result = PgQueryResult {
             columns:
                 <(&Vec<OdbcColumn>, &Vec<PgTableItem>) as TryConvert<Vec<PgColumn>>>::try_convert((
                     &res.columns,
-                    &pg_all_columns,
+                    pg_all_columns,
                 ))
                 .unwrap(),
             ..Default::default()
