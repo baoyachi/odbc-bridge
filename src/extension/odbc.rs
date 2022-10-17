@@ -115,12 +115,12 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
                 for v in view.iter() {
                     if let Some(x) = v {
                         buffer.push(OdbcColumnItem {
-                            odbc_type: OdbcColumnType::Text,
+                            odbc_type: OdbcColumnType::WText,
                             value: Some(BytesMut::from(x.to_string().unwrap().as_bytes())),
                         });
                     } else {
                         buffer.push(OdbcColumnItem {
-                            odbc_type: OdbcColumnType::Text,
+                            odbc_type: OdbcColumnType::WText,
                             value: None,
                         })
                     }
