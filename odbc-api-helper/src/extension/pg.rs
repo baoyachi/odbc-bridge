@@ -1,3 +1,5 @@
+#![allow(clippy::option_map_unit_fn, clippy::single_match)]
+
 use crate::executor::database::Options;
 use crate::executor::query::QueryResult;
 use crate::executor::statement::SqlValue;
