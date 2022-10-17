@@ -459,29 +459,30 @@ impl TryConvert<PgQueryResult> for (&QueryResult, &Vec<PgTableItem>, &Options) {
         let res = self.0;
         let pg_all_columns = self.1;
         let option = self.2;
-        let mut result = PgQueryResult {
-            columns:
-                <(&Vec<OdbcColumn>, &Vec<PgTableItem>) as TryConvert<Vec<PgColumn>>>::try_convert((
-                    &res.columns,
-                    pg_all_columns,
-                ))
-                .unwrap(),
-            ..Default::default()
-        };
+        let mut result = PgQueryResult::default();
+        if let Ok(cols) =
+            <(&Vec<OdbcColumn>, &Vec<PgTableItem>) as TryConvert<Vec<PgColumn>>>::try_convert((
+                &res.columns,
+                pg_all_columns,
+            ))
+        {
+            result.columns = cols;
 
-        if let crate::executor::SupportDatabase::Dameng = option.database {
-            for v in res.data.iter() {
-                let mut row = vec![];
-                for (index, odbc_item) in v.iter().enumerate() {
-                    let col = result.columns.get(index).unwrap();
-                    row.push(
-                        <(&OdbcColumnItem, &PgColumn) as TryConvert<PgColumnItem>>::try_convert((
-                            odbc_item, col,
-                        ))
-                        .unwrap(),
-                    );
+            if let crate::executor::SupportDatabase::Dameng = option.database {
+                for v in res.data.iter() {
+                    let mut row = vec![];
+                    for (index, odbc_item) in v.iter().enumerate() {
+                        if let Some(col) = result.columns.get(index) {
+                            row.push(
+                                <(&OdbcColumnItem, &PgColumn) as TryConvert<PgColumnItem>>::try_convert((
+                                    odbc_item, col,
+                                ))
+                                .unwrap(),
+                            );
+                        }
+                    }
+                    result.data.push(row);
                 }
-                result.data.push(row);
             }
         }
         Ok(result)
