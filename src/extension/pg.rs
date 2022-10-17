@@ -1,4 +1,4 @@
-use crate::executor::database::{self, Options};
+use crate::executor::database::Options;
 use crate::executor::query::QueryResult;
 use crate::executor::statement::SqlValue;
 use crate::extension::odbc::{OdbcColumn, OdbcColumnItem, OdbcColumnType};
