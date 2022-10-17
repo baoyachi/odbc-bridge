@@ -1,3 +1,5 @@
+#![allow(clippy::option_map_unit_fn, clippy::single_match)]
+
 use crate::executor::database::Options;
 use crate::executor::query::QueryResult;
 use crate::executor::statement::SqlValue;
@@ -457,16 +459,18 @@ impl TryConvert<PgQueryResult> for (&QueryResult, &Vec<PgTableItem>, &Options) {
         let pg_all_columns = self.1;
         let option = self.2;
 
-        let mut result = PgQueryResult::default();
-        result.columns =
-            <(&Vec<OdbcColumn>, &Vec<PgTableItem>) as TryConvert<Vec<PgColumn>>>::try_convert((
-                &res.columns,
-                &pg_all_columns,
-            ))
-            .unwrap();
+        let mut result = PgQueryResult {
+            columns:
+                <(&Vec<OdbcColumn>, &Vec<PgTableItem>) as TryConvert<Vec<PgColumn>>>::try_convert((
+                    &res.columns,
+                    pg_all_columns,
+                ))
+                .unwrap(),
+            ..Default::default()
+        };
 
         match option.database {
-            crate::executor::SupportDatabase::Dameng => {
+            SupportDatabase::Dameng => {
                 for v in res.data.iter() {
                     let mut row = vec![];
                     for (index, odbc_item) in v.iter().enumerate() {
