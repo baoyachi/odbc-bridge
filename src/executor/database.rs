@@ -49,18 +49,21 @@ pub struct Options {
     pub database: SupportDatabase,
     pub max_batch_size: usize,
     pub max_str_len: usize,
+    pub max_binary_len: usize,
 }
 
 impl Options {
     // Max Buffer Size 256
     pub const MAX_BATCH_SIZE: usize = 1 << 8;
-    pub const MAX_STR_LEN: usize = 1 << 8;
+    pub const MAX_STR_LEN: usize = 1024 * 1024;
+    pub const MAX_BINARY_LEN: usize = 1024 * 1024;
 
     pub fn new(database: SupportDatabase) -> Self {
         Options {
             database,
             max_batch_size: Self::MAX_BATCH_SIZE,
             max_str_len: Self::MAX_STR_LEN,
+            max_binary_len: Self::MAX_BINARY_LEN,
         }
     }
 
@@ -71,7 +74,11 @@ impl Options {
 
         if self.max_str_len == 0 {
             // Add default size:1MB
-            self.max_str_len = 1024 * 1024
+            self.max_str_len = Self::MAX_STR_LEN
+        }
+
+        if self.max_binary_len == 0 {
+            self.max_binary_len = Self::MAX_BINARY_LEN
         }
         self
     }
