@@ -22,7 +22,7 @@ jobs:
             path: dameng-helper
           - name: odbc-api-helper
             registryName: odbc-api-helper
-            path: .
+            path: odbc-api-helper
     steps:
       - uses: actions-rs/toolchain@v1
         with:

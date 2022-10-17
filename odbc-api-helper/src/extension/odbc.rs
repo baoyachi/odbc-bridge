@@ -36,7 +36,7 @@ impl TryConvert<BufferDescription> for (&OdbcColumn, &Options) {
 
         // When use `BufferKind::from_data_type` get result with `BufferKind::Text`
         // It's maybe caused panic,it need use `Option.max_str_len` to readjust size.
-        // Link: <https://github.com/baoyachi/odbc-api-helper/issues/35>
+        // Link: <https://github.com/pacman82/odbc-api/issues/268>
         match description.kind {
             BufferKind::Text { .. } => {
                 description.kind = BufferKind::Text {
@@ -115,12 +115,12 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
                 for v in view.iter() {
                     if let Some(x) = v {
                         buffer.push(OdbcColumnItem {
-                            odbc_type: OdbcColumnType::Text,
+                            odbc_type: OdbcColumnType::WText,
                             value: Some(BytesMut::from(x.to_string().unwrap().as_bytes())),
                         });
                     } else {
                         buffer.push(OdbcColumnItem {
-                            odbc_type: OdbcColumnType::Text,
+                            odbc_type: OdbcColumnType::WText,
                             value: None,
                         })
                     }
