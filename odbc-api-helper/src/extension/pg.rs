@@ -326,28 +326,31 @@ impl TryConvert<PgColumnItem> for (&OdbcColumnItem, &PgColumn) {
 
         match pg_column.pg_type {
             PgType::TEXT | PgType::VARCHAR => {
-                odbc_data
-                    .map(|x| pp_type::text_to_sql(&String::from_utf8_lossy(x.as_ref()), &mut buf));
+                if let Some(x) = odbc_data {
+                    pp_type::text_to_sql(&String::from_utf8_lossy(x.as_ref()), &mut buf);
+                }
             }
 
             PgType::BYTEA => {
-                odbc_data.map(|x| pp_type::bytea_to_sql(x.as_ref(), &mut buf));
+                if let Some(x) = odbc_data {
+                    pp_type::bytea_to_sql(x.as_ref(), &mut buf);
+                }
             }
 
             PgType::DATE => {
-                odbc_data.map(|x| {
+                if let Some(x) = odbc_data {
                     let val = String::from_utf8_lossy(x.as_ref()).to_string();
                     let date = NaiveDate::parse_from_str(val.as_str(), "%Y-%m-%d").unwrap();
                     let days = (date - NaiveDate::from_ymd(2000, 1, 1)).num_days();
                     if days > i64::from(i32::max_value()) || days < i64::from(i32::min_value()) {
                         panic!("value too large to transmit");
                     }
-                    pp_type::date_to_sql(days as i32, &mut buf)
-                });
+                    pp_type::date_to_sql(days as i32, &mut buf);
+                }
             }
 
             PgType::TIME | PgType::TIMETZ => {
-                odbc_data.map(|x| {
+                if let Some(x) = odbc_data {
                     let val = String::from_utf8_lossy(x.as_ref()).to_string();
                     let time = NaiveTime::parse_from_str(
                         val.as_str(),
@@ -361,12 +364,12 @@ impl TryConvert<PgColumnItem> for (&OdbcColumnItem, &PgColumn) {
                     let delta = (time - NaiveTime::from_hms(0, 0, 0))
                         .num_microseconds()
                         .unwrap();
-                    pp_type::time_to_sql(delta, &mut buf)
-                });
+                    pp_type::time_to_sql(delta, &mut buf);
+                }
             }
 
             PgType::TIMESTAMP | PgType::TIMESTAMPTZ => {
-                odbc_data.map(|x| {
+                if let Some(x) = odbc_data {
                     let val = String::from_utf8_lossy(x.as_ref()).to_string();
                     let date_time = NaiveDateTime::parse_from_str(
                         val.as_str(),
@@ -379,71 +382,71 @@ impl TryConvert<PgColumnItem> for (&OdbcColumnItem, &PgColumn) {
                     .unwrap();
                     let epoch = NaiveDate::from_ymd(2000, 1, 1).and_hms(0, 0, 0);
                     let ms = (date_time - epoch).num_microseconds().unwrap();
-                    pp_type::timestamp_to_sql(ms, &mut buf)
-                });
+                    pp_type::timestamp_to_sql(ms, &mut buf);
+                }
             }
             PgType::FLOAT8 => {
-                odbc_data.map(|x| {
+                if let Some(x) = odbc_data {
                     let val = &String::from_utf8_lossy(x.as_ref())
                         .to_string()
                         .parse::<f64>()
                         .unwrap();
-                    pp_type::float8_to_sql(*val, &mut buf)
-                });
+                    pp_type::float8_to_sql(*val, &mut buf);
+                }
             }
             PgType::FLOAT4 => {
-                odbc_data.map(|x| {
+                if let Some(x) = odbc_data {
                     let val = &String::from_utf8_lossy(x.as_ref())
                         .to_string()
                         .parse::<f32>()
                         .unwrap();
-                    pp_type::float4_to_sql(*val, &mut buf)
-                });
+                    pp_type::float4_to_sql(*val, &mut buf);
+                }
             }
             PgType::CHAR => {
-                odbc_data.map(|x| {
+                if let Some(x) = odbc_data {
                     let val = &String::from_utf8_lossy(x.as_ref())
                         .to_string()
                         .parse::<i8>()
                         .unwrap();
-                    pp_type::char_to_sql(*val, &mut buf)
-                });
+                    pp_type::char_to_sql(*val, &mut buf);
+                }
             }
             PgType::INT2 => {
-                odbc_data.map(|x| {
+                if let Some(x) = odbc_data {
                     let val = &String::from_utf8_lossy(x.as_ref())
                         .to_string()
                         .parse::<i16>()
                         .unwrap();
-                    pp_type::int2_to_sql(*val, &mut buf)
-                });
+                    pp_type::int2_to_sql(*val, &mut buf);
+                }
             }
             PgType::INT4 | PgType::NUMERIC => {
-                odbc_data.map(|x| {
+                if let Some(x) = odbc_data {
                     let val = &String::from_utf8_lossy(x.as_ref())
                         .to_string()
                         .parse::<i32>()
                         .unwrap();
-                    pp_type::int4_to_sql(*val, &mut buf)
-                });
+                    pp_type::int4_to_sql(*val, &mut buf);
+                }
             }
             PgType::INT8 => {
-                odbc_data.map(|x| {
+                if let Some(x) = odbc_data {
                     let val = &String::from_utf8_lossy(x.as_ref())
                         .to_string()
                         .parse::<i64>()
                         .unwrap();
-                    pp_type::int8_to_sql(*val, &mut buf)
-                });
+                    pp_type::int8_to_sql(*val, &mut buf);
+                }
             }
             PgType::BOOL | PgType::BIT => {
-                odbc_data.map(|x| {
+                if let Some(x) = odbc_data {
                     let val = &String::from_utf8_lossy(x.as_ref())
                         .to_string()
                         .parse::<bool>()
                         .unwrap();
-                    pp_type::bool_to_sql(*val, &mut buf)
-                });
+                    pp_type::bool_to_sql(*val, &mut buf);
+                }
             }
             _ => {}
         };
@@ -458,34 +461,32 @@ impl TryConvert<PgQueryResult> for (&QueryResult, &Vec<PgTableItem>, &Options) {
         let res = self.0;
         let pg_all_columns = self.1;
         let option = self.2;
+        let mut result = PgQueryResult::default();
+        if let Ok(cols) =
+            <(&Vec<OdbcColumn>, &Vec<PgTableItem>) as TryConvert<Vec<PgColumn>>>::try_convert((
+                &res.columns,
+                pg_all_columns,
+            ))
+        {
+            result.columns = cols;
 
-        let mut result = PgQueryResult {
-            columns:
-                <(&Vec<OdbcColumn>, &Vec<PgTableItem>) as TryConvert<Vec<PgColumn>>>::try_convert((
-                    &res.columns,
-                    pg_all_columns,
-                ))
-                .unwrap(),
-            ..Default::default()
-        };
-
-        match option.database {
-            SupportDatabase::Dameng => {
+            if let crate::executor::SupportDatabase::Dameng = option.database {
                 for v in res.data.iter() {
                     let mut row = vec![];
                     for (index, odbc_item) in v.iter().enumerate() {
-                        let col = result.columns.get(index).unwrap();
-                        row.push(<(&OdbcColumnItem, &PgColumn) as TryConvert<PgColumnItem>>::try_convert((
-                                odbc_item,
-                                col,
-                            )).unwrap()
-                        );
+                        if let Some(col) = result.columns.get(index) {
+                            row.push(
+                                <(&OdbcColumnItem, &PgColumn) as TryConvert<PgColumnItem>>::try_convert((
+                                    odbc_item, col,
+                                ))
+                                .unwrap(),
+                            );
+                        }
                     }
                     result.data.push(row);
                 }
             }
-            _ => {}
-        };
+        }
         Ok(result)
     }
 }
