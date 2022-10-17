@@ -1,10 +1,9 @@
 use crate::executor::database::Options;
 use crate::{Convert, TryConvert};
+use bytes::BytesMut;
 use odbc_api::buffers::{AnySlice, BufferDescription, BufferKind};
 use odbc_api::sys::{Date, Time, Timestamp, NULL_DATA};
 use odbc_api::DataType;
-use std::char::decode_utf16;
-use std::ops::Deref;
 
 #[derive(Debug, Clone)]
 pub struct OdbcColumn {
@@ -49,6 +48,11 @@ impl TryConvert<BufferDescription> for (&OdbcColumn, &Options) {
                     max_str_len: option.max_str_len,
                 };
             }
+            BufferKind::Binary { .. } => {
+                description.kind = BufferKind::Binary {
+                    length: option.max_binary_len,
+                }
+            }
             _ => {}
         }
 
@@ -57,21 +61,27 @@ impl TryConvert<BufferDescription> for (&OdbcColumn, &Options) {
 }
 
 #[derive(Debug)]
-pub enum OdbcColumnItem {
-    Text(Option<String>),
-    WText(Option<String>),
-    Binary(Option<Vec<u8>>),
-    Date(Option<Date>),
-    Time(Option<Time>),
-    Timestamp(Option<Timestamp>),
-    F64(Option<f64>),
-    F32(Option<f32>),
-    I8(Option<i8>),
-    I16(Option<i16>),
-    I32(Option<i32>),
-    I64(Option<i64>),
-    U8(Option<u8>),
-    Bit(Option<bool>),
+pub struct OdbcColumnItem {
+    pub odbc_type: OdbcColumnType,
+    pub value: Option<BytesMut>,
+}
+
+#[derive(Debug)]
+pub enum OdbcColumnType {
+    Text,
+    WText,
+    Binary,
+    Date,
+    Time,
+    Timestamp,
+    F64,
+    F32,
+    I8,
+    I16,
+    I32,
+    I64,
+    U8,
+    Bit,
 }
 
 impl ToString for OdbcColumnItem {
@@ -87,25 +97,32 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
                 let mut buffer = Vec::with_capacity(view.len());
                 for v in view.iter() {
                     if let Some(x) = v {
-                        let cow = String::from_utf8_lossy(x);
-                        buffer.push(OdbcColumnItem::Text(Some(cow.to_string())));
+                        buffer.push(OdbcColumnItem {
+                            odbc_type: OdbcColumnType::Text,
+                            value: Some(BytesMut::from(x)),
+                        });
                     } else {
-                        buffer.push(OdbcColumnItem::Text(None))
+                        buffer.push(OdbcColumnItem {
+                            odbc_type: OdbcColumnType::Text,
+                            value: None,
+                        })
                     }
                 }
                 buffer
             }
             AnySlice::WText(view) => {
                 let mut buffer = Vec::with_capacity(view.len());
-                for value in view.iter() {
-                    if let Some(utf16) = value {
-                        let mut buf_utf8 = String::new();
-                        for c in decode_utf16(utf16.as_slice().iter().cloned()) {
-                            buf_utf8.push(c.unwrap());
-                        }
-                        buffer.push(OdbcColumnItem::WText(Some(buf_utf8)));
+                for v in view.iter() {
+                    if let Some(x) = v {
+                        buffer.push(OdbcColumnItem {
+                            odbc_type: OdbcColumnType::Text,
+                            value: Some(BytesMut::from(x.to_string().unwrap().as_bytes())),
+                        });
                     } else {
-                        buffer.push(OdbcColumnItem::WText(None))
+                        buffer.push(OdbcColumnItem {
+                            odbc_type: OdbcColumnType::Text,
+                            value: None,
+                        })
                     }
                 }
                 buffer
@@ -114,9 +131,15 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
                 let mut buffer = vec![];
                 for value in view.iter() {
                     if let Some(bytes) = value {
-                        buffer.push(OdbcColumnItem::Binary(Some(bytes.to_vec())))
+                        buffer.push(OdbcColumnItem {
+                            odbc_type: OdbcColumnType::Binary,
+                            value: Some(BytesMut::from(bytes)),
+                        })
                     } else {
-                        buffer.push(OdbcColumnItem::Binary(None))
+                        buffer.push(OdbcColumnItem {
+                            odbc_type: OdbcColumnType::Binary,
+                            value: None,
+                        })
                     }
                 }
                 buffer
@@ -124,35 +147,53 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
             AnySlice::Date(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(OdbcColumnItem::Date(Some(*value)))
+                    let val = value.try_convert().unwrap();
+                    buffer.push(OdbcColumnItem {
+                        odbc_type: OdbcColumnType::Date,
+                        value: Some(BytesMut::from(val.to_string().as_bytes())),
+                    })
                 }
                 buffer
             }
             AnySlice::Timestamp(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(OdbcColumnItem::Timestamp(Some(*value)))
+                    let val: time::PrimitiveDateTime = value.try_convert().unwrap();
+                    buffer.push(OdbcColumnItem {
+                        odbc_type: OdbcColumnType::Timestamp,
+                        value: Some(BytesMut::from(val.to_string().as_bytes())),
+                    })
                 }
                 buffer
             }
             AnySlice::Time(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(OdbcColumnItem::Time(Some(*value)))
+                    let val = value.try_convert().unwrap();
+                    buffer.push(OdbcColumnItem {
+                        odbc_type: OdbcColumnType::Time,
+                        value: Some(BytesMut::from(val.to_string().as_bytes())),
+                    })
                 }
                 buffer
             }
             AnySlice::I32(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(OdbcColumnItem::I32(Some(*value)))
+                    buffer.push(OdbcColumnItem {
+                        odbc_type: OdbcColumnType::I32,
+                        value: Some(BytesMut::from(value.to_string().as_bytes())),
+                    })
                 }
                 buffer
             }
             AnySlice::Bit(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(OdbcColumnItem::Bit(Some(value.as_bool())))
+                    buffer.push(OdbcColumnItem {
+                        odbc_type: OdbcColumnType::Bit,
+                        value: Some(BytesMut::from(value.as_bool().to_string().as_bytes())),
+                    })
                 }
                 buffer
             }
@@ -160,42 +201,61 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
             AnySlice::F64(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(OdbcColumnItem::F64(Some(*value)))
+                    buffer.push(OdbcColumnItem {
+                        odbc_type: OdbcColumnType::F64,
+                        value: Some(BytesMut::from(value.to_string().as_bytes())),
+                    })
                 }
                 buffer
             }
             AnySlice::F32(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(OdbcColumnItem::F32(Some(*value)))
+                    buffer.push(OdbcColumnItem {
+                        odbc_type: OdbcColumnType::F32,
+                        value: Some(BytesMut::from(value.to_string().as_bytes())),
+                    })
                 }
                 buffer
             }
             AnySlice::I8(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(OdbcColumnItem::I8(Some(*value)))
+                    buffer.push(OdbcColumnItem {
+                        odbc_type: OdbcColumnType::I8,
+                        value: Some(BytesMut::from(value.to_string().as_bytes())),
+                    })
                 }
                 buffer
             }
             AnySlice::I16(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(OdbcColumnItem::I16(Some(*value)))
+                    buffer.push(OdbcColumnItem {
+                        odbc_type: OdbcColumnType::I16,
+                        value: Some(BytesMut::from(value.to_string().as_bytes())),
+                    })
                 }
                 buffer
             }
             AnySlice::I64(view) => {
                 let mut buffer = vec![];
                 for value in view.iter() {
-                    buffer.push(OdbcColumnItem::I64(Some(*value)))
+                    buffer.push(OdbcColumnItem {
+                        odbc_type: OdbcColumnType::I64,
+                        value: Some(BytesMut::from(value.to_string().as_bytes())),
+                    })
                 }
                 buffer
             }
             AnySlice::U8(view) => {
                 let mut buffer = vec![];
+
                 for value in view.iter() {
-                    buffer.push(OdbcColumnItem::U8(Some(*value)))
+                    buffer.push(OdbcColumnItem {
+                        odbc_type: OdbcColumnType::U8,
+                        value: Some(BytesMut::from(vec![*value].as_slice())),
+                    })
                 }
                 buffer
             }
@@ -208,9 +268,16 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
                     .enumerate()
                     .map(|(index, value)| {
                         if indicators[index] != NULL_DATA {
-                            OdbcColumnItem::Date(Some(*value))
+                            let val = value.try_convert().unwrap();
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::Date,
+                                value: Some(BytesMut::from(val.to_string().as_bytes())),
+                            }
                         } else {
-                            OdbcColumnItem::Date(None)
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::Date,
+                                value: None,
+                            }
                         }
                     })
                     .collect()
@@ -224,9 +291,16 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
                     .enumerate()
                     .map(|(index, value)| {
                         if indicators[index] != NULL_DATA {
-                            OdbcColumnItem::Time(Some(*value))
+                            let val = value.try_convert().unwrap();
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::Time,
+                                value: Some(BytesMut::from(val.to_string().as_bytes())),
+                            }
                         } else {
-                            OdbcColumnItem::Time(None)
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::Time,
+                                value: None,
+                            }
                         }
                     })
                     .collect()
@@ -240,9 +314,16 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
                     .enumerate()
                     .map(|(index, value)| {
                         if indicators[index] != NULL_DATA {
-                            OdbcColumnItem::Timestamp(Some(*value))
+                            let val: time::PrimitiveDateTime = value.try_convert().unwrap();
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::Timestamp,
+                                value: Some(BytesMut::from(val.to_string().as_bytes())),
+                            }
                         } else {
-                            OdbcColumnItem::Timestamp(None)
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::Timestamp,
+                                value: None,
+                            }
                         }
                     })
                     .collect()
@@ -256,9 +337,15 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
                     .enumerate()
                     .map(|(index, value)| {
                         if indicators[index] != NULL_DATA {
-                            OdbcColumnItem::F64(Some(*value))
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::F64,
+                                value: Some(BytesMut::from(value.to_string().as_bytes())),
+                            }
                         } else {
-                            OdbcColumnItem::F64(None)
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::F64,
+                                value: None,
+                            }
                         }
                     })
                     .collect()
@@ -272,9 +359,15 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
                     .enumerate()
                     .map(|(index, value)| {
                         if indicators[index] != NULL_DATA {
-                            OdbcColumnItem::F32(Some(*value))
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::F32,
+                                value: Some(BytesMut::from(value.to_string().as_bytes())),
+                            }
                         } else {
-                            OdbcColumnItem::F32(None)
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::F32,
+                                value: None,
+                            }
                         }
                     })
                     .collect()
@@ -288,9 +381,15 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
                     .enumerate()
                     .map(|(index, value)| {
                         if indicators[index] != NULL_DATA {
-                            OdbcColumnItem::I8(Some(*value))
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::I8,
+                                value: Some(BytesMut::from(value.to_string().as_bytes())),
+                            }
                         } else {
-                            OdbcColumnItem::I8(None)
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::I8,
+                                value: None,
+                            }
                         }
                     })
                     .collect()
@@ -304,9 +403,15 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
                     .enumerate()
                     .map(|(index, value)| {
                         if indicators[index] != NULL_DATA {
-                            OdbcColumnItem::I16(Some(*value))
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::I16,
+                                value: Some(BytesMut::from(value.to_string().as_bytes())),
+                            }
                         } else {
-                            OdbcColumnItem::I16(None)
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::I16,
+                                value: None,
+                            }
                         }
                     })
                     .collect()
@@ -320,9 +425,15 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
                     .enumerate()
                     .map(|(index, value)| {
                         if indicators[index] != NULL_DATA {
-                            OdbcColumnItem::I32(Some(*value))
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::I32,
+                                value: Some(BytesMut::from(value.to_string().as_bytes())),
+                            }
                         } else {
-                            OdbcColumnItem::I32(None)
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::I32,
+                                value: None,
+                            }
                         }
                     })
                     .collect()
@@ -336,9 +447,15 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
                     .enumerate()
                     .map(|(index, value)| {
                         if indicators[index] != NULL_DATA {
-                            OdbcColumnItem::I64(Some(*value))
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::I64,
+                                value: Some(BytesMut::from(value.to_string().as_bytes())),
+                            }
                         } else {
-                            OdbcColumnItem::I64(None)
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::I64,
+                                value: None,
+                            }
                         }
                     })
                     .collect()
@@ -352,9 +469,15 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
                     .enumerate()
                     .map(|(index, value)| {
                         if indicators[index] != NULL_DATA {
-                            OdbcColumnItem::U8(Some(*value))
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::U8,
+                                value: Some(BytesMut::from(vec![*value].as_slice())),
+                            }
                         } else {
-                            OdbcColumnItem::U8(None)
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::U8,
+                                value: None,
+                            }
                         }
                     })
                     .collect()
@@ -368,9 +491,15 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
                     .enumerate()
                     .map(|(index, value)| {
                         if indicators[index] != NULL_DATA {
-                            OdbcColumnItem::Bit(Some(value.deref().as_bool()))
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::Bit,
+                                value: Some(BytesMut::from(value.as_bool().to_string().as_bytes())),
+                            }
                         } else {
-                            OdbcColumnItem::Bit(None)
+                            OdbcColumnItem {
+                                odbc_type: OdbcColumnType::Bit,
+                                value: None,
+                            }
                         }
                     })
                     .collect()
