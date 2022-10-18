@@ -458,13 +458,11 @@ impl TryConvert<PgQueryResult> for (QueryResult, &Vec<PgTableItem>, &Options) {
     fn try_convert(self) -> Result<PgQueryResult, Self::Error> {
         let res = self.0;
         let pg_all_columns = self.1;
-        let option = self.2;
+        let options = self.2;
         let mut result = PgQueryResult::default();
-        if let Ok(cols) =
-            <(&Vec<OdbcColumn>, &Vec<PgTableItem>) as TryConvert<Vec<PgColumn>>>::try_convert((
-                &res.columns,
-                pg_all_columns,
-            ))
+        if let Ok(cols) = <(&Vec<OdbcColumn>, &Vec<PgTableItem>, &Options) as TryConvert<
+            Vec<PgColumn>,
+        >>::try_convert((&res.columns, pg_all_columns, options))
         {
             let cols: Vec<PgColumn> = cols;
             result.columns = cols;
@@ -475,7 +473,7 @@ impl TryConvert<PgQueryResult> for (QueryResult, &Vec<PgTableItem>, &Options) {
                 return Ok(PgQueryResult::from(res));
             }
 
-            if let crate::executor::SupportDatabase::Dameng = option.database {
+            if let crate::executor::SupportDatabase::Dameng = options.database {
                 for v in res.data.iter() {
                     let mut row: Vec<PgColumnItem> = vec![];
                     for (index, odbc_item) in v.iter().enumerate() {
@@ -496,15 +494,24 @@ impl TryConvert<PgQueryResult> for (QueryResult, &Vec<PgTableItem>, &Options) {
     }
 }
 
-impl TryConvert<Vec<PgColumn>> for (&Vec<OdbcColumn>, &Vec<PgTableItem>) {
+impl TryConvert<Vec<PgColumn>> for (&Vec<OdbcColumn>, &Vec<PgTableItem>, &Options) {
     type Error = String;
 
     fn try_convert(self) -> Result<Vec<PgColumn>, Self::Error> {
         let odbc_columns = self.0;
         let pg_all_columns = self.1;
+        let options = self.2;
         let mut result = vec![];
         for v in odbc_columns.iter() {
-            if let Some(pg) = pg_all_columns.iter().find(|&p| p.name == v.name) {
+            let find_name = |source: &str, target: &str| -> bool {
+                if options.case_sensitive {
+                    source == target
+                } else {
+                    source.to_uppercase() == target.to_uppercase()
+                }
+            };
+
+            if let Some(pg) = pg_all_columns.iter().find(|&p| find_name(&p.name, &v.name)) {
                 result.push(PgColumn {
                     name: pg.name.clone(),
                     pg_type: pg.r#type.clone(),
