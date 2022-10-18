@@ -469,6 +469,11 @@ impl TryConvert<PgQueryResult> for (&QueryResult, &Vec<PgTableItem>, &Options) {
             let cols: Vec<PgColumn> = cols;
             result.columns = cols;
 
+            if result.columns.is_empty(){
+                return Ok(PgQueryResult::from(res.clone()))
+            }
+
+
             if let crate::executor::SupportDatabase::Dameng = option.database {
                 for v in res.data.iter() {
                     let mut row: Vec<PgColumnItem> = vec![];
