@@ -25,7 +25,7 @@ pub trait ConnectionTrait {
     where
         S: StatementInput;
 
-    fn show_table(&self, table_name: Vec<String>) -> anyhow::Result<TableDescResult>;
+    fn show_table(&self, table_names: Vec<String>) -> anyhow::Result<TableDescResult>;
 
     // begin transaction
     fn begin(&self) -> anyhow::Result<()>;
@@ -110,8 +110,8 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
         }
     }
 
-    fn show_table(&self, table_name: Vec<String>) -> anyhow::Result<TableDescResult> {
-        self.table_desc(table_name)
+    fn show_table(&self, table_names: Vec<String>) -> anyhow::Result<TableDescResult> {
+        self.table_desc(table_names)
     }
 
     fn begin(&self) -> anyhow::Result<()> {
