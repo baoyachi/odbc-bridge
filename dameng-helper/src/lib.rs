@@ -11,22 +11,22 @@ use odbc_api::handles::StatementImpl;
 use odbc_api::{Cursor, CursorImpl, ResultSetMetadata};
 
 pub trait DmAdapter {
-    fn get_table_sql(table_name: Vec<String>) -> String;
+    fn get_table_sql(table_names: Vec<String>, db_name: &str) -> String;
     fn get_table_desc(self) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)>;
 }
 
 impl DmAdapter for CursorImpl<StatementImpl<'_>> {
-    fn get_table_sql(table_name: Vec<String>) -> String {
+    fn get_table_sql(table_names: Vec<String>, db_name: &str) -> String {
         // Use sql: `SELECT A.*, B.NAME AS TABLE_NAME FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ("X")`;
         // The X is table name;
-        let table_name = table_name
+        let tables = table_names
             .iter()
             .map(|x| format!("'{}'", x))
             .collect::<Vec<_>>()
             .join(",");
         format!(
-            r#"SELECT A.NAME, A.ID, A.COLID, A.TYPE$, A.LENGTH$, A.SCALE, A.NULLABLE$, A.DEFVAL, B.NAME AS TABLE_NAME, B.CRTDATE FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ({});"#,
-            table_name
+            r#"SELECT A.NAME, A.ID, A.COLID, A.TYPE$, A.LENGTH$, A.SCALE, A.NULLABLE$, A.DEFVAL, B.NAME AS TABLE_NAME, B.CRTDATE FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ({}) AND B.SCHID IN (SELECT ID FROM SYSOBJECTS WHERE name = '{}');"#,
+            tables, db_name
         )
     }
 
