@@ -3,7 +3,7 @@ use crate::executor::query::QueryResult;
 use crate::executor::statement::StatementInput;
 use crate::executor::table::TableDescResult;
 use crate::executor::SupportDatabase;
-use crate::extension::odbc::OdbcColumn;
+use crate::extension::odbc::{OdbcColumn, OdbcColumnItem};
 use crate::{Convert, TryConvert};
 use dameng_helper::DmAdapter;
 use either::Either;
@@ -185,7 +185,7 @@ impl<'a> OdbcDbConnection<'a> {
         while let Some(row_set) = row_set_cursor.fetch()? {
             for index in 0..query_result.columns.len() {
                 let column_view: AnySlice = row_set.column(index);
-                let column_types: Vec<_> = column_view.convert();
+                let column_types: Vec<OdbcColumnItem> = column_view.convert();
                 if index == 0 {
                     for c in column_types.into_iter() {
                         total_row.push(vec![c]);
