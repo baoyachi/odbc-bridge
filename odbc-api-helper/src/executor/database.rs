@@ -51,6 +51,8 @@ pub struct Options {
     pub max_batch_size: usize,
     pub max_str_len: usize,
     pub max_binary_len: usize,
+    //ignore uppercase/lowercase
+    pub case_sensitive: bool,
 }
 
 impl Options {
@@ -66,6 +68,7 @@ impl Options {
             max_batch_size: Self::MAX_BATCH_SIZE,
             max_str_len: Self::MAX_STR_LEN,
             max_binary_len: Self::MAX_BINARY_LEN,
+            case_sensitive: false,
         }
     }
 
