@@ -469,6 +469,8 @@ impl TryConvert<PgQueryResult> for (QueryResult, &Vec<PgTableItem>, &Options) {
             let cols: Vec<PgColumn> = cols;
             result.columns = cols;
 
+            // if column name is count(*),but this name not exist Vec<PgTableItem>
+            // So,could find result.columns is empty.
             if result.columns.is_empty() {
                 return Ok(PgQueryResult::from(res));
             }
