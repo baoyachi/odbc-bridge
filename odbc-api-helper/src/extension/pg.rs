@@ -504,6 +504,8 @@ impl TryConvert<Vec<PgColumn>> for (&Vec<OdbcColumn>, &Vec<PgTableItem>) {
                     oid: pg.r#type.oid(),
                     nullable: pg.nullable,
                 });
+            } else {
+                result.push(v.clone().convert());
             }
         }
 
