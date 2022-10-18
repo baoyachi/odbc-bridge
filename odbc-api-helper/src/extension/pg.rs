@@ -466,18 +466,19 @@ impl TryConvert<PgQueryResult> for (&QueryResult, &Vec<PgTableItem>, &Options) {
                 pg_all_columns,
             ))
         {
+            let cols: Vec<PgColumn> = cols;
             result.columns = cols;
 
             if let crate::executor::SupportDatabase::Dameng = option.database {
                 for v in res.data.iter() {
-                    let mut row = vec![];
+                    let mut row: Vec<PgColumnItem> = vec![];
                     for (index, odbc_item) in v.iter().enumerate() {
                         if let Some(col) = result.columns.get(index) {
                             row.push(
                                 <(&OdbcColumnItem, &PgColumn) as TryConvert<PgColumnItem>>::try_convert((
                                     odbc_item, col,
                                 ))
-                                .unwrap(),
+                                    .unwrap(),
                             );
                         }
                     }
