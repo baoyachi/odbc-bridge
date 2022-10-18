@@ -25,7 +25,7 @@ pub trait ConnectionTrait {
     where
         S: StatementInput;
 
-    fn show_table(&self, table_name: Vec<String>) -> anyhow::Result<TableDescResult>;
+    fn show_table(&self, table_names: Vec<String>) -> anyhow::Result<TableDescResult>;
 
     // begin transaction
     fn begin(&self) -> anyhow::Result<()>;
@@ -46,6 +46,7 @@ pub struct OdbcDbConnection<'a> {
 
 #[derive(Debug)]
 pub struct Options {
+    pub db_name: String,
     pub database: SupportDatabase,
     pub max_batch_size: usize,
     pub max_str_len: usize,
@@ -58,8 +59,9 @@ impl Options {
     pub const MAX_STR_LEN: usize = 1024 * 1024;
     pub const MAX_BINARY_LEN: usize = 1024 * 1024;
 
-    pub fn new(database: SupportDatabase) -> Self {
+    pub fn new(db_name: String, database: SupportDatabase) -> Self {
         Options {
+            db_name,
             database,
             max_batch_size: Self::MAX_BATCH_SIZE,
             max_str_len: Self::MAX_STR_LEN,
@@ -108,8 +110,8 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
         }
     }
 
-    fn show_table(&self, table_name: Vec<String>) -> anyhow::Result<TableDescResult> {
-        self.table_desc(table_name)
+    fn show_table(&self, table_names: Vec<String>) -> anyhow::Result<TableDescResult> {
+        self.table_desc(table_names)
     }
 
     fn begin(&self) -> anyhow::Result<()> {
@@ -220,7 +222,7 @@ impl<'a> OdbcDbConnection<'a> {
         let db = &self.options.database;
         match db {
             SupportDatabase::Dameng => {
-                let sql = CursorImpl::get_table_sql(table_names);
+                let sql = CursorImpl::get_table_sql(table_names, &self.options.db_name);
                 let cursor = self
                     .conn
                     .execute(&sql, ())?
