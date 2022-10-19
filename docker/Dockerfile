@@ -1,8 +1,5 @@
 # Docker image intended for local development using vscode
 
-# See here for image contents: https://github.com/microsoft/vscode-dev-containers/blob/v0.163.1/containers/ubuntu/.devcontainer/Dockerfile
-
-# [Choice] Ubuntu version: bionic, focal
 FROM ubuntu:latest
 
 # [Optional] Uncomment this section to install additional OS packages.
