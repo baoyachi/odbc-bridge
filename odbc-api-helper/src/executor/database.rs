@@ -51,14 +51,16 @@ pub struct Options {
     pub max_batch_size: usize,
     pub max_str_len: usize,
     pub max_binary_len: usize,
-    //ignore uppercase/lowercase
+    // ignore uppercase/lowercase,default is false.
     pub case_sensitive: bool,
 }
 
 impl Options {
-    // Max Buffer Size 256
+    // Default Max Buffer Size 256
     pub const MAX_BATCH_SIZE: usize = 1 << 8;
+    // Default Max string length 1MB
     pub const MAX_STR_LEN: usize = 1024 * 1024;
+    // Default Max binary length 1MB
     pub const MAX_BINARY_LEN: usize = 1024 * 1024;
 
     pub fn new(db_name: String, database: SupportDatabase) -> Self {
@@ -83,6 +85,7 @@ impl Options {
         }
 
         if self.max_binary_len == 0 {
+            // Add default size:1MB
             self.max_binary_len = Self::MAX_BINARY_LEN
         }
         self
@@ -230,7 +233,7 @@ impl<'a> OdbcDbConnection<'a> {
                     .conn
                     .execute(&sql, ())?
                     .ok_or_else(|| anyhow!("query error"))?;
-                cursor.get_table_desc()
+                cursor.get_table_desc(self.options.case_sensitive)
             }
             _ => {
                 bail!("current not support database:{:?}", db)
