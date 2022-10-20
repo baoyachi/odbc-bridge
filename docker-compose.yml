@@ -15,9 +15,6 @@ services:
       dockerfile: Dockerfile
     volumes:
       - .:/workspace:cached
-
     # Firing up the databases will take a while, fortunately so does compilating the library
-    links:
-      - dm8_single
     depends_on:
       - dm8_single
