@@ -77,7 +77,7 @@ mod tests {
         let env = Environment::new().unwrap();
         let conn = env
             .connect_with_connection_string(
-                "Driver={DM8};Server=dm8_single;UID=SYSDBA;PWD=SYSDBA001;",
+                "Driver={DM8};Server=0.0.0.0;UID=SYSDBA;PWD=SYSDBA001;",
             )
             .unwrap();
 
