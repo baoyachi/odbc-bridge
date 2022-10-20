@@ -67,21 +67,29 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use odbc_api::Environment;
     use odbc_api_helper::executor::database::{OdbcDbConnection, Options};
     use odbc_api_helper::executor::SupportDatabase;
-    use super::*;
 
     #[test]
     fn test_dameng_table_desc() {
         let env = Environment::new().unwrap();
-        let conn = env.connect_with_connection_string(
-            "Driver={DM8};Server=dm8_single;UID=SYSDBA;PWD=SYSDBA001;",
-        ).unwrap();
+        let conn = env
+            .connect_with_connection_string(
+                "Driver={DM8};Server=dm8_single;UID=SYSDBA;PWD=SYSDBA001;",
+            )
+            .unwrap();
 
-        let connection = OdbcDbConnection::new(conn, Options::new("SYSDBA".to_string(),SupportDatabase::Dameng)).unwrap();
-        let cursor = connection.conn
-            .execute(r#"SELECT * from SYSCOLUMNS limit 10;"#,()).unwrap()
+        let connection = OdbcDbConnection::new(
+            conn,
+            Options::new("SYSDBA".to_string(), SupportDatabase::Dameng),
+        )
+        .unwrap();
+        let cursor = connection
+            .conn
+            .execute(r#"SELECT * from SYSCOLUMNS limit 10;"#, ())
+            .unwrap()
             .unwrap();
         odbc_api_helper::print_all_tables(cursor).unwrap();
     }
