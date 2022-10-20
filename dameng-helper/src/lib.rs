@@ -67,7 +67,7 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+
     use odbc_api::Environment;
     use odbc_api_helper::executor::database::{OdbcDbConnection, Options};
     use odbc_api_helper::executor::SupportDatabase;
