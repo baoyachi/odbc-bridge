@@ -18,3 +18,4 @@ services:
     # Firing up the databases will take a while, fortunately so does compilating the library
     depends_on:
       - dm8_single
+    network_mode: host
