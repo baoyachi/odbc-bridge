@@ -1,0 +1,20 @@
+services:
+
+  dm8_single:
+    image: ghcr.io/baoyachi/dm8_single:v8.1.2.128_ent_x86_64_ctm_pack4
+    container_name: dm8_single
+    ports:
+      - 5236:5236
+#    environment:
+#      UID: SYSDBA
+#      PWD: SYSDBA
+
+  dev:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    volumes:
+      - .:/workspace:cached
+    # Firing up the databases will take a while, fortunately so does compilating the library
+    depends_on:
+      - dm8_single
