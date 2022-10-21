@@ -39,6 +39,9 @@ impl TryConvert<BufferDescription> for (&OdbcColumn, &Options) {
         // Link: <https://github.com/pacman82/odbc-api/issues/268>
         match description.kind {
             BufferKind::Text { max_str_len } => {
+            // TODO Notice: The kind of `BufferKind::Text` mix up varchar or text type
+            // Need to distinguish between text type or varchar type
+            BufferKind::Text { .. } => {
                 description.kind = BufferKind::Text {
                     max_str_len: if max_str_len > option.max_str_len { option.max_str_len} else { max_str_len},
                 };
