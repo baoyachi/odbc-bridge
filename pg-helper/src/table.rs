@@ -6,6 +6,17 @@ pub struct PgTableDesc {
     pub data: BTreeMap<String, Vec<PgTableItem>>,
 }
 
+impl PgTableDesc {
+    pub fn get_data(&self, key: String, case_sensitive: bool) -> Option<&Vec<PgTableItem>> {
+        let key = if case_sensitive {
+            key
+        } else {
+            key.to_uppercase()
+        };
+        self.data.get(&key)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct PgTableItem {
     // column name
