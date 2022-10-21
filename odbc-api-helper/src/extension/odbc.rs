@@ -38,6 +38,8 @@ impl TryConvert<BufferDescription> for (&OdbcColumn, &Options) {
         // It's maybe caused panic,it need use `Option.max_str_len` to readjust size.
         // Link: <https://github.com/pacman82/odbc-api/issues/268>
         match description.kind {
+            // TODO Notice: The kind of `BufferKind::Text` mix up varchar or text type
+            // Need to distinguish between text type or varchar type
             BufferKind::Text { .. } => {
                 description.kind = BufferKind::Text {
                     max_str_len: option.max_str_len,
