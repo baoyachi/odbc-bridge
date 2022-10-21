@@ -76,9 +76,7 @@ mod tests {
     fn test_dameng_table_desc() {
         let env = Environment::new().unwrap();
         let conn = env
-            .connect_with_connection_string(
-                "Driver={DM8};Server=0.0.0.0;UID=SYSDBA;PWD=SYSDBA001;",
-            )
+            .connect_with_connection_string("Driver={DM8};Server=0.0.0.0;UID=SYSDBA;PWD=SYSDBA001;")
             .unwrap();
 
         let connection = OdbcDbConnection::new(
