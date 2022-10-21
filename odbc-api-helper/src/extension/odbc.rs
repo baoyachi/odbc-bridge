@@ -38,19 +38,19 @@ impl TryConvert<BufferDescription> for (&OdbcColumn, &Options) {
         // It's maybe caused panic,it need use `Option.max_str_len` to readjust size.
         // Link: <https://github.com/pacman82/odbc-api/issues/268>
         match description.kind {
-            BufferKind::Text { .. } => {
+            BufferKind::Text { max_str_len } => {
                 description.kind = BufferKind::Text {
-                    max_str_len: option.max_str_len,
+                    max_str_len: if max_str_len > option.max_str_len { option.max_str_len} else { max_str_len},
                 };
             }
-            BufferKind::WText { .. } => {
+            BufferKind::WText { max_str_len } => {
                 description.kind = BufferKind::WText {
-                    max_str_len: option.max_str_len,
+                    max_str_len: if max_str_len > option.max_str_len { option.max_str_len} else { max_str_len},
                 };
             }
-            BufferKind::Binary { .. } => {
+            BufferKind::Binary { length } => {
                 description.kind = BufferKind::Binary {
-                    length: option.max_binary_len,
+                    length: if length > option.max_binary_len { option.max_binary_len} else { length},
                 }
             }
             _ => {}

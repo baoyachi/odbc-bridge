@@ -57,11 +57,11 @@ pub struct Options {
 
 impl Options {
     // Default Max Buffer Size 256
-    pub const MAX_BATCH_SIZE: usize = 1 << 8;
+    pub const MAX_BATCH_SIZE: usize = 1 << 7;
     // Default Max string length 1MB
-    pub const MAX_STR_LEN: usize = 1024 * 1024;
+    pub const MAX_STR_LEN: usize = 1024;
     // Default Max binary length 1MB
-    pub const MAX_BINARY_LEN: usize = 1024 * 1024;
+    pub const MAX_BINARY_LEN: usize = 1024;
 
     pub fn new(db_name: String, database: SupportDatabase) -> Self {
         Options {
@@ -76,7 +76,7 @@ impl Options {
 
     fn check(mut self) -> Self {
         if self.max_batch_size == 0 {
-            self.max_str_len = Self::MAX_BATCH_SIZE
+            self.max_batch_size = Self::MAX_BATCH_SIZE
         }
 
         if self.max_str_len == 0 {
