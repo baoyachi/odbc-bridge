@@ -9,9 +9,9 @@ pub struct PgTableDesc {
 impl PgTableDesc {
     pub fn get_data(&self, key: String, case_sensitive: bool) -> Option<&Vec<PgTableItem>> {
         let key = if case_sensitive {
-            key.to_uppercase()
-        } else {
             key
+        } else {
+            key.to_uppercase()
         };
         self.data.get(&key)
     }
