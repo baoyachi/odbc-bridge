@@ -181,14 +181,17 @@ CREATE TABLE SYSDBA.T2 (
             .iter_mut()
             .map(|x| {
                 // id must greater than 0
+
+                let len = x.len();
                 let id = x.get(1).unwrap().parse::<usize>().unwrap();
                 assert!(id > 0);
 
                 // validate CRTDATE value:2022-10-24 17:28:26.308000
                 let crtdate = x.last().unwrap();
                 assert_eq!(true, validate_crtdate(crtdate));
-                x.insert(1, "1058".to_string());
-                x.insert(x.len() - 1, "2022-10-24 17:28:26.308000".to_string());
+                let _ = std::mem::replace(&mut x[1], "1058".to_string());
+                let _ =
+                    std::mem::replace(&mut x[len - 1], "2022-10-24 17:28:26.308000".to_string());
                 x
             })
             .collect();
