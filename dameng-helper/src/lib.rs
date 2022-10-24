@@ -67,16 +67,17 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
 
 #[cfg(test)]
 mod tests {
+    const DAMENG_CONNECTION: &str = "Driver={DM8};Server=0.0.0.0;UID=SYSDBA;PWD=SYSDBA001;";
 
     use odbc_api::Environment;
-    use odbc_api_helper::executor::database::{OdbcDbConnection, Options};
+    use odbc_api_helper::executor::database::{ConnectionTrait, OdbcDbConnection, Options};
+    use odbc_api_helper::executor::execute::ExecResult;
     use odbc_api_helper::executor::SupportDatabase;
 
-    #[test]
-    fn test_dameng_table_desc() {
+    fn get_dameng_conn() -> OdbcDbConnection {
         let env = Environment::new().unwrap();
         let conn = env
-            .connect_with_connection_string("Driver={DM8};Server=0.0.0.0;UID=SYSDBA;PWD=SYSDBA001;")
+            .connect_with_connection_string(DAMENG_CONNECTION)
             .unwrap();
 
         let connection = OdbcDbConnection::new(
@@ -84,11 +85,61 @@ mod tests {
             Options::new("SYSDBA".to_string(), SupportDatabase::Dameng),
         )
         .unwrap();
+        connection
+    }
+
+    #[test]
+    fn test_dameng_table_desc() {
+        let connection = get_dameng_conn();
         let cursor = connection
             .conn
             .execute(r#"SELECT * from SYSCOLUMNS limit 10;"#, ())
             .unwrap()
             .unwrap();
         odbc_api_helper::print_all_tables(cursor).unwrap();
+    }
+
+    #[test]
+    fn test_dameng_table_desc() {
+        //1. create table
+        //2. query table
+        let create_table_sql = r#"
+CREATE TABLE SYSDBA.T2 (
+	C1 DATETIME WITH TIME ZONE,
+	C2 TIMESTAMP,
+	c3 VARCHAR(100),
+	c4 NUMERIC,
+	c5 TIME WITH TIME ZONE,
+	c6 TIMESTAMP WITH LOCAL TIME ZONE,
+	"NUMBER" NUMBER,
+	"DECIMAL" DECIMAL,
+	"BIT" BIT,
+	"INTEGER" INTEGER,
+	xxx_PLS_INTEGER INTEGER,
+	"BIGINT" BIGINT,
+	"TINYINT" TINYINT,
+	BYTE BYTE,
+	"SMALLINT" SMALLINT,
+	"BINARY" BINARY(1),
+	"VARBINARY" VARBINARY(8188),
+	"REAL" REAL,
+	"FLOAT" FLOAT,
+	"DOUBLE" DOUBLE,
+	DOUBLE_PRECISION DOUBLE PRECISION,
+	"CHAR" CHAR(1),
+	"VARCHAR" VARCHAR(8188),
+	TEXT TEXT,
+	IMAGE IMAGE,
+	"BLOB" BLOB,
+	not_null_test VARCHAR(100) DEFAULT 'default_value_hh' NOT NULL,
+	not_null_test_len VARCHAR(100) DEFAULT 'default_value_hh' NOT NULL
+);"#;
+        let connection = get_dameng_conn();
+
+        let exec_result: ExecResult = connection.execute(create_table_sql, ()).unwrap().unwrap();
+        assert_eq!(exec_result.rows_affected, 1);
+
+        let table_desc = connection.show_table(vec!["T2".to_string()]).unwrap();
+        assert_eq!(table_desc, (vec![], vec![]));
     }
 }
