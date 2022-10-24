@@ -73,10 +73,12 @@ mod tests {
     use odbc_api_helper::executor::database::{ConnectionTrait, OdbcDbConnection, Options};
     use odbc_api_helper::executor::execute::ExecResult;
     use odbc_api_helper::executor::SupportDatabase;
+    use once_cell::sync::Lazy;
 
-    fn get_dameng_conn() -> OdbcDbConnection {
-        let env = Environment::new().unwrap();
-        let conn = env
+    pub static ENV: Lazy<Environment> = Lazy::new(|| Environment::new().unwrap());
+
+    fn get_dameng_conn() -> OdbcDbConnection<'static> {
+        let conn = ENV
             .connect_with_connection_string(DAMENG_CONNECTION)
             .unwrap();
 
@@ -89,7 +91,7 @@ mod tests {
     }
 
     #[test]
-    fn test_dameng_table_desc() {
+    fn test_print_all_tables() {
         let connection = get_dameng_conn();
         let cursor = connection
             .conn
@@ -136,7 +138,7 @@ CREATE TABLE SYSDBA.T2 (
 );"#;
         let connection = get_dameng_conn();
 
-        let exec_result: ExecResult = connection.execute(create_table_sql, ()).unwrap().unwrap();
+        let exec_result: ExecResult = connection.execute(create_table_sql).unwrap();
         assert_eq!(exec_result.rows_affected, 1);
 
         let table_desc = connection.show_table(vec!["T2".to_string()]).unwrap();
