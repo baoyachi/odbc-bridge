@@ -8,4 +8,4 @@ done;
 echo "dm8_single is ready!";
 echo "start web service here";
 env
-~/.cargo/bin/cargo test
+~/.cargo/bin/cargo test -- --nocapture
