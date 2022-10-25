@@ -1,9 +1,7 @@
-use crate::DataType;
+use crate::DmDateType;
 use std::collections::BTreeMap;
 use std::str::FromStr;
 use strum::{Display, EnumString};
-
-pub type DmDateType = DataType;
 
 /// The table data. Execute sql get table describe
 /// ```bash
@@ -69,16 +67,16 @@ impl DmTableDesc {
 
         let mut data_map: BTreeMap<String, Vec<DmTableItem>> = Default::default();
 
-        for rols in data {
-            assert_eq!(rols.len(), headers.len());
-            // iterator line item
+        for rows in data {
+            assert_eq!(rows.len(), headers.len());
+            // iterator row item
             let mut item = DmTableItem::default();
-            for (index, val) in rols.into_iter().enumerate() {
+            for (index, val) in rows.into_iter().enumerate() {
                 match headers.get(&index).unwrap() {
                     ColNameEnum::Name => item.name = val,
                     ColNameEnum::Id => item.table_id = to_type!(val, usize)?,
                     ColNameEnum::Colid => item.col_index = to_type!(val, usize)?,
-                    ColNameEnum::Type => item.r#type = to_type!(val, DataType)?,
+                    ColNameEnum::Type => item.r#type = to_type!(val, DmDateType)?,
                     ColNameEnum::Length => item.length = to_type!(val, usize)?,
                     ColNameEnum::Scale => item.scale = to_type!(val, usize)?,
                     ColNameEnum::Nullable => match val.to_uppercase().as_ref() {

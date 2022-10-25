@@ -1,5 +1,6 @@
 use crate::TryConvert;
-use dameng_helper::table::{DmDateType, DmTableItem};
+use dameng_helper::table::DmTableItem;
+use dameng_helper::DmDateType;
 use pg_helper::table::PgTableItem;
 use pg_helper::PgType;
 
