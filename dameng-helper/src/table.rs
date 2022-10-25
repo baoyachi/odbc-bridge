@@ -1,6 +1,7 @@
 use crate::DmDateType;
 use std::collections::BTreeMap;
 use std::str::FromStr;
+use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
 
 /// The table data. Execute sql get table describe
@@ -42,7 +43,7 @@ use strum::{Display, EnumString};
 /// data_text        |1195|    0|TEXT                          |2147483647|    0|Y        |                  |Text_len  |2022-10-08 02:48:41.901|
 /// ```
 ///
-#[derive(Debug)]
+#[derive(Debug,Serialize,Deserialize)]
 pub struct DmTableDesc {
     pub headers: BTreeMap<usize, ColNameEnum>,
     pub data: BTreeMap<String, Vec<DmTableItem>>,
@@ -103,7 +104,7 @@ impl DmTableDesc {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default,Serialize,Deserialize)]
 pub struct DmTableItem {
     pub name: String,
     pub table_id: usize,
@@ -117,7 +118,7 @@ pub struct DmTableItem {
     pub create_time: String,
 }
 
-#[derive(Debug, EnumString, Display)]
+#[derive(Debug, EnumString, Display,Serialize,Deserialize)]
 pub enum ColNameEnum {
     #[strum(to_string = "NAME")]
     Name,
