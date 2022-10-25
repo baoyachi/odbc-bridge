@@ -36,20 +36,3 @@ pub struct PgTableItem {
     pub table_name: String,
     pub create_time: String,
 }
-
-impl Default for PgTableItem {
-    fn default() -> Self {
-        PgTableItem {
-            name: "".to_string(),
-            table_id: 0,
-            col_index: 0,
-            r#type: PgType::UNKNOWN,
-            length: 0,
-            scale: 0,
-            nullable: false,
-            default_val: None,
-            table_name: "".to_string(),
-            create_time: "".to_string(),
-        }
-    }
-}
