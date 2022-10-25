@@ -2,7 +2,7 @@ use crate::error::DmError;
 use std::str::FromStr;
 
 #[derive(Debug, Clone)]
-pub enum DataType {
+pub enum DmDateType {
     /// `NUMERIC 数据类型用于存储零、正负定点数。其中:精度是一个无符号整数，
     /// 定义 了总的数字数，精度范围是 1至38，标度定义了小数点右边的数字位数，定义时如省略 精度，则默认是 16。
     /// 如省略标度，则默认是 0。一个数的标度不应大于其精度。例如: NUMERIC(4,1)定义了小数点前面 3 位和小数点后面 1 位，共 4 位的数字，范围在 - 999.9 到 999.9。
@@ -85,13 +85,13 @@ pub enum DataType {
     Unknown,
 }
 
-impl Default for DataType {
+impl Default for DmDateType {
     fn default() -> Self {
         Self::Unknown
     }
 }
 
-impl FromStr for DataType {
+impl FromStr for DmDateType {
     type Err = DmError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
