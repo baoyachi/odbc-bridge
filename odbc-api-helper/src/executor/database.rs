@@ -52,6 +52,8 @@ pub struct Options {
     pub max_str_len: usize,
     pub max_binary_len: usize,
     // ignore uppercase/lowercase,default is false.
+    // false:all column name convert uppercase
+    // true: ignore，keep original column name
     pub case_sensitive: bool,
 }
 
