@@ -4,6 +4,47 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
 
+/// dameng database table item
+#[derive(Debug, Default,Serialize,Deserialize)]
+pub struct DmTableItem {
+    pub name: String,
+    pub table_id: usize,
+    pub col_index: usize,
+    pub r#type: DmDateType,
+    pub length: usize,
+    pub scale: usize,
+    pub nullable: bool,
+    pub default_val: Option<String>,
+    pub table_name: String,
+    pub create_time: String,
+}
+
+/// table describe
+#[derive(Debug, EnumString, Display,Serialize,Deserialize)]
+pub enum ColNameEnum {
+    #[strum(to_string = "NAME")]
+    Name,
+    #[strum(to_string = "ID")]
+    Id,
+    #[strum(to_string = "COLID")]
+    ColId,
+    #[strum(to_string = "TYPE$")]
+    Type,
+    #[strum(to_string = "LENGTH$")]
+    Length,
+    #[strum(to_string = "SCALE")]
+    Scale,
+    #[strum(to_string = "NULLABLE$")]
+    Nullable,
+    #[strum(to_string = "DEFVAL")]
+    DefaultVal,
+    #[strum(to_string = "TABLE_NAME")]
+    TableName,
+    #[strum(to_string = "CRTDATE")]
+    CreateTime,
+}
+
+
 /// The table data. Execute sql get table describe
 /// ```bash
 /// > SELECT A.NAME, A.ID, A.COLID, A.TYPE$, A.LENGTH$, A.SCALE, A.NULLABLE$, A.DEFVAL, B.NAME AS TABLE_NAME, B.CRTDATE FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ('Text_len','T2','test_type') AND B.SCHID IN (SELECT ID FROM SYSOBJECTS WHERE name = 'SYSDBA');
@@ -76,7 +117,7 @@ impl DmTableDesc {
                 match headers.get(&index).unwrap() {
                     ColNameEnum::Name => item.name = val,
                     ColNameEnum::Id => item.table_id = to_type!(val, usize)?,
-                    ColNameEnum::Colid => item.col_index = to_type!(val, usize)?,
+                    ColNameEnum::ColId => item.col_index = to_type!(val, usize)?,
                     ColNameEnum::Type => item.r#type = to_type!(val, DmDateType)?,
                     ColNameEnum::Length => item.length = to_type!(val, usize)?,
                     ColNameEnum::Scale => item.scale = to_type!(val, usize)?,
@@ -104,40 +145,3 @@ impl DmTableDesc {
     }
 }
 
-#[derive(Debug, Default,Serialize,Deserialize)]
-pub struct DmTableItem {
-    pub name: String,
-    pub table_id: usize,
-    pub col_index: usize,
-    pub r#type: DmDateType,
-    pub length: usize,
-    pub scale: usize,
-    pub nullable: bool,
-    pub default_val: Option<String>,
-    pub table_name: String,
-    pub create_time: String,
-}
-
-#[derive(Debug, EnumString, Display,Serialize,Deserialize)]
-pub enum ColNameEnum {
-    #[strum(to_string = "NAME")]
-    Name,
-    #[strum(to_string = "ID")]
-    Id,
-    #[strum(to_string = "COLID")]
-    Colid,
-    #[strum(to_string = "TYPE$")]
-    Type,
-    #[strum(to_string = "LENGTH$")]
-    Length,
-    #[strum(to_string = "SCALE")]
-    Scale,
-    #[strum(to_string = "NULLABLE$")]
-    Nullable,
-    #[strum(to_string = "DEFVAL")]
-    DefaultVal,
-    #[strum(to_string = "TABLE_NAME")]
-    TableName,
-    #[strum(to_string = "CRTDATE")]
-    CreateTime,
-}
