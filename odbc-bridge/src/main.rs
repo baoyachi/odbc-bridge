@@ -23,6 +23,8 @@ pub struct EnvConfig {
 }
 
 fn main() {
+    simple_log::quick!();
+
     let args = Args::parse();
     let json = fs::read_to_string(args.path).unwrap();
     let config: EnvConfig = serde_json::from_str(&json).unwrap();
