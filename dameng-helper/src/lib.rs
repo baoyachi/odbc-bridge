@@ -2,7 +2,6 @@
 #[macro_use]
 extern crate log;
 
-
 #[allow(non_camel_case_types)]
 pub mod data_type;
 pub mod error;
@@ -12,17 +11,36 @@ pub use data_type::*;
 use odbc_api::buffers::TextRowSet;
 use odbc_api::handles::StatementImpl;
 use odbc_api::{Cursor, CursorImpl, ResultSetMetadata};
+use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 
 pub trait DmAdapter {
-    fn get_table_sql(table_names: Vec<String>, db_name: &str) -> String;
+    fn get_table_sql(
+        table_names: Vec<String>,
+        db_name: &str,
+        case_sensitive: bool,
+    ) -> TableSqlDescribe;
     fn get_table_desc(
         self,
-        case_sensitive: bool,
+        describe: TableSqlDescribe,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)>;
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct TableSqlDescribe {
+    pub db_name: String,
+    pub describe_sql: String,
+    pub column_name_index: usize,
+    pub table_name_index: usize,
+    pub case_sensitive: bool,
+}
+
 impl DmAdapter for CursorImpl<StatementImpl<'_>> {
-    fn get_table_sql(table_names: Vec<String>, db_name: &str) -> String {
+    fn get_table_sql(
+        table_names: Vec<String>,
+        db_name: &str,
+        case_sensitive: bool,
+    ) -> TableSqlDescribe {
         // Use sql: `SELECT A.*, B.NAME AS TABLE_NAME FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ("X")`;
         // The X is table name;
         let tables = table_names
@@ -30,16 +48,33 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
             .map(|x| format!("'{}'", x))
             .collect::<Vec<_>>()
             .join(",");
-        format!(
+        let describe_sql = format!(
             r#"SELECT A.NAME, A.ID, A.COLID, A.TYPE$, A.LENGTH$, A.SCALE, A.NULLABLE$, A.DEFVAL, B.NAME AS TABLE_NAME, B.CRTDATE FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ({}) AND B.SCHID IN (SELECT ID FROM SYSOBJECTS WHERE name = '{}');"#,
             tables, db_name
-        )
+        );
+        debug!("describe_sql:{}", describe_sql);
+        TableSqlDescribe {
+            db_name: db_name.to_string(),
+            describe_sql,
+            column_name_index: 0,
+            table_name_index: 9,
+            case_sensitive,
+        }
     }
 
     fn get_table_desc(
         mut self,
-        case_sensitive: bool,
+        describe: TableSqlDescribe,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
+        let case_sensitive_fn = |row_index: usize, name: Cow<str>| -> String {
+            if !describe.case_sensitive && row_index == describe.column_name_index
+                || row_index == describe.table_name_index
+            {
+                return name.to_uppercase();
+            }
+            name.to_string()
+        };
+
         let headers = self.column_names()?.collect::<Result<Vec<String>, _>>()?;
 
         let mut buffers = TextRowSet::for_cursor(1024, &mut self, Some(4096))?;
@@ -50,16 +85,10 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
             for row_index in 0..batch.num_rows() {
                 let num_cols = batch.num_cols();
                 let row_data: Vec<String> = (0..num_cols)
-                    .map(|col_index| batch.at(col_index, row_index).unwrap_or(&[]))
+                    .map(|col_index| (col_index, batch.at(col_index, row_index).unwrap_or(&[])))
                     .into_iter()
-                    .map(String::from_utf8_lossy)
-                    .map(|x| {
-                        if case_sensitive {
-                            x.to_string()
-                        } else {
-                            x.to_uppercase()
-                        }
-                    })
+                    .map(|(col_index, x)| (col_index, String::from_utf8_lossy(x)))
+                    .map(|(col_index, x)| case_sensitive_fn(col_index, x))
                     .collect();
                 data.push(row_data);
             }
@@ -163,9 +192,9 @@ CREATE TABLE SYSDBA.T2 (
         assert_eq!(exec_result.rows_affected, 0);
 
         let create_table_t3 = r#"
-CREATE TABLE SYSDBA.T3 (
+CREATE TABLE SYSDBA.t3 (
 	C1 DATETIME WITH TIME ZONE,
-	C2 TIMESTAMP,
+	case_seNSItive TIMESTAMP,
 	c3 VARCHAR(100),
 	c4 NUMERIC,
 	not_null_test_len VARCHAR(100) DEFAULT 'default_value_hh' NOT NULL
@@ -176,7 +205,7 @@ CREATE TABLE SYSDBA.T3 (
         let create_table_t4 = r#"
 CREATE TABLE SYSDBA.T4 (
 	id INT NOT NULL,
-	user_id CHARACTER VARYING(8188) NOT NULL,
+	useR_ID CHARACTER VARYING(8188) NOT NULL,
 	user_name TEXT NOT NULL,
 	"role" TEXT NOT NULL,
 	"source" TEXT NOT NULL
@@ -587,11 +616,11 @@ CREATE TABLE SYSDBA.T4 (
                 "6",
                 "Y",
                 "",
-                "T3",
+                "t3",
                 "2022-10-24 17:28:26.308000"
             ],
             svec![
-                "C2",
+                "CASE_SENSITIVE",
                 "1058",
                 "1",
                 "TIMESTAMP",
@@ -599,7 +628,7 @@ CREATE TABLE SYSDBA.T4 (
                 "6",
                 "Y",
                 "",
-                "T3",
+                "t3",
                 "2022-10-24 17:28:26.308000"
             ],
             svec![
@@ -611,7 +640,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "Y",
                 "",
-                "T3",
+                "t3",
                 "2022-10-24 17:28:26.308000"
             ],
             svec![
