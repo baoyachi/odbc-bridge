@@ -225,10 +225,10 @@ CREATE TABLE SYSDBA.T4 (
 	"role" TEXT NOT NULL,
 	"source" TEXT NOT NULL
 );"#;
-        let table_desc_fn = |connection: OdbcDbConnection<'_>| {
-            let exec_result: ExecResult = connection.execute(create_table_t4).unwrap();
-            assert_eq!(exec_result.rows_affected, 0);
+        let exec_result: ExecResult = connection.execute(create_table_t4).unwrap();
+        assert_eq!(exec_result.rows_affected, 0);
 
+        let table_desc_fn = |connection: OdbcDbConnection<'_>| {
             //2. query table
             let mut table_desc = connection
                 .show_table(vec!["T2".to_string(), "T3".to_string(), "T4".to_string()])
