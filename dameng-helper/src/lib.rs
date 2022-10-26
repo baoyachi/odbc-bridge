@@ -51,6 +51,7 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
                     .into_iter()
                     .map(String::from_utf8_lossy)
                     .map(|x| {
+                        println!("column_name:{},case_sensitive:{}",x,case_sensitive);
                         if case_sensitive {
                             x.to_string()
                         } else {
