@@ -1,2 +1,2 @@
 [workspace]
-members = ["odbc-api-helper", "pg-helper", "dameng-helper"]
+members = ["odbc-api-helper", "pg-helper", "dameng-helper", "odbc-bridge"]
