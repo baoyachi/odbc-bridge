@@ -59,6 +59,7 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
                         }
                     })
                     .collect();
+                println!("row_index:{},row_data:{}",row_index,serde_json::to_string(&row_data).unwrap());
                 data.push(row_data);
             }
         }
