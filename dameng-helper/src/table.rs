@@ -150,7 +150,7 @@ mod tests {
     use crate::tests::mock_table_result;
 
     #[test]
-    fn test_dameng_table_desc() {
+    fn test_dameng_table_desc_convert() {
         let result = mock_table_result();
         let dm_table_desc = DmTableDesc::new(result.0, result.1).unwrap();
         println!("{}", serde_json::to_string(&dm_table_desc).unwrap());
