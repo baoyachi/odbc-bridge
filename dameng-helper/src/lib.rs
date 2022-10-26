@@ -121,9 +121,10 @@ mod tests {
 
     #[test]
     fn test_dameng_table_desc() {
+        let connection = get_dameng_conn();
+
         //1. create table
-        //2. query table
-        let create_table_sql = r#"
+        let create_table_t2 = r#"
 CREATE TABLE SYSDBA.T2 (
 	C1 DATETIME WITH TIME ZONE,
 	C2 TIMESTAMP,
@@ -154,12 +155,35 @@ CREATE TABLE SYSDBA.T2 (
 	not_null_test VARCHAR(100) DEFAULT 'default_value_hh' NOT NULL,
 	not_null_test_len VARCHAR(100) DEFAULT 'default_value_hh' NOT NULL
 );"#;
-        let connection = get_dameng_conn();
-
-        let exec_result: ExecResult = connection.execute(create_table_sql).unwrap();
+        let exec_result: ExecResult = connection.execute(create_table_t2).unwrap();
         assert_eq!(exec_result.rows_affected, 0);
 
-        let mut table_desc = connection.show_table(vec!["T2".to_string()]).unwrap();
+        let create_table_t3 = r#"
+CREATE TABLE SYSDBA.T3 (
+	C1 DATETIME WITH TIME ZONE,
+	C2 TIMESTAMP,
+	c3 VARCHAR(100),
+	c4 NUMERIC,
+	not_null_test_len VARCHAR(100) DEFAULT 'default_value_hh' NOT NULL
+);"#;
+        let exec_result: ExecResult = connection.execute(create_table_t3).unwrap();
+        assert_eq!(exec_result.rows_affected, 0);
+
+        let create_table_t4 = r#"
+CREATE TABLE SYSDBA.T4 (
+	id INT NOT NULL,
+	user_id CHARACTER VARYING(8188) NOT NULL,
+	user_name TEXT NOT NULL,
+	"role" TEXT NOT NULL,
+	"source" TEXT NOT NULL
+);"#;
+        let exec_result: ExecResult = connection.execute(create_table_t4).unwrap();
+        assert_eq!(exec_result.rows_affected, 0);
+
+        //2. query table
+        let mut table_desc = connection
+            .show_table(vec!["T2".to_string(), "T3".to_string(), "T4".to_string()])
+            .unwrap();
 
         let _: Vec<_> = table_desc
             .1

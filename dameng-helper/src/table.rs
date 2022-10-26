@@ -1,11 +1,11 @@
 use crate::DmDateType;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
-use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
 
 /// dameng database table item
-#[derive(Debug, Default,Serialize,Deserialize)]
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct DmTableItem {
     pub name: String,
     pub table_id: usize,
@@ -20,7 +20,7 @@ pub struct DmTableItem {
 }
 
 /// table describe
-#[derive(Debug, EnumString, Display,Serialize,Deserialize)]
+#[derive(Debug, EnumString, Display, Serialize, Deserialize)]
 pub enum ColNameEnum {
     #[strum(to_string = "NAME")]
     Name,
@@ -43,7 +43,6 @@ pub enum ColNameEnum {
     #[strum(to_string = "CRTDATE")]
     CreateTime,
 }
-
 
 /// The table data. Execute sql get table describe
 /// ```bash
@@ -84,7 +83,7 @@ pub enum ColNameEnum {
 /// data_text        |1195|    0|TEXT                          |2147483647|    0|Y        |                  |Text_len  |2022-10-08 02:48:41.901|
 /// ```
 ///
-#[derive(Debug,Serialize,Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct DmTableDesc {
     pub headers: BTreeMap<usize, ColNameEnum>,
     pub data: BTreeMap<String, Vec<DmTableItem>>,
@@ -145,3 +144,15 @@ impl DmTableDesc {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tests::mock_table_result;
+
+    #[test]
+    fn test_dameng_table_desc() {
+        let result = mock_table_result();
+        let dm_table_desc = DmTableDesc::new(result.0, result.1).unwrap();
+        println!("{}", serde_json::to_string(&dm_table_desc).unwrap());
+    }
+}
