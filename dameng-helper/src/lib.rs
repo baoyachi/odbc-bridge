@@ -54,7 +54,6 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
                     .into_iter()
                     .map(String::from_utf8_lossy)
                     .map(|x| {
-                        info!("column_name:{},case_sensitive:{}",x,case_sensitive);
                         if case_sensitive {
                             x.to_string()
                         } else {
@@ -62,7 +61,6 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
                         }
                     })
                     .collect();
-                info!("row_index:{},row_data:{:?}",row_index,row_data);
                 data.push(row_data);
             }
         }
@@ -191,11 +189,6 @@ CREATE TABLE SYSDBA.T4 (
             .show_table(vec!["T2".to_string(), "T3".to_string(), "T4".to_string()])
             .unwrap();
 
-        println!(
-            "replace before:{}",
-            serde_json::to_string(&table_desc).unwrap()
-        );
-
         let _: Vec<_> = table_desc
             .1
             .iter_mut()
@@ -215,11 +208,6 @@ CREATE TABLE SYSDBA.T4 (
                 x
             })
             .collect();
-
-        println!(
-            "replace after:{}",
-            serde_json::to_string(&table_desc).unwrap()
-        );
 
         assert_eq!(table_desc, mock_table_result())
     }
