@@ -263,7 +263,7 @@ CREATE TABLE SYSDBA.T4 (
         let mut connection = get_dameng_conn();
         connection.options.case_sensitive = true;
         let table_desc = table_desc_fn(connection);
-        info!("{}",serde_json::from_str(&table_desc).unwrap());
+        info!("{}",serde_json::to_string(&table_desc).unwrap());
         assert_eq!(table_desc, mock_table_result());
     }
 
