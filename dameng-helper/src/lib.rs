@@ -37,7 +37,7 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
         mut self,
         case_sensitive: bool,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
-        let headers = self.column_names()?.collect::<Result<Vec<_>, _>>()?;
+        let headers = self.column_names()?.collect::<Result<Vec<String>, _>>()?;
 
         let mut buffers = TextRowSet::for_cursor(1024, &mut self, Some(4096))?;
         let mut row_set_cursor = self.bind_buffer(&mut buffers)?;
@@ -46,7 +46,7 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
         while let Some(batch) = row_set_cursor.fetch()? {
             for row_index in 0..batch.num_rows() {
                 let num_cols = batch.num_cols();
-                let row_data: Vec<_> = (0..num_cols)
+                let row_data: Vec<String> = (0..num_cols)
                     .map(|col_index| batch.at(col_index, row_index).unwrap_or(&[]))
                     .into_iter()
                     .map(String::from_utf8_lossy)
@@ -185,6 +185,11 @@ CREATE TABLE SYSDBA.T4 (
             .show_table(vec!["T2".to_string(), "T3".to_string(), "T4".to_string()])
             .unwrap();
 
+        println!(
+            "replace before:{}",
+            serde_json::to_string(&table_desc).unwrap()
+        );
+
         let _: Vec<_> = table_desc
             .1
             .iter_mut()
@@ -205,7 +210,10 @@ CREATE TABLE SYSDBA.T4 (
             })
             .collect();
 
-        println!("{}", serde_json::to_string(&table_desc).unwrap());
+        println!(
+            "replace after:{}",
+            serde_json::to_string(&table_desc).unwrap()
+        );
 
         assert_eq!(table_desc, mock_table_result())
     }
@@ -575,6 +583,126 @@ CREATE TABLE SYSDBA.T4 (
                 "'default_value_hh'",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+            ],
+            svec![
+                "C1",
+                "1058",
+                "0",
+                "DATETIME WITH TIME ZONE",
+                "10",
+                "6",
+                "Y",
+                "",
+                "T3",
+                "2022-10-24 17:28:26.308000"
+            ],
+            svec![
+                "C2",
+                "1058",
+                "1",
+                "TIMESTAMP",
+                "8",
+                "6",
+                "Y",
+                "",
+                "T3",
+                "2022-10-24 17:28:26.308000"
+            ],
+            svec![
+                "C3",
+                "1058",
+                "2",
+                "VARCHAR",
+                "100",
+                "0",
+                "Y",
+                "",
+                "T3",
+                "2022-10-24 17:28:26.308000"
+            ],
+            svec![
+                "C4",
+                "1058",
+                "3",
+                "NUMERIC",
+                "0",
+                "0",
+                "Y",
+                "",
+                "T3",
+                "2022-10-24 17:28:26.308000"
+            ],
+            svec![
+                "NOT_NULL_TEST_LEN",
+                "1058",
+                "4",
+                "VARCHAR",
+                "100",
+                "0",
+                "N",
+                "'default_value_hh'",
+                "T3",
+                "2022-10-24 17:28:26.308000"
+            ],
+            svec![
+                "ID",
+                "1058",
+                "0",
+                "INT",
+                "4",
+                "0",
+                "N",
+                "",
+                "T4",
+                "2022-10-24 17:28:26.308000"
+            ],
+            svec![
+                "USER_ID",
+                "1058",
+                "1",
+                "CHARACTER VARYING",
+                "8188",
+                "0",
+                "N",
+                "",
+                "T4",
+                "2022-10-24 17:28:26.308000"
+            ],
+            svec![
+                "USER_NAME",
+                "1058",
+                "2",
+                "TEXT",
+                "2147483647",
+                "0",
+                "N",
+                "",
+                "T4",
+                "2022-10-24 17:28:26.308000"
+            ],
+            svec![
+                "role",
+                "1058",
+                "3",
+                "TEXT",
+                "2147483647",
+                "0",
+                "N",
+                "",
+                "T4",
+                "2022-10-24 17:28:26.308000"
+            ],
+            svec![
+                "source",
+                "1058",
+                "4",
+                "TEXT",
+                "2147483647",
+                "0",
+                "N",
+                "",
+                "T4",
+                "2022-10-24 17:28:26.308000"
             ],
         ];
         (headers, datas)
