@@ -230,12 +230,16 @@ impl<'a> OdbcDbConnection<'a> {
         let db = &self.options.database;
         match db {
             SupportDatabase::Dameng => {
-                let sql = CursorImpl::get_table_sql(table_names, &self.options.db_name);
+                let describe = CursorImpl::get_table_sql(
+                    table_names,
+                    &self.options.db_name,
+                    self.options.case_sensitive,
+                );
                 let cursor = self
                     .conn
-                    .execute(&sql, ())?
+                    .execute(&describe.describe_sql, ())?
                     .ok_or_else(|| anyhow!("query error"))?;
-                cursor.get_table_desc(self.options.case_sensitive)
+                cursor.get_table_desc(describe)
             }
             _ => {
                 bail!("current not support database:{:?}", db)
