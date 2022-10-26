@@ -675,7 +675,7 @@ CREATE TABLE SYSDBA.T4 (
                 "2022-10-24 17:28:26.308000"
             ],
             svec![
-                "role",
+                "ROLE",
                 "1058",
                 "3",
                 "TEXT",
@@ -687,7 +687,7 @@ CREATE TABLE SYSDBA.T4 (
                 "2022-10-24 17:28:26.308000"
             ],
             svec![
-                "source",
+                "SOURCE",
                 "1058",
                 "4",
                 "TEXT",
