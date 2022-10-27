@@ -7,4 +7,6 @@ pub enum DmError {
     OdbcError(Error),
     #[error("Failed to parse Dameng DateType with str:{0}")]
     DataTypeError(String),
+    #[error("Failed to Dameng DateType to_string error:{0}")]
+    ToStringError(String),
 }

@@ -130,3 +130,48 @@ impl FromStr for DmDateType {
         Ok(data_type)
     }
 }
+
+pub trait TryToString {
+    type Err;
+    fn try_to_string(&self) -> Result<String, Self::Err>;
+}
+
+impl TryToString for DataType {
+    type Err = DmError;
+
+    fn try_to_string(&self) -> Result<String, Self::Err> {
+        match self {
+            DataType::NUMERIC => Ok("NUMERIC".to_string()),
+            DataType::NUMBER => Ok("NUMBER".to_string()),
+            DataType::DECIMAL => Ok("DECIMAL".to_string()),
+            DataType::BIT => Ok("BIT".to_string()),
+            DataType::INTEGER => Ok("INT".to_string()),
+            DataType::BIGINT => Ok("BIGINT".to_string()),
+            DataType::TINYINT => Ok("TINYINT".to_string()),
+            DataType::BYTE => Ok("BYTE".to_string()),
+            DataType::SMALLINT => Ok("SMALLINT".to_string()),
+            DataType::BINARY => Ok("BINARY".to_string()),
+            DataType::VARBINARY => Ok("VARBINARY".to_string()),
+            DataType::REAL => Ok("REAL".to_string()),
+            DataType::FLOAT => Ok("FLOAT".to_string()),
+            DataType::DOUBLE => Ok("DOUBLE".to_string()),
+            DataType::DOUBLE_PRECISION => Ok("DOUBLE PRECISION".to_string()),
+            DataType::CHAR => Ok("CHAR".to_string()),
+            DataType::VARCHAR => Ok("VARCHAR".to_string()),
+            DataType::TEXT => Ok("TEXT".to_string()),
+            DataType::IMAGE => Ok("IMAGE".to_string()),
+            DataType::BLOB => Ok("BLOB".to_string()),
+            DataType::CLOB => Ok("CLOB".to_string()),
+            DataType::BFILE => Ok("BFILE".to_string()),
+            DataType::DATE => Ok("DATE".to_string()),
+            DataType::TIME => Ok("TIME".to_string()),
+            DataType::TIMESTAMP => Ok("TIMESTAMP".to_string()),
+            DataType::TIME_WITH_TIME_ZONE => Ok("TIME WITH TIME ZONE".to_string()),
+            DataType::TIMESTAMP_WITH_TIME_ZONE => Ok("DATETIME WITH TIME ZONE".to_string()),
+            DataType::TIMESTAMP_WITH_LOCAL_TIME_ZONE => {
+                Ok("TIMESTAMP WITH LOCAL TIME ZONE".to_string())
+            }
+            _ => return Err(DmError::DataTypeError(format!("{:?}", self))),
+        }
+    }
+}
