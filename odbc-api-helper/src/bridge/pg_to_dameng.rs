@@ -1,5 +1,5 @@
 use crate::TryConvert;
-use dameng_helper::table::DmDateType;
+use dameng_helper::DmDateType;
 use pg_helper::PgType;
 
 impl TryConvert<DmDateType> for &PgType {
