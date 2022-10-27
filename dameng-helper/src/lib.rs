@@ -232,7 +232,7 @@ CREATE TABLE SYSDBA.T4 (
         let exec_result: ExecResult = connection.execute(create_table_t4).unwrap();
         assert_eq!(exec_result.rows_affected, 0);
 
-        let cursor_impl = connection.conn.execute("SELECT A.NAME, A.ID, A.COLID, A.TYPE$, A.LENGTH$, A.SCALE, A.NULLABLE$, A.DEFVAL, B.NAME AS TABLE_NAME, B.CRTDATE FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ('T5') AND B.SCHID IN (SELECT ID FROM SYSOBJECTS WHERE name = 'SYSDBA';", ()).unwrap().unwrap();
+        let cursor_impl = connection.conn.execute("SELECT A.NAME, A.ID, A.COLID, A.TYPE$, A.LENGTH$, A.SCALE, A.NULLABLE$, A.DEFVAL, B.NAME AS TABLE_NAME, B.CRTDATE FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ('T4') AND B.SCHID IN (SELECT ID FROM SYSOBJECTS WHERE name = 'SYSDBA';", ()).unwrap().unwrap();
         use odbc_api_helper::print_all_tables;
         print_all_tables(cursor_impl).unwrap();
 
