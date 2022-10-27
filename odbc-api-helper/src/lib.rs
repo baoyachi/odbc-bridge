@@ -11,7 +11,7 @@ pub extern crate pg_helper;
 
 pub use odbc_api;
 
-mod bridge;
+pub mod bridge;
 pub mod debug;
 pub mod error;
 pub mod executor;
