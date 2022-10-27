@@ -2,11 +2,11 @@ use crate::TryConvert;
 use dameng_helper::table::DmDateType;
 use pg_helper::PgType;
 
-impl TryConvert<DmDateType> for PgType {
+impl TryConvert<DmDateType> for &PgType {
     type Error = anyhow::Error;
 
     fn try_convert(self) -> Result<DmDateType, Self::Error> {
-        match self {
+        match *self {
             PgType::NUMERIC => Ok(DmDateType::NUMERIC),
             PgType::BOOL => Ok(DmDateType::BIT),
             PgType::INT4 => Ok(DmDateType::INTEGER),
