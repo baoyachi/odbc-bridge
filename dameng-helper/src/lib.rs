@@ -151,7 +151,7 @@ mod tests {
             conn,
             Options::new("SYSDBA".to_string(), SupportDatabase::Dameng),
         )
-            .unwrap();
+        .unwrap();
         connection
     }
 
@@ -247,8 +247,10 @@ CREATE TABLE SYSDBA.T4 (
                     let crtdate = x.last().unwrap();
                     assert_eq!(true, validate_crtdate(crtdate));
                     let _ = std::mem::replace(&mut x[1], "1058".to_string());
-                    let _ =
-                        std::mem::replace(&mut x[len - 1], "2022-10-24 17:28:26.308000".to_string());
+                    let _ = std::mem::replace(
+                        &mut x[len - 1],
+                        "2022-10-24 17:28:26.308000".to_string(),
+                    );
                     x
                 })
                 .collect();
@@ -263,7 +265,7 @@ CREATE TABLE SYSDBA.T4 (
         let mut connection = get_dameng_conn();
         connection.options.case_sensitive = true;
         let table_desc = table_desc_fn(connection);
-        info!("{}",serde_json::to_string(&table_desc).unwrap());
+        info!("{}", serde_json::to_string(&table_desc).unwrap());
         assert_eq!(table_desc, mock_table_result());
     }
 
