@@ -8,6 +8,14 @@ use std::collections::HashMap;
 
 pub trait Print: Sized {
     fn print_all_tables(self) -> anyhow::Result<()> {
+        let p = self.table_string()?;
+        debug!("\n{}", p);
+        Ok(())
+    }
+
+    fn convert_table(self) -> anyhow::Result<Table>;
+
+    fn table_string(self) -> anyhow::Result<String> {
         let table = self.convert_table()?;
         let cfg = Config::default();
         let styles = HashMap::default();
@@ -16,11 +24,8 @@ pub trait Print: Sized {
         let p = table
             .draw_table(&cfg, &styles, alignments, usize::MAX)
             .ok_or(anyhow!("convert table to string error"))?;
-        debug!("\n{}", p);
-        Ok(())
+        Ok(p)
     }
-
-    fn convert_table(self) -> anyhow::Result<Table>;
 }
 
 const BATCH_SIZE: usize = 128;

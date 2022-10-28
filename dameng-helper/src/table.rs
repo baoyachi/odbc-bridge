@@ -1,4 +1,5 @@
 use crate::DmDateType;
+use odbc_common::{Print, StyledString, Table, TableTheme, TextStyle};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -17,6 +18,23 @@ pub struct DmTableItem {
     pub default_val: Option<String>,
     pub table_name: String,
     pub create_time: String,
+}
+
+impl DmTableItem {
+    fn to_vec(&self) -> Vec<String> {
+        let mut vec = vec![];
+        vec.push(self.name.to_string());
+        vec.push(self.table_id.to_string());
+        vec.push(self.col_index.to_string());
+        vec.push(format!("{:?}", self.r#type));
+        vec.push(self.length.to_string());
+        vec.push(self.scale.to_string());
+        vec.push(self.nullable.to_string());
+        vec.push(self.default_val.clone().unwrap_or_default());
+        vec.push(self.table_name.to_string());
+        vec.push(self.create_time.to_string());
+        vec
+    }
 }
 
 /// table describe
@@ -89,6 +107,34 @@ pub struct DmTableDesc {
     pub data: BTreeMap<String, Vec<DmTableItem>>,
 }
 
+impl Print for DmTableDesc {
+    fn convert_table(self) -> anyhow::Result<Table> {
+        let headers: Vec<StyledString> = self
+            .headers
+            .iter()
+            .map(|(_, x)| StyledString::new(x.to_string(), TextStyle::default_header()))
+            .collect();
+
+        let items: Vec<DmTableItem> = self.data.into_iter().fold(vec![], |mut vec, (_, mut x)| {
+            vec.append(&mut x);
+            vec
+        });
+        info!("{}", serde_json::to_string(&items).unwrap());
+
+        let rows = items
+            .iter()
+            .map(|x| {
+                x.to_vec()
+                    .into_iter()
+                    .map(|x| StyledString::new(x, TextStyle::basic_left()))
+                    .collect()
+            })
+            .collect::<Vec<Vec<StyledString>>>();
+
+        Ok(Table::new(headers, rows, TableTheme::rounded()))
+    }
+}
+
 impl DmTableDesc {
     pub fn new(headers: Vec<String>, data: Vec<Vec<String>>) -> anyhow::Result<Self> {
         macro_rules! to_type {
@@ -151,8 +197,56 @@ mod tests {
 
     #[test]
     fn test_dameng_table_desc_convert() {
+        simple_log::quick!();
         let result = mock_table_result();
         let dm_table_desc = DmTableDesc::new(result.0, result.1).unwrap();
-        println!("{}", serde_json::to_string(&dm_table_desc).unwrap());
+        let string = format!("\n{}", dm_table_desc.table_string().unwrap());
+
+        let expect = r#"
+╭───────────────────┬──────┬───────┬────────────────────────────────┬────────────┬───────┬───────────┬────────────────────┬────────────┬────────────────────────────╮
+│              NAME │  ID  │ COLID │             TYPE$              │  LENGTH$   │ SCALE │ NULLABLE$ │       DEFVAL       │ TABLE_NAME │          CRTDATE           │
+├───────────────────┼──────┼───────┼────────────────────────────────┼────────────┼───────┼───────────┼────────────────────┼────────────┼────────────────────────────┤
+│ C1                │ 1058 │ 0     │ TIMESTAMP_WITH_TIME_ZONE       │ 10         │ 6     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ C2                │ 1058 │ 1     │ TIMESTAMP                      │ 8          │ 6     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ C3                │ 1058 │ 2     │ VARCHAR                        │ 100        │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ C4                │ 1058 │ 3     │ NUMERIC                        │ 0          │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ C5                │ 1058 │ 4     │ TIME_WITH_TIME_ZONE            │ 7          │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ C6                │ 1058 │ 5     │ TIMESTAMP_WITH_LOCAL_TIME_ZONE │ 8          │ 4102  │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ NUMBER            │ 1058 │ 6     │ NUMBER                         │ 0          │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ DECIMAL           │ 1058 │ 7     │ DECIMAL                        │ 0          │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ BIT               │ 1058 │ 8     │ BIT                            │ 1          │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ INTEGER           │ 1058 │ 9     │ INTEGER                        │ 4          │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ XXX_PLS_INTEGER   │ 1058 │ 10    │ INTEGER                        │ 4          │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ BIGINT            │ 1058 │ 11    │ BIGINT                         │ 8          │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ TINYINT           │ 1058 │ 12    │ TINYINT                        │ 1          │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ BYTE              │ 1058 │ 13    │ BYTE                           │ 1          │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ SMALLINT          │ 1058 │ 14    │ SMALLINT                       │ 2          │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ BINARY            │ 1058 │ 15    │ BINARY                         │ 1          │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ VARBINARY         │ 1058 │ 16    │ VARBINARY                      │ 8188       │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ REAL              │ 1058 │ 17    │ REAL                           │ 4          │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ FLOAT             │ 1058 │ 18    │ FLOAT                          │ 8          │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ DOUBLE            │ 1058 │ 19    │ DOUBLE                         │ 8          │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ DOUBLE_PRECISION  │ 1058 │ 20    │ DOUBLE_PRECISION               │ 8          │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ CHAR              │ 1058 │ 21    │ CHAR                           │ 1          │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ VARCHAR           │ 1058 │ 22    │ VARCHAR                        │ 8188       │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ TEXT              │ 1058 │ 23    │ TEXT                           │ 2147483647 │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ IMAGE             │ 1058 │ 24    │ IMAGE                          │ 2147483647 │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ BLOB              │ 1058 │ 25    │ BLOB                           │ 2147483647 │ 0     │ true      │                    │ T2         │ 2022-10-24 17:28:26.308000 │
+│ NOT_NULL_TEST     │ 1058 │ 26    │ VARCHAR                        │ 100        │ 0     │ false     │ 'default_value_hh' │ T2         │ 2022-10-24 17:28:26.308000 │
+│ NOT_NULL_TEST_LEN │ 1058 │ 27    │ VARCHAR                        │ 100        │ 0     │ false     │ 'default_value_hh' │ T2         │ 2022-10-24 17:28:26.308000 │
+│ C1                │ 1058 │ 0     │ TIMESTAMP_WITH_TIME_ZONE       │ 10         │ 6     │ true      │                    │ T3         │ 2022-10-24 17:28:26.308000 │
+│ CASE_SENSITIVE    │ 1058 │ 1     │ TIMESTAMP                      │ 8          │ 6     │ true      │                    │ T3         │ 2022-10-24 17:28:26.308000 │
+│ C3                │ 1058 │ 2     │ VARCHAR                        │ 100        │ 0     │ true      │                    │ T3         │ 2022-10-24 17:28:26.308000 │
+│ C4                │ 1058 │ 3     │ NUMERIC                        │ 0          │ 0     │ true      │                    │ T3         │ 2022-10-24 17:28:26.308000 │
+│ NOT_NULL_TEST_LEN │ 1058 │ 4     │ VARCHAR                        │ 100        │ 0     │ false     │ 'default_value_hh' │ T3         │ 2022-10-24 17:28:26.308000 │
+│ ID                │ 1058 │ 0     │ INTEGER                        │ 4          │ 0     │ false     │                    │ T4         │ 2022-10-24 17:28:26.308000 │
+│ USER_ID           │ 1058 │ 1     │ VARCHAR                        │ 8188       │ 0     │ false     │                    │ T4         │ 2022-10-24 17:28:26.308000 │
+│ USER_NAME         │ 1058 │ 2     │ TEXT                           │ 2147483647 │ 0     │ false     │                    │ T4         │ 2022-10-24 17:28:26.308000 │
+│ ROLE              │ 1058 │ 3     │ TEXT                           │ 2147483647 │ 0     │ false     │                    │ T4         │ 2022-10-24 17:28:26.308000 │
+│ SOURCE            │ 1058 │ 4     │ TEXT                           │ 2147483647 │ 0     │ false     │                    │ T4         │ 2022-10-24 17:28:26.308000 │
+├───────────────────┼──────┼───────┼────────────────────────────────┼────────────┼───────┼───────────┼────────────────────┼────────────┼────────────────────────────┤
+│              NAME │  ID  │ COLID │             TYPE$              │  LENGTH$   │ SCALE │ NULLABLE$ │       DEFVAL       │ TABLE_NAME │          CRTDATE           │
+╰───────────────────┴──────┴───────┴────────────────────────────────┴────────────┴───────┴───────────┴────────────────────┴────────────┴────────────────────────────╯"#;
+        assert_eq!(string, expect);
     }
 }

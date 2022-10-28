@@ -106,6 +106,7 @@ mod tests {
     use odbc_api_helper::executor::execute::ExecResult;
     use odbc_api_helper::executor::table::TableDescResult;
     use odbc_api_helper::executor::SupportDatabase;
+    use odbc_common::Print;
     use once_cell::sync::Lazy;
     use regex::Regex;
 
@@ -163,7 +164,7 @@ mod tests {
             .execute(r#"SELECT * from SYSCOLUMNS limit 10;"#, ())
             .unwrap()
             .unwrap();
-        odbc_api_helper::print_all_tables(cursor).unwrap();
+        cursor.print_all_tables().unwrap();
     }
 
     #[test]
@@ -230,8 +231,7 @@ CREATE TABLE SYSDBA.T4 (
         assert_eq!(exec_result.rows_affected, 0);
 
         let cursor_impl = connection.conn.execute(r#"SELECT A.NAME, A.ID, A.COLID, A.TYPE$, A.LENGTH$, A.SCALE, A.NULLABLE$, A.DEFVAL, B.NAME AS TABLE_NAME, B.CRTDATE FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ('T4') AND B.SCHID IN (SELECT ID FROM SYSOBJECTS WHERE name = 'SYSDBA');"#, ()).unwrap().unwrap();
-        use odbc_api_helper::print_all_tables;
-        print_all_tables(cursor_impl).unwrap();
+        cursor_impl.print_all_tables().unwrap();
 
         //2. query table
         let mut table_desc = connection
