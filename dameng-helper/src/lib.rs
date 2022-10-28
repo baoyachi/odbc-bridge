@@ -32,6 +32,7 @@ pub struct TableSqlDescribe {
     pub describe_sql: String,
     pub column_name_index: usize,
     pub table_name_index: usize,
+    // See detail dameng database case_sensitive rule: <https://github.com/baoyachi/odbc-bridge/discussions/25>
     pub case_sensitive: bool,
 }
 
