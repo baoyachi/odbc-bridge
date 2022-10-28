@@ -52,7 +52,6 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
             r#"SELECT A.NAME, A.ID, A.COLID, A.TYPE$, A.LENGTH$, A.SCALE, A.NULLABLE$, A.DEFVAL, B.NAME AS TABLE_NAME, B.CRTDATE FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ({}) AND B.SCHID IN (SELECT ID FROM SYSOBJECTS WHERE name = '{}');"#,
             tables, db_name
         );
-        debug!("describe_sql:{}", describe_sql);
         TableSqlDescribe {
             db_name: db_name.to_string(),
             describe_sql,
