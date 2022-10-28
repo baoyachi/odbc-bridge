@@ -119,8 +119,6 @@ impl Print for DmTableDesc {
             vec.append(&mut x);
             vec
         });
-        info!("{}", serde_json::to_string(&items).unwrap());
-
         let rows = items
             .iter()
             .map(|x| {
