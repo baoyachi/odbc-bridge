@@ -15,8 +15,6 @@ license = "Apache-2.0"
 
 [dependencies]
 log = "0.4.17"
-nu-protocol = "=0.69.1"
-nu-table = "=0.69.1"
 odbc-api = "0.50.2"
 anyhow = "1.0.64"
 postgres-types = "0.2.4"
@@ -27,4 +25,5 @@ time = { version = "0.3.14", features = ["macros", "parsing"] }
 chrono = "0.4.22"
 async-trait = "0.1.57"
 dameng-helper = { path = "../dameng-helper", version = "0.2.1" }
+odbc-common = { path = "../odbc-common", version = "0.1.0" }
 pg-helper = { path = "../pg-helper", version = "0.2.0" }
