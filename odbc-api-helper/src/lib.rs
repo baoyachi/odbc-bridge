@@ -12,12 +12,11 @@ pub extern crate pg_helper;
 pub use odbc_api;
 
 pub mod bridge;
-pub mod debug;
 pub mod error;
 pub mod executor;
 pub mod extension;
 
-pub use debug::print_all_tables;
+pub use odbc_common::Print;
 
 pub trait Convert<T>: Sized {
     fn convert(self) -> T;

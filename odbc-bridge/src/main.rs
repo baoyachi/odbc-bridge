@@ -2,7 +2,7 @@ use clap::Parser;
 use odbc_api_helper::executor::database::{OdbcDbConnection, Options};
 use odbc_api_helper::executor::SupportDatabase;
 use odbc_api_helper::odbc_api::Environment;
-use odbc_api_helper::print_all_tables;
+use odbc_api_helper::Print;
 use serde::{Deserialize, Serialize};
 use std::fs;
 
@@ -40,5 +40,5 @@ fn main() {
     )
     .unwrap();
     let cursor_impl = connection.conn.execute(&config.sql, ()).unwrap().unwrap();
-    print_all_tables(cursor_impl).unwrap();
+    cursor_impl.print_all_tables().unwrap()
 }
