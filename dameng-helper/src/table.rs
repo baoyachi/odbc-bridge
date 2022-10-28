@@ -195,10 +195,10 @@ mod tests {
 
     #[test]
     fn test_dameng_table_desc_convert() {
-        simple_log::quick!();
         let result = mock_table_result();
         let dm_table_desc = DmTableDesc::new(result.0, result.1).unwrap();
         let string = format!("\n{}", dm_table_desc.table_string().unwrap());
+        info!("{}", string);
 
         let expect = r#"
 ╭───────────────────┬──────┬───────┬────────────────────────────────┬────────────┬───────┬───────────┬────────────────────┬────────────┬────────────────────────────╮

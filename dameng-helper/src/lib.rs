@@ -14,6 +14,12 @@ use odbc_api::{Cursor, CursorImpl, ResultSetMetadata};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
+#[cfg(test)]
+#[ctor::ctor]
+fn init_test() {
+    simple_log::quick!();
+}
+
 pub trait DmAdapter {
     fn get_table_sql(
         table_names: Vec<String>,
@@ -170,7 +176,6 @@ mod tests {
 
     #[test]
     fn test_dameng_table_desc() {
-        simple_log::quick!();
         let connection = get_dameng_conn();
 
         //1. create table
