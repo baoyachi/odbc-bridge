@@ -23,7 +23,7 @@ pub trait Print: Sized {
 
         let p = table
             .draw_table(&cfg, &styles, alignments, usize::MAX)
-            .ok_or(anyhow!("convert table to string error"))?;
+            .ok_or_else(|| anyhow!("convert table to string error"))?;
         Ok(p)
     }
 }
