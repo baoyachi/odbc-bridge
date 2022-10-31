@@ -4,6 +4,7 @@ use bytes::BytesMut;
 use odbc_api::buffers::{AnySlice, BufferDescription, BufferKind};
 use odbc_api::sys::{Date, Time, Timestamp, NULL_DATA};
 use odbc_api::DataType;
+use std::cmp::min;
 
 #[derive(Debug, Clone)]
 pub struct OdbcColumn {
@@ -40,19 +41,19 @@ impl TryConvert<BufferDescription> for (&OdbcColumn, &Options) {
         match description.kind {
             // TODO Notice: The kind of `BufferKind::Text` mix up varchar or text type
             // Need to distinguish between text type or varchar type
-            BufferKind::Text { .. } => {
+            BufferKind::Text { max_str_len } => {
                 description.kind = BufferKind::Text {
-                    max_str_len: option.max_str_len,
+                    max_str_len: min(max_str_len, option.max_str_len),
                 };
             }
-            BufferKind::WText { .. } => {
+            BufferKind::WText { max_str_len } => {
                 description.kind = BufferKind::WText {
-                    max_str_len: option.max_str_len,
+                    max_str_len: min(max_str_len, option.max_str_len),
                 };
             }
-            BufferKind::Binary { .. } => {
+            BufferKind::Binary { length } => {
                 description.kind = BufferKind::Binary {
-                    length: option.max_binary_len,
+                    length: min(length, option.max_binary_len),
                 }
             }
             _ => {}
