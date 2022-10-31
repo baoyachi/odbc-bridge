@@ -171,7 +171,7 @@ impl TryToString for DmDateType {
             DmDateType::TIMESTAMP_WITH_LOCAL_TIME_ZONE => {
                 Ok("TIMESTAMP WITH LOCAL TIME ZONE".to_string())
             }
-            _ => return Err(DmError::DataTypeError(format!("{:?}", self))),
+            _ => Err(DmError::DataTypeError(format!("{:?}", self))),
         }
     }
 }
