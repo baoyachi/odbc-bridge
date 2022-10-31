@@ -1,6 +1,6 @@
-use crate::executor::Print;
 use crate::extension::odbc::{OdbcColumn, OdbcColumnItem};
-use nu_table::{StyledString, Table, TableTheme, TextStyle};
+use odbc_common::print_table::Print;
+use odbc_common::{StyledString, Table, TableTheme, TextStyle};
 
 #[derive(Debug, Default)]
 pub struct QueryResult {
@@ -11,7 +11,7 @@ pub struct QueryResult {
 }
 
 impl Print for QueryResult {
-    fn covert_table(&self) -> Table {
+    fn convert_table(self) -> anyhow::Result<Table> {
         let headers: Vec<StyledString> = self
             .columns
             .iter()
@@ -28,6 +28,6 @@ impl Print for QueryResult {
                     .collect::<Vec<_>>()
             })
             .collect();
-        Table::new(headers, rows, TableTheme::rounded())
+        Ok(Table::new(headers, rows, TableTheme::rounded()))
     }
 }
