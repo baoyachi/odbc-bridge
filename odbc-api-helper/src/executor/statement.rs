@@ -1,13 +1,24 @@
+use crate::error::OdbcHelperError;
 use crate::TryConvert;
 use either::Either;
 use odbc_api::parameter::InputParameter;
 use std::fmt::Debug;
+
+pub(crate) type EitherBoxParams = Either<Vec<Box<dyn InputParameter>>, ()>;
 
 pub trait StatementInput {
     type Item: SqlValue;
 
     fn to_value(self) -> Either<Vec<Self::Item>, ()>;
     fn to_sql(&self) -> &str;
+
+    fn values(self) -> Result<EitherBoxParams, OdbcHelperError>
+    where
+        Self: Sized,
+    {
+        let params: EitherBoxParams = self.try_convert()?;
+        Ok(params)
+    }
 }
 
 pub trait SqlValue {
@@ -85,10 +96,33 @@ impl StatementInput for String {
     }
 }
 
-pub type EitherBoxParams = Either<Vec<Box<dyn InputParameter>>, ()>;
-
+/// TryConvert State `StatementInput` trait to `EitherBoxParams`
+/// # Example
+///
+/// ```rust
+/// use either::Either;
+/// use odbc_api::parameter::InputParameter;
+/// use odbc_api_helper::executor::statement::Statement;
+/// use odbc_api_helper::extension::pg::PgValueInput;
+/// use odbc_api_helper::TryConvert;
+///
+/// let statement = Statement::new("select * from empty where name=? and age=?",vec![
+///     PgValueInput::VARCHAR("foo".into()),
+///     PgValueInput::INT2(8)
+/// ]);
+///
+/// let left:Vec<Box<dyn InputParameter>> = statement.try_convert().unwrap().left().unwrap();
+/// assert_eq!(left.len(),2);
+///
+/// let statement = "select * from empty where name=? and age=?";
+///
+/// let right:() = statement.try_convert().unwrap().right().unwrap();///
+/// assert_eq!(right,());
+///
+/// ```
+///
 impl<T: StatementInput> TryConvert<EitherBoxParams> for T {
-    type Error = &'static str;
+    type Error = OdbcHelperError;
 
     fn try_convert(self) -> Result<EitherBoxParams, Self::Error> {
         match self.to_value() {
@@ -96,7 +130,11 @@ impl<T: StatementInput> TryConvert<EitherBoxParams> for T {
                 let params: Result<Vec<_>, Self::Error> = values
                     .into_iter()
                     .map(|v| v.to_value())
-                    .map(|x| x.left().ok_or("value not include empty tuple"))
+                    .map(|x| {
+                        x.left().ok_or_else(|| {
+                            OdbcHelperError::SqlParamsError("value not include empty tuple".into())
+                        })
+                    })
                     .collect();
                 Ok(Either::Left(params?))
             }
