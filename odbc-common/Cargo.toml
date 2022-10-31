@@ -1,0 +1,13 @@
+[package]
+name = "odbc-common"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+nu-protocol = "=0.69.1"
+nu-table = "=0.69.1"
+log = "0.4.17"
+odbc-api = "0.50.2"
+anyhow = "1.0.66"
