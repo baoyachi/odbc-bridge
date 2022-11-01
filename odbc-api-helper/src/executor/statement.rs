@@ -22,7 +22,7 @@ pub trait StatementInput {
 }
 
 pub trait SqlValue {
-    fn to_value(&self) -> Either<Box<dyn InputParameter>, ()>;
+    fn to_value(self) -> Either<Box<dyn InputParameter>, ()>;
 }
 
 #[derive(Debug)]
@@ -46,13 +46,13 @@ where
 }
 
 impl SqlValue for &str {
-    fn to_value(&self) -> Either<Box<dyn InputParameter>, ()> {
+    fn to_value(self) -> Either<Box<dyn InputParameter>, ()> {
         Either::Right(())
     }
 }
 
 impl SqlValue for String {
-    fn to_value(&self) -> Either<Box<dyn InputParameter>, ()> {
+    fn to_value(self) -> Either<Box<dyn InputParameter>, ()> {
         Either::Right(())
     }
 }
