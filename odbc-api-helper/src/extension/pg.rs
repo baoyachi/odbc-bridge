@@ -48,9 +48,9 @@ impl SqlValue for PgValueInput {
             Self::INT8(i) => left_param!(i.into_parameter()),
             Self::FLOAT4(i) => left_param!(i.into_parameter()),
             Self::FLOAT8(i) => left_param!(i.into_parameter()),
-            Self::CHAR(i) => left_param!(i.to_string().into_parameter()),
-            Self::VARCHAR(i) => left_param!(i.to_string().into_parameter()),
-            Self::TEXT(i) => left_param!(i.to_string().into_parameter()),
+            Self::CHAR(i) => left_param!(i.into_parameter()),
+            Self::VARCHAR(i) => left_param!(i.into_parameter()),
+            Self::TEXT(i) => left_param!(i.into_parameter()),
             Self::Bool(i) => left_param!(Bit::from_bool(i).into_parameter()),
             PgValueInput::Binary(bytes) => left_param!(bytes.into_parameter()),
         }
