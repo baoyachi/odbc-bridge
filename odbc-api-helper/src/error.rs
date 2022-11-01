@@ -1,5 +1,9 @@
-#[derive(Debug)]
-pub enum Error {
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum OdbcHelperError {
+    #[error("odbc error:`{0}`")]
     OdbcError(odbc_api::Error),
-    UnknownError(String),
+    #[error("invalid sql params `{0}` error")]
+    SqlParamsError(String),
 }
