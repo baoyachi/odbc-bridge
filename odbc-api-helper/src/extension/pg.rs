@@ -31,10 +31,11 @@ pub enum PgValueInput {
     VARCHAR(String),
     TEXT(String),
     Bool(bool),
+    Binary(Vec<u8>),
 }
 
 impl SqlValue for PgValueInput {
-    fn to_value(&self) -> Either<Box<dyn InputParameter>, ()> {
+    fn to_value(self) -> Either<Box<dyn InputParameter>, ()> {
         macro_rules! left_param {
             ($($arg:tt)*) => {{
                 Either::Left(Box::new($($arg)*))
@@ -50,7 +51,8 @@ impl SqlValue for PgValueInput {
             Self::CHAR(i) => left_param!(i.to_string().into_parameter()),
             Self::VARCHAR(i) => left_param!(i.to_string().into_parameter()),
             Self::TEXT(i) => left_param!(i.to_string().into_parameter()),
-            Self::Bool(i) => left_param!(Bit::from_bool(*i).into_parameter()),
+            Self::Bool(i) => left_param!(Bit::from_bool(i).into_parameter()),
+            PgValueInput::Binary(bytes) => left_param!(bytes.into_parameter()),
         }
     }
 }
