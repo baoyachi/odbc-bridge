@@ -63,7 +63,7 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
             db_name: db_name.to_string(),
             describe_sql,
             column_name_index: 0,
-            table_name_index: 9,
+            table_name_index: 8,
             case_sensitive,
         }
     }
