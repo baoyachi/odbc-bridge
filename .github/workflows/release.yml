@@ -14,6 +14,9 @@ jobs:
       max-parallel: 1
       matrix:
         package:
+          - name: odbc-common
+            registryName: odbc-common
+            path: odbc-common
           - name: pg-helper
             registryName: pg-helper
             path: pg-helper
@@ -23,6 +26,9 @@ jobs:
           - name: odbc-api-helper
             registryName: odbc-api-helper
             path: odbc-api-helper
+          - name: odbc-bridge
+            registryName: odbc-bridge
+            path: odbc-bridge
     steps:
       - uses: actions-rs/toolchain@v1
         with:
