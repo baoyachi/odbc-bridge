@@ -1,6 +1,6 @@
 [package]
 name = "dameng-helper"
-version = "0.2.1"
+version = "0.2.3"
 edition = "2021"
 authors = ["baoyachi <liaoymxsdl@gmail.com>"]
 description = "dameng database helper"
@@ -21,7 +21,7 @@ strum = { version = "0.24.1", features = ["derive"] }
 strum_macros = "0.24.3"
 serde = { version = "1.0.147", features = ["derive"] }
 log = "0.4.17"
-odbc-common = { path = "../odbc-common", version = "0.1.0" }
+odbc-common = { path = "../odbc-common", version = "0.2.3" }
 
 [dev-dependencies]
 ctor = "0.1.26"
