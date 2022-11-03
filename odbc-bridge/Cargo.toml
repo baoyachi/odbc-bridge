@@ -2,11 +2,19 @@
 name = "odbc-bridge"
 version = "0.1.0"
 edition = "2021"
+authors = ["baoyachi <liaoymxsdl@gmail.com>"]
+description = "odbc bridge"
+keywords = ["dameng", "odbc", "orm", "dameng-odbc", "dm"]
+readme = "README.md"
+repository = "https://github.com/baoyachi/odbc-bridge"
+documentation = "https://docs.rs/odbc-bridge"
+homepage = "https://github.com/baoyachi/odbc-bridge"
+license = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-odbc-api-helper = { path = "../odbc-api-helper" }
+odbc-api-helper = { path = "../odbc-api-helper", version="0.2.3"}
 serde = { version = "1.0.147", features = ["derive"] }
 serde_json = "1.0.87"
 clap = {version="4.0.18",features=["derive"]}
