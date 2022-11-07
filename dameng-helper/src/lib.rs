@@ -74,8 +74,9 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
         debug!("describe:{:?}", describe);
         let case_sensitive_fn = |row_index: usize, name: Cow<str>| -> String {
-            if !describe.case_sensitive && row_index == describe.column_name_index
-                || row_index == describe.table_name_index
+            if !describe.case_sensitive
+                && (row_index == describe.column_name_index
+                    || row_index == describe.table_name_index)
             {
                 return name.to_uppercase();
             }
