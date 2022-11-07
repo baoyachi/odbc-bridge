@@ -8,8 +8,8 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use either::Either;
 use odbc_api::buffers::BufferKind;
 use odbc_api::parameter::InputParameter;
+use odbc_api::Bit;
 use odbc_api::IntoParameter;
-use odbc_api::{Bit, DataType};
 use pg_helper::table::PgTableItem;
 use postgres_protocol::types as pp_type;
 use postgres_types::{Oid, Type as PgType};
@@ -549,6 +549,7 @@ impl TryConvert<Vec<PgColumn>> for (&Vec<OdbcColumn>, &Vec<PgTableItem>, &Option
 #[cfg(test)]
 mod tests {
     use super::*;
+    use odbc_api::DataType;
 
     #[test]
     fn test_query_result_convert() {
