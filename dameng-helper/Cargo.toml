@@ -1,6 +1,6 @@
 [package]
 name = "dameng-helper"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 authors = ["baoyachi <liaoymxsdl@gmail.com>"]
 description = "dameng database helper"
