@@ -8,8 +8,8 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use either::Either;
 use odbc_api::buffers::BufferKind;
 use odbc_api::parameter::InputParameter;
-use odbc_api::Bit;
 use odbc_api::IntoParameter;
+use odbc_api::{Bit, DataType};
 use pg_helper::table::PgTableItem;
 use postgres_protocol::types as pp_type;
 use postgres_types::{Oid, Type as PgType};
@@ -55,13 +55,13 @@ impl SqlValue for PgValueInput {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Eq, PartialEq)]
 pub struct PgQueryResult {
     pub columns: Vec<PgColumn>,
     pub data: Vec<Vec<PgColumnItem>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct PgColumn {
     pub name: String,
     pub pg_type: PgType,
@@ -69,9 +69,9 @@ pub struct PgColumn {
     pub nullable: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct PgColumnItem {
-    pub data: BytesMut,
+    pub data: Option<BytesMut>,
     pub pg_type: PgType,
     pub oid: Oid,
 }
@@ -79,7 +79,20 @@ pub struct PgColumnItem {
 impl PgColumnItem {
     fn new(data: BytesMut, pg_type: PgType) -> Self {
         let oid = pg_type.oid();
-        Self { data, pg_type, oid }
+        Self {
+            data: Some(data),
+            pg_type,
+            oid,
+        }
+    }
+
+    fn new_pg_type(pg_type: PgType) -> Self {
+        let oid = pg_type.oid();
+        Self {
+            data: None,
+            pg_type,
+            oid,
+        }
     }
 }
 
@@ -319,6 +332,7 @@ impl TryConvert<PgColumnItem> for (&OdbcColumnItem, &PgColumn) {
 
     fn try_convert(self) -> Result<PgColumnItem, Self::Error> {
         let odbc_data = self.0.value.clone();
+        let original_empty = odbc_data.is_none();
         let pg_column = self.1;
         let mut buf = BytesMut::new();
 
@@ -448,6 +462,11 @@ impl TryConvert<PgColumnItem> for (&OdbcColumnItem, &PgColumn) {
             }
             _ => {}
         };
+
+        if original_empty && buf.is_empty() {
+            return Ok(PgColumnItem::new_pg_type(pg_column.pg_type.clone()));
+        }
+
         Ok(PgColumnItem::new(buf, pg_column.pg_type.clone()))
     }
 }
@@ -524,5 +543,67 @@ impl TryConvert<Vec<PgColumn>> for (&Vec<OdbcColumn>, &Vec<PgTableItem>, &Option
         }
 
         Ok(result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_query_result_convert() {
+        let column = OdbcColumn {
+            name: "trace_id".to_string(),
+            data_type: DataType::Varchar { length: 255 },
+            nullable: true,
+        };
+
+        let query_result = QueryResult {
+            columns: vec![column],
+            data: vec![vec![OdbcColumnItem {
+                odbc_type: OdbcColumnType::Text,
+                value: None,
+            }]],
+        };
+
+        let pg_table_item = PgTableItem {
+            name: "trace_id".to_string(),
+            table_id: 0,
+            col_index: 0,
+            r#type: PgType::VARCHAR,
+            length: 255,
+            scale: 0,
+            nullable: true,
+            default_val: None,
+            table_name: "".to_string(),
+            create_time: "".to_string(),
+        };
+        let options = Options {
+            db_name: "test_db".to_string(),
+            database: SupportDatabase::Dameng,
+            max_batch_size: 1024,
+            max_str_len: 1024,
+            max_binary_len: 1024,
+            case_sensitive: false,
+        };
+        let result: PgQueryResult = (query_result, &vec![pg_table_item], &options)
+            .try_convert()
+            .unwrap();
+        assert_eq!(
+            result,
+            PgQueryResult {
+                columns: vec![PgColumn {
+                    name: "trace_id".to_string(),
+                    pg_type: PgType::VARCHAR,
+                    oid: 1043,
+                    nullable: true,
+                }],
+                data: vec![vec![PgColumnItem {
+                    data: None,
+                    pg_type: PgType::VARCHAR,
+                    oid: 1043,
+                }]],
+            }
+        );
     }
 }
