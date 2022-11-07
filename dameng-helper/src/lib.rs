@@ -71,6 +71,7 @@ mod tests {
     use odbc_api::Environment;
     use odbc_api_helper::executor::database::{OdbcDbConnection, Options};
     use odbc_api_helper::executor::SupportDatabase;
+    use odbc_api_helper::Print;
 
     #[test]
     fn test_dameng_table_desc() {
@@ -89,6 +90,6 @@ mod tests {
             .execute(r#"SELECT * from SYSCOLUMNS limit 10;"#, ())
             .unwrap()
             .unwrap();
-        odbc_api_helper::print_all_tables(cursor).unwrap();
+        cursor.print_all_tables().unwrap()
     }
 }
