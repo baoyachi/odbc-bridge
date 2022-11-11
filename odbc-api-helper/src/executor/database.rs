@@ -25,7 +25,11 @@ pub trait ConnectionTrait {
     where
         S: StatementInput;
 
-    fn show_table(&self, table_names: Vec<String>) -> anyhow::Result<TableDescResult>;
+    fn show_table(
+        &self,
+        db_name: &str,
+        table_names: Vec<String>,
+    ) -> anyhow::Result<TableDescResult>;
 
     // begin transaction
     fn begin(&self) -> anyhow::Result<()>;
@@ -46,7 +50,6 @@ pub struct OdbcDbConnection<'a> {
 
 #[derive(Debug)]
 pub struct Options {
-    pub db_name: String,
     pub database: SupportDatabase,
     pub max_batch_size: usize,
     pub max_str_len: usize,
@@ -65,9 +68,8 @@ impl Options {
     // Default Max binary length 1MB
     pub const MAX_BINARY_LEN: usize = 1024 * 1024;
 
-    pub fn new(db_name: String, database: SupportDatabase) -> Self {
+    pub fn new(database: SupportDatabase) -> Self {
         Options {
-            db_name,
             database,
             max_batch_size: Self::MAX_BATCH_SIZE,
             max_str_len: Self::MAX_STR_LEN,
@@ -118,8 +120,12 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
         }
     }
 
-    fn show_table(&self, table_names: Vec<String>) -> anyhow::Result<TableDescResult> {
-        self.table_desc(table_names)
+    fn show_table(
+        &self,
+        db_name: &str,
+        table_names: Vec<String>,
+    ) -> anyhow::Result<TableDescResult> {
+        self.table_desc(db_name, table_names)
     }
 
     fn begin(&self) -> anyhow::Result<()> {
@@ -226,15 +232,16 @@ impl<'a> OdbcDbConnection<'a> {
         Ok(query_result)
     }
 
-    fn table_desc(&self, table_names: Vec<String>) -> anyhow::Result<TableDescResult> {
+    fn table_desc(
+        &self,
+        db_name: &str,
+        table_names: Vec<String>,
+    ) -> anyhow::Result<TableDescResult> {
         let db = &self.options.database;
         match db {
             SupportDatabase::Dameng => {
-                let describe = CursorImpl::get_table_sql(
-                    table_names,
-                    &self.options.db_name,
-                    self.options.case_sensitive,
-                );
+                let describe =
+                    CursorImpl::get_table_sql(table_names, db_name, self.options.case_sensitive);
                 let cursor = self
                     .conn
                     .execute(&describe.describe_sql, ())?

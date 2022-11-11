@@ -582,7 +582,6 @@ mod tests {
             create_time: "".to_string(),
         };
         let options = Options {
-            db_name: "test_db".to_string(),
             database: SupportDatabase::Dameng,
             max_batch_size: 1024,
             max_str_len: 1024,

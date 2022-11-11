@@ -34,11 +34,7 @@ fn main() {
         .connect_with_connection_string(&config.connection)
         .unwrap();
 
-    let connection = OdbcDbConnection::new(
-        conn,
-        Options::new(config.database.to_string(), SupportDatabase::Dameng),
-    )
-    .unwrap();
+    let connection = OdbcDbConnection::new(conn, Options::new(SupportDatabase::Dameng)).unwrap();
     let cursor_impl = connection.conn.execute(&config.sql, ()).unwrap().unwrap();
     cursor_impl.print_all_tables().unwrap()
 }
