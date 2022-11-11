@@ -99,7 +99,7 @@ impl FromStr for DmDateType {
         let data_type = match &*s.to_uppercase() {
             "NUMERIC" => Self::NUMERIC,
             "NUMBER" => Self::NUMBER,
-            "DECIMAL" => Self::DECIMAL,
+            "DECIMAL" | "DEC" => Self::DECIMAL,
             "BIT" => Self::BIT,
             "INT" | "INTEGER" | "PLS_INTEGER" => Self::INTEGER,
             "BIGINT" => Self::BIGINT,
