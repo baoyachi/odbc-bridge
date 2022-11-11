@@ -156,11 +156,8 @@ mod tests {
             .connect_with_connection_string(DAMENG_CONNECTION)
             .unwrap();
 
-        let connection = OdbcDbConnection::new(
-            conn,
-            Options::new("SYSDBA".to_string(), SupportDatabase::Dameng),
-        )
-        .unwrap();
+        let connection =
+            OdbcDbConnection::new(conn, Options::new(SupportDatabase::Dameng)).unwrap();
         connection
     }
 
@@ -242,7 +239,10 @@ CREATE TABLE SYSDBA.T4 (
 
         //2. query table
         let mut table_desc = connection
-            .show_table(vec!["T2".to_string(), "T3".to_string(), "T4".to_string()])
+            .show_table(
+                "SYSDBA",
+                vec!["T2".to_string(), "T3".to_string(), "T4".to_string()],
+            )
             .unwrap();
 
         let _: Vec<_> = table_desc
