@@ -63,7 +63,7 @@ pub struct Options {
 impl Options {
     // Default Max Buffer Size 256
     pub const MAX_BATCH_SIZE: usize = 1 << 7;
-    // Default Max string length 1MB
+    // Default Max string length 1K
     pub const MAX_STR_LEN: usize = 1024;
     // Default Max binary length 1MB
     pub const MAX_BINARY_LEN: usize = 1024 * 1024;
