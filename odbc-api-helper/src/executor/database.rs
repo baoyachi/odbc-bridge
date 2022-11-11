@@ -84,7 +84,7 @@ impl Options {
         }
 
         if self.max_str_len == 0 {
-            // Add default size:1MB
+            // Add default size:1K
             self.max_str_len = Self::MAX_STR_LEN
         }
 
