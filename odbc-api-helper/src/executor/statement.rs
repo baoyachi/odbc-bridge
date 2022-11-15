@@ -107,8 +107,8 @@ impl StatementInput for String {
 /// use odbc_api_helper::TryConvert;
 ///
 /// let statement = Statement::new("select * from empty where name=? and age=?",vec![
-///     PgValueInput::VARCHAR("foo".into()),
-///     PgValueInput::INT2(8)
+///     PgValueInput::Varchar("foo".into()),
+///     PgValueInput::Int2(8)
 /// ]);
 ///
 /// let left:Vec<Box<dyn InputParameter>> = statement.try_convert().unwrap().left().unwrap();
