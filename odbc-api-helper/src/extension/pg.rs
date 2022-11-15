@@ -187,7 +187,10 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
                         },
                     )
                     .unwrap();
-                    let epoch = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+                    let epoch = NaiveDate::from_ymd_opt(2000, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(0, 0, 0)
+                        .unwrap();
                     let ms = (date_time - epoch).num_microseconds().unwrap();
                     pp_type::timestamp_to_sql(ms, &mut buf)
                 }),
@@ -394,7 +397,10 @@ impl TryConvert<PgColumnItem> for (&OdbcColumnItem, &PgColumn) {
                         },
                     )
                     .unwrap();
-                    let epoch = NaiveDate::from_ymd_opt(2000, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap();
+                    let epoch = NaiveDate::from_ymd_opt(2000, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(0, 0, 0)
+                        .unwrap();
                     let ms = (date_time - epoch).num_microseconds().unwrap();
                     pp_type::timestamp_to_sql(ms, &mut buf);
                 }
