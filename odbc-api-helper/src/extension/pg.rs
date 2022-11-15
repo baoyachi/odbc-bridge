@@ -231,11 +231,8 @@ impl TryConvert<PgColumnItem> for (&OdbcColumnItem, &PgColumn) {
         let value = match pg_column.pg_type {
             PgType::TEXT => odbc_data.map(|v| PgValueInput::Text(parse_to_string(v))),
             PgType::VARCHAR => odbc_data.map(|v| PgValueInput::Varchar(parse_to_string(v))),
-
             PgType::BYTEA => odbc_data.map(|v| PgValueInput::Bytea(v.to_vec())),
-
             PgType::DATE => odbc_data.map(|v| PgValueInput::Date(parse_to_date(v).unwrap())),
-
             PgType::TIME => odbc_data.map(|v| PgValueInput::Time(parse_to_time(v).unwrap())),
             PgType::TIMETZ => odbc_data.map(|v| PgValueInput::Timez(parse_to_time(v).unwrap())),
             PgType::TIMESTAMP => {
