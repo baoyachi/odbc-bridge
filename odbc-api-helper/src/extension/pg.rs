@@ -3,15 +3,13 @@ use crate::executor::query::QueryResult;
 use crate::executor::statement::SqlValue;
 use crate::extension::odbc::{OdbcColumn, OdbcColumnItem, OdbcColumnType};
 use crate::{Convert, TryConvert};
-use bytes::BytesMut;
-use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use either::Either;
 use odbc_api::buffers::BufferKind;
 use odbc_api::parameter::InputParameter;
 use odbc_api::Bit;
 use odbc_api::IntoParameter;
 use pg_helper::table::PgTableItem;
-use postgres_protocol::types as pp_type;
 use postgres_types::{Oid, Type as PgType};
 use std::collections::BTreeMap;
 
@@ -42,7 +40,6 @@ pub enum PgValueInput {
     Timestampz(NaiveDateTime),
     Date(NaiveDate),
     Numeric(i32),
-    Bit(i8),
 }
 
 impl SqlValue for PgValueInput {
@@ -67,7 +64,6 @@ impl SqlValue for PgValueInput {
             Self::Time(i) | Self::Timez(i) => left_param!(i.to_string().into_parameter()),
             Self::Timestamp(i) | Self::Timestampz(i) => left_param!(i.to_string().into_parameter()),
             Self::Date(i) => left_param!(i.to_string().into_parameter()),
-            Self::Bit(i) => left_param!(i.to_string().into_parameter()),
         }
     }
 }
@@ -256,7 +252,6 @@ impl TryConvert<PgColumnItem> for (&OdbcColumnItem, &PgColumn) {
             PgType::NUMERIC => odbc_data.map(|v| PgValueInput::Numeric(parse_to_int4(v).unwrap())),
             PgType::INT8 => odbc_data.map(|v| PgValueInput::Int8(parse_to_int8(v).unwrap())),
             PgType::BOOL => odbc_data.map(|v| PgValueInput::Bool(parse_to_bool(v).unwrap())),
-            PgType::BIT => odbc_data.map(|v| PgValueInput::Bit(parse_to_i8(v).unwrap())),
             _ => {
                 error!(
                     "There is no adaptation for this type, {}",
