@@ -156,7 +156,7 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
                 self.value.map(|x| {
                     let val = String::from_utf8_lossy(x.as_ref()).to_string();
                     let date = NaiveDate::parse_from_str(val.as_str(), "%Y-%m-%d").unwrap();
-                    let days = (date - NaiveDate::from_ymd(2000, 1, 1)).num_days();
+                    let days = (date - NaiveDate::from_ymd_opt(2000, 1, 1).unwrap()).num_days();
                     if days > i64::from(i32::max_value()) || days < i64::from(i32::min_value()) {
                         panic!("value too large to transmit");
                     }
@@ -168,7 +168,7 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
                 self.value.map(|x| {
                     let val = String::from_utf8_lossy(x.as_ref()).to_string();
                     let time = NaiveTime::parse_from_str(val.as_str(), "%H:%M:%S%.f").unwrap();
-                    let delta = (time - NaiveTime::from_hms(0, 0, 0))
+                    let delta = (time - NaiveTime::from_hms_opt(0, 0, 0).unwrap())
                         .num_microseconds()
                         .unwrap();
                     pp_type::time_to_sql(delta, &mut buf)
@@ -187,7 +187,10 @@ impl Convert<PgColumnItem> for OdbcColumnItem {
                         },
                     )
                     .unwrap();
-                    let epoch = NaiveDate::from_ymd(2000, 1, 1).and_hms(0, 0, 0);
+                    let epoch = NaiveDate::from_ymd_opt(2000, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(0, 0, 0)
+                        .unwrap();
                     let ms = (date_time - epoch).num_microseconds().unwrap();
                     pp_type::timestamp_to_sql(ms, &mut buf)
                 }),
@@ -355,7 +358,7 @@ impl TryConvert<PgColumnItem> for (&OdbcColumnItem, &PgColumn) {
                 if let Some(x) = odbc_data {
                     let val = String::from_utf8_lossy(x.as_ref()).to_string();
                     let date = NaiveDate::parse_from_str(val.as_str(), "%Y-%m-%d").unwrap();
-                    let days = (date - NaiveDate::from_ymd(2000, 1, 1)).num_days();
+                    let days = (date - NaiveDate::from_ymd_opt(2000, 1, 1).unwrap()).num_days();
                     if days > i64::from(i32::max_value()) || days < i64::from(i32::min_value()) {
                         panic!("value too large to transmit");
                     }
@@ -375,7 +378,7 @@ impl TryConvert<PgColumnItem> for (&OdbcColumnItem, &PgColumn) {
                         },
                     )
                     .unwrap();
-                    let delta = (time - NaiveTime::from_hms(0, 0, 0))
+                    let delta = (time - NaiveTime::from_hms_opt(0, 0, 0).unwrap())
                         .num_microseconds()
                         .unwrap();
                     pp_type::time_to_sql(delta, &mut buf);
@@ -394,7 +397,10 @@ impl TryConvert<PgColumnItem> for (&OdbcColumnItem, &PgColumn) {
                         },
                     )
                     .unwrap();
-                    let epoch = NaiveDate::from_ymd(2000, 1, 1).and_hms(0, 0, 0);
+                    let epoch = NaiveDate::from_ymd_opt(2000, 1, 1)
+                        .unwrap()
+                        .and_hms_opt(0, 0, 0)
+                        .unwrap();
                     let ms = (date_time - epoch).num_microseconds().unwrap();
                     pp_type::timestamp_to_sql(ms, &mut buf);
                 }
