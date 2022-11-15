@@ -111,8 +111,8 @@ impl Print for DmTableDesc {
     fn convert_table(self) -> anyhow::Result<Table> {
         let headers: Vec<StyledString> = self
             .headers
-            .iter()
-            .map(|(_, x)| StyledString::new(x.to_string(), TextStyle::default_header()))
+            .values()
+            .map(|x| StyledString::new(x.to_string(), TextStyle::default_header()))
             .collect();
 
         let items: Vec<DmTableItem> = self.data.into_iter().fold(vec![], |mut vec, (_, mut x)| {
