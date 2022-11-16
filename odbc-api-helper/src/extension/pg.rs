@@ -3,7 +3,6 @@ use crate::executor::query::QueryResult;
 use crate::executor::statement::SqlValue;
 use crate::extension::odbc::{OdbcColumn, OdbcColumnItem, OdbcColumnType};
 use crate::{Convert, TryConvert};
-use bytes::BytesMut;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use either::Either;
 use odbc_api::buffers::BufferKind;
@@ -11,27 +10,37 @@ use odbc_api::parameter::InputParameter;
 use odbc_api::Bit;
 use odbc_api::IntoParameter;
 use pg_helper::table::PgTableItem;
-use postgres_protocol::types as pp_type;
 use postgres_types::{Oid, Type as PgType};
 use std::collections::BTreeMap;
 
 use crate::executor::table::TableDescResult;
 use crate::executor::SupportDatabase;
+use crate::extension::util::{
+    parse_to_bool, parse_to_data_time, parse_to_date, parse_to_float4, parse_to_float8,
+    parse_to_i8, parse_to_int2, parse_to_int4, parse_to_int8, parse_to_string, parse_to_time,
+};
 use dameng_helper::table::DmTableDesc;
 use pg_helper::table::PgTableDesc;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum PgValueInput {
-    INT2(i16),
-    INT4(i32),
-    INT8(i64),
-    FLOAT4(f32),
-    FLOAT8(f64),
-    CHAR(String),
-    VARCHAR(String),
-    TEXT(String),
+    Int2(i16),
+    Int4(i32),
+    Int8(i64),
+    Float4(f32),
+    Float8(f64),
+    Char(i8),
+    Varchar(String),
+    Text(String),
     Bool(bool),
-    Binary(Vec<u8>),
+    Bytea(Vec<u8>),
+    Time(NaiveTime),
+    Timez(NaiveTime),
+    Timestamp(NaiveDateTime),
+    Timestampz(NaiveDateTime),
+    Date(NaiveDate),
+    Numeric(i32),
+    Name(String),
 }
 
 impl SqlValue for PgValueInput {
@@ -43,21 +52,23 @@ impl SqlValue for PgValueInput {
         }
 
         match self {
-            Self::INT2(i) => left_param!(i.into_parameter()),
-            Self::INT4(i) => left_param!(i.into_parameter()),
-            Self::INT8(i) => left_param!(i.into_parameter()),
-            Self::FLOAT4(i) => left_param!(i.into_parameter()),
-            Self::FLOAT8(i) => left_param!(i.into_parameter()),
-            Self::CHAR(i) => left_param!(i.into_parameter()),
-            Self::VARCHAR(i) => left_param!(i.into_parameter()),
-            Self::TEXT(i) => left_param!(i.into_parameter()),
+            Self::Int2(i) => left_param!(i.into_parameter()),
+            Self::Int4(i) | Self::Numeric(i) => left_param!(i.into_parameter()),
+            Self::Int8(i) => left_param!(i.into_parameter()),
+            Self::Float4(i) => left_param!(i.into_parameter()),
+            Self::Float8(i) => left_param!(i.into_parameter()),
+            Self::Char(i) => left_param!(i.into_parameter()),
+            Self::Varchar(i) | Self::Text(i) | Self::Name(i) => left_param!(i.into_parameter()),
             Self::Bool(i) => left_param!(Bit::from_bool(i).into_parameter()),
-            PgValueInput::Binary(bytes) => left_param!(bytes.into_parameter()),
+            Self::Bytea(bytes) => left_param!(bytes.into_parameter()),
+            Self::Time(i) | Self::Timez(i) => left_param!(i.to_string().into_parameter()),
+            Self::Timestamp(i) | Self::Timestampz(i) => left_param!(i.to_string().into_parameter()),
+            Self::Date(i) => left_param!(i.to_string().into_parameter()),
         }
     }
 }
 
-#[derive(Debug, Default, Eq, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct PgQueryResult {
     pub columns: Vec<PgColumn>,
     pub data: Vec<Vec<PgColumnItem>>,
@@ -71,30 +82,14 @@ pub struct PgColumn {
     pub nullable: bool,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct PgColumnItem {
-    pub data: Option<BytesMut>,
-    pub pg_type: PgType,
-    pub oid: Oid,
+    pub data: Option<PgValueInput>,
 }
 
 impl PgColumnItem {
-    fn new(data: BytesMut, pg_type: PgType) -> Self {
-        let oid = pg_type.oid();
-        Self {
-            data: Some(data),
-            pg_type,
-            oid,
-        }
-    }
-
-    fn new_pg_type(pg_type: PgType) -> Self {
-        let oid = pg_type.oid();
-        Self {
-            data: None,
-            pg_type,
-            oid,
-        }
+    fn new(data: Option<PgValueInput>) -> Self {
+        Self { data }
     }
 }
 
@@ -132,149 +127,43 @@ impl Convert<PgColumn> for OdbcColumn {
 /// referring to link:`<https://docs.rs/postgres-protocol/0.6.4/postgres_protocol/types/index.html#functions>`
 impl Convert<PgColumnItem> for OdbcColumnItem {
     fn convert(self) -> PgColumnItem {
-        let mut buf = BytesMut::new();
-
-        let (_, t) = match self.odbc_type {
-            OdbcColumnType::Text => (
-                self.value
-                    .map(|x| pp_type::text_to_sql(&String::from_utf8_lossy(x.as_ref()), &mut buf)),
-                PgType::TEXT,
-            ),
-
-            OdbcColumnType::WText => (
-                self.value
-                    .map(|x| pp_type::text_to_sql(&String::from_utf8_lossy(x.as_ref()), &mut buf)),
-                PgType::TEXT,
-            ),
-
-            OdbcColumnType::Binary => (
-                self.value
-                    .map(|x| pp_type::bytea_to_sql(x.as_ref(), &mut buf)),
-                PgType::BYTEA,
-            ),
-            OdbcColumnType::Date => (
-                self.value.map(|x| {
-                    let val = String::from_utf8_lossy(x.as_ref()).to_string();
-                    let date = NaiveDate::parse_from_str(val.as_str(), "%Y-%m-%d").unwrap();
-                    let days = (date - NaiveDate::from_ymd_opt(2000, 1, 1).unwrap()).num_days();
-                    if days > i64::from(i32::max_value()) || days < i64::from(i32::min_value()) {
-                        panic!("value too large to transmit");
-                    }
-                    pp_type::date_to_sql(days as i32, &mut buf)
-                }),
-                PgType::DATE,
-            ),
-            OdbcColumnType::Time => (
-                self.value.map(|x| {
-                    let val = String::from_utf8_lossy(x.as_ref()).to_string();
-                    let time = NaiveTime::parse_from_str(val.as_str(), "%H:%M:%S%.f").unwrap();
-                    let delta = (time - NaiveTime::from_hms_opt(0, 0, 0).unwrap())
-                        .num_microseconds()
-                        .unwrap();
-                    pp_type::time_to_sql(delta, &mut buf)
-                }),
-                PgType::TIME,
-            ),
-            OdbcColumnType::Timestamp => (
-                self.value.map(|x| {
-                    let val = String::from_utf8_lossy(x.as_ref()).to_string();
-                    let date_time = NaiveDateTime::parse_from_str(
-                        val.as_str(),
-                        if val.contains('+') {
-                            "%Y-%m-%d %H:%M:%S%.f%#z"
-                        } else {
-                            "%Y-%m-%d %H:%M:%S%.f"
-                        },
-                    )
-                    .unwrap();
-                    let epoch = NaiveDate::from_ymd_opt(2000, 1, 1)
-                        .unwrap()
-                        .and_hms_opt(0, 0, 0)
-                        .unwrap();
-                    let ms = (date_time - epoch).num_microseconds().unwrap();
-                    pp_type::timestamp_to_sql(ms, &mut buf)
-                }),
-                PgType::TIMESTAMP,
-            ),
-            OdbcColumnType::F64 => (
-                self.value.map(|x| {
-                    let val = &String::from_utf8_lossy(x.as_ref())
-                        .to_string()
-                        .parse::<f64>()
-                        .unwrap();
-                    pp_type::float8_to_sql(*val, &mut buf)
-                }),
-                PgType::FLOAT8,
-            ),
-            OdbcColumnType::F32 => (
-                self.value.map(|x| {
-                    let val = &String::from_utf8_lossy(x.as_ref())
-                        .to_string()
-                        .parse::<f32>()
-                        .unwrap();
-                    pp_type::float4_to_sql(*val, &mut buf)
-                }),
-                PgType::FLOAT4,
-            ),
-            OdbcColumnType::I8 => (
-                self.value.map(|x| {
-                    let val = &String::from_utf8_lossy(x.as_ref())
-                        .to_string()
-                        .parse::<i8>()
-                        .unwrap();
-                    pp_type::char_to_sql(*val, &mut buf)
-                }),
-                PgType::CHAR,
-            ),
-            OdbcColumnType::I16 => (
-                self.value.map(|x| {
-                    let val = &String::from_utf8_lossy(x.as_ref())
-                        .to_string()
-                        .parse::<i16>()
-                        .unwrap();
-                    pp_type::int2_to_sql(*val, &mut buf)
-                }),
-                PgType::INT2,
-            ),
-            OdbcColumnType::I32 => (
-                self.value.map(|x| {
-                    let val = &String::from_utf8_lossy(x.as_ref())
-                        .to_string()
-                        .parse::<i32>()
-                        .unwrap();
-                    pp_type::int4_to_sql(*val, &mut buf)
-                }),
-                PgType::INT4,
-            ),
-            OdbcColumnType::I64 => (
-                self.value.map(|x| {
-                    let val = &String::from_utf8_lossy(x.as_ref())
-                        .to_string()
-                        .parse::<i64>()
-                        .unwrap();
-                    pp_type::int8_to_sql(*val, &mut buf)
-                }),
-                PgType::INT8,
-            ),
-            OdbcColumnType::U8 => (
-                self.value.map(|x| {
-                    let val = x.as_ref().first().unwrap();
-                    pp_type::char_to_sql(*val as i8, &mut buf)
-                }),
-                PgType::CHAR,
-            ),
-            OdbcColumnType::Bit => (
-                self.value.map(|x| {
-                    let val = &String::from_utf8_lossy(x.as_ref())
-                        .to_string()
-                        .parse::<bool>()
-                        .unwrap();
-                    pp_type::bool_to_sql(*val, &mut buf)
-                }),
-                PgType::BOOL,
-            ),
+        let value = match self.odbc_type {
+            OdbcColumnType::Text | OdbcColumnType::WText => {
+                self.value.map(|x| PgValueInput::Text(parse_to_string(x)))
+            }
+            OdbcColumnType::Binary => self.value.map(|x| PgValueInput::Bytea(x.to_vec())),
+            OdbcColumnType::Date => self
+                .value
+                .map(|x| PgValueInput::Date(parse_to_date(x).unwrap())),
+            OdbcColumnType::Time => self
+                .value
+                .map(|x| PgValueInput::Time(parse_to_time(x).unwrap())),
+            OdbcColumnType::Timestamp => self
+                .value
+                .map(|x| PgValueInput::Timestamp(parse_to_data_time(x).unwrap())),
+            OdbcColumnType::F64 => self
+                .value
+                .map(|x| PgValueInput::Float8(parse_to_float8(x).unwrap())),
+            OdbcColumnType::F32 => self
+                .value
+                .map(|x| PgValueInput::Float4(parse_to_float4(x).unwrap())),
+            OdbcColumnType::I8 | OdbcColumnType::U8 => self
+                .value
+                .map(|x| PgValueInput::Char(parse_to_i8(x).unwrap())),
+            OdbcColumnType::I16 => self
+                .value
+                .map(|x| PgValueInput::Int2(parse_to_int2(x).unwrap())),
+            OdbcColumnType::I32 => self
+                .value
+                .map(|x| PgValueInput::Int4(parse_to_int4(x).unwrap())),
+            OdbcColumnType::I64 => self
+                .value
+                .map(|x| PgValueInput::Int8(parse_to_int8(x).unwrap())),
+            OdbcColumnType::Bit => self
+                .value
+                .map(|x| PgValueInput::Bool(parse_to_bool(x).unwrap())),
         };
-        PgColumnItem::new(buf, t)
+        PgColumnItem::new(value)
     }
 }
 
@@ -337,145 +226,39 @@ impl TryConvert<PgColumnItem> for (&OdbcColumnItem, &PgColumn) {
 
     fn try_convert(self) -> Result<PgColumnItem, Self::Error> {
         let odbc_data = self.0.value.clone();
-        let original_empty = odbc_data.is_none();
         let pg_column = self.1;
-        let mut buf = BytesMut::new();
 
-        match pg_column.pg_type {
-            PgType::TEXT | PgType::VARCHAR => {
-                if let Some(x) = odbc_data {
-                    pp_type::text_to_sql(&String::from_utf8_lossy(x.as_ref()), &mut buf);
-                }
+        let value = match pg_column.pg_type {
+            PgType::TEXT => odbc_data.map(|v| PgValueInput::Text(parse_to_string(v))),
+            PgType::VARCHAR => odbc_data.map(|v| PgValueInput::Varchar(parse_to_string(v))),
+            PgType::BYTEA => odbc_data.map(|v| PgValueInput::Bytea(v.to_vec())),
+            PgType::DATE => odbc_data.map(|v| PgValueInput::Date(parse_to_date(v).unwrap())),
+            PgType::TIME => odbc_data.map(|v| PgValueInput::Time(parse_to_time(v).unwrap())),
+            PgType::TIMETZ => odbc_data.map(|v| PgValueInput::Timez(parse_to_time(v).unwrap())),
+            PgType::TIMESTAMP => {
+                odbc_data.map(|v| PgValueInput::Timestamp(parse_to_data_time(v).unwrap()))
             }
-
-            PgType::BYTEA => {
-                if let Some(x) = odbc_data {
-                    pp_type::bytea_to_sql(x.as_ref(), &mut buf);
-                }
+            PgType::TIMESTAMPTZ => {
+                odbc_data.map(|v| PgValueInput::Timestampz(parse_to_data_time(v).unwrap()))
             }
-
-            PgType::DATE => {
-                if let Some(x) = odbc_data {
-                    let val = String::from_utf8_lossy(x.as_ref()).to_string();
-                    let date = NaiveDate::parse_from_str(val.as_str(), "%Y-%m-%d").unwrap();
-                    let days = (date - NaiveDate::from_ymd_opt(2000, 1, 1).unwrap()).num_days();
-                    if days > i64::from(i32::max_value()) || days < i64::from(i32::min_value()) {
-                        panic!("value too large to transmit");
-                    }
-                    pp_type::date_to_sql(days as i32, &mut buf);
-                }
+            PgType::FLOAT8 => odbc_data.map(|v| PgValueInput::Float8(parse_to_float8(v).unwrap())),
+            PgType::FLOAT4 => odbc_data.map(|v| PgValueInput::Float4(parse_to_float4(v).unwrap())),
+            PgType::CHAR => odbc_data.map(|v| PgValueInput::Char(parse_to_i8(v).unwrap())),
+            PgType::INT2 => odbc_data.map(|v| PgValueInput::Int2(parse_to_int2(v).unwrap())),
+            PgType::INT4 => odbc_data.map(|v| PgValueInput::Int4(parse_to_int4(v).unwrap())),
+            PgType::NUMERIC => odbc_data.map(|v| PgValueInput::Numeric(parse_to_int4(v).unwrap())),
+            PgType::INT8 => odbc_data.map(|v| PgValueInput::Int8(parse_to_int8(v).unwrap())),
+            PgType::BOOL => odbc_data.map(|v| PgValueInput::Bool(parse_to_bool(v).unwrap())),
+            _ => {
+                error!(
+                    "There is no adaptation for this type, {}",
+                    pg_column.pg_type
+                );
+                odbc_data.map(|v| PgValueInput::Text(parse_to_string(v)))
             }
-
-            PgType::TIME | PgType::TIMETZ => {
-                if let Some(x) = odbc_data {
-                    let val = String::from_utf8_lossy(x.as_ref()).to_string();
-                    let time = NaiveTime::parse_from_str(
-                        val.as_str(),
-                        if val.contains('+') {
-                            "%H:%M:%S%.f%#z"
-                        } else {
-                            "%H:%M:%S%.f"
-                        },
-                    )
-                    .unwrap();
-                    let delta = (time - NaiveTime::from_hms_opt(0, 0, 0).unwrap())
-                        .num_microseconds()
-                        .unwrap();
-                    pp_type::time_to_sql(delta, &mut buf);
-                }
-            }
-
-            PgType::TIMESTAMP | PgType::TIMESTAMPTZ => {
-                if let Some(x) = odbc_data {
-                    let val = String::from_utf8_lossy(x.as_ref()).to_string();
-                    let date_time = NaiveDateTime::parse_from_str(
-                        val.as_str(),
-                        if val.contains('+') {
-                            "%Y-%m-%d %H:%M:%S%.f%#z"
-                        } else {
-                            "%Y-%m-%d %H:%M:%S%.f"
-                        },
-                    )
-                    .unwrap();
-                    let epoch = NaiveDate::from_ymd_opt(2000, 1, 1)
-                        .unwrap()
-                        .and_hms_opt(0, 0, 0)
-                        .unwrap();
-                    let ms = (date_time - epoch).num_microseconds().unwrap();
-                    pp_type::timestamp_to_sql(ms, &mut buf);
-                }
-            }
-            PgType::FLOAT8 => {
-                if let Some(x) = odbc_data {
-                    let val = &String::from_utf8_lossy(x.as_ref())
-                        .to_string()
-                        .parse::<f64>()
-                        .unwrap();
-                    pp_type::float8_to_sql(*val, &mut buf);
-                }
-            }
-            PgType::FLOAT4 => {
-                if let Some(x) = odbc_data {
-                    let val = &String::from_utf8_lossy(x.as_ref())
-                        .to_string()
-                        .parse::<f32>()
-                        .unwrap();
-                    pp_type::float4_to_sql(*val, &mut buf);
-                }
-            }
-            PgType::CHAR => {
-                if let Some(x) = odbc_data {
-                    let val = &String::from_utf8_lossy(x.as_ref())
-                        .to_string()
-                        .parse::<i8>()
-                        .unwrap();
-                    pp_type::char_to_sql(*val, &mut buf);
-                }
-            }
-            PgType::INT2 => {
-                if let Some(x) = odbc_data {
-                    let val = &String::from_utf8_lossy(x.as_ref())
-                        .to_string()
-                        .parse::<i16>()
-                        .unwrap();
-                    pp_type::int2_to_sql(*val, &mut buf);
-                }
-            }
-            PgType::INT4 | PgType::NUMERIC => {
-                if let Some(x) = odbc_data {
-                    let val = &String::from_utf8_lossy(x.as_ref())
-                        .to_string()
-                        .parse::<i32>()
-                        .unwrap();
-                    pp_type::int4_to_sql(*val, &mut buf);
-                }
-            }
-            PgType::INT8 => {
-                if let Some(x) = odbc_data {
-                    let val = &String::from_utf8_lossy(x.as_ref())
-                        .to_string()
-                        .parse::<i64>()
-                        .unwrap();
-                    pp_type::int8_to_sql(*val, &mut buf);
-                }
-            }
-            PgType::BOOL | PgType::BIT => {
-                if let Some(x) = odbc_data {
-                    let val = &String::from_utf8_lossy(x.as_ref())
-                        .to_string()
-                        .parse::<bool>()
-                        .unwrap();
-                    pp_type::bool_to_sql(*val, &mut buf);
-                }
-            }
-            _ => {}
         };
 
-        if original_empty && buf.is_empty() {
-            return Ok(PgColumnItem::new_pg_type(pg_column.pg_type.clone()));
-        }
-
-        Ok(PgColumnItem::new(buf, pg_column.pg_type.clone()))
+        Ok(PgColumnItem::new(value))
     }
 }
 
@@ -487,10 +270,7 @@ impl TryConvert<PgQueryResult> for (QueryResult, &Vec<PgTableItem>, &Options) {
         let pg_all_columns = self.1;
         let options = self.2;
         let mut result = PgQueryResult::default();
-        if let Ok(cols) = <(&Vec<OdbcColumn>, &Vec<PgTableItem>, &Options) as TryConvert<
-            Vec<PgColumn>,
-        >>::try_convert((&res.columns, pg_all_columns, options))
-        {
+        if let Ok(cols) = (&res.columns, pg_all_columns, options).try_convert() {
             let cols: Vec<PgColumn> = cols;
             result.columns = cols;
 
@@ -505,12 +285,7 @@ impl TryConvert<PgQueryResult> for (QueryResult, &Vec<PgTableItem>, &Options) {
                     let mut row: Vec<PgColumnItem> = vec![];
                     for (index, odbc_item) in v.iter().enumerate() {
                         if let Some(col) = result.columns.get(index) {
-                            row.push(
-                                <(&OdbcColumnItem, &PgColumn) as TryConvert<PgColumnItem>>::try_convert((
-                                    odbc_item, col,
-                                ))
-                                    .unwrap(),
-                            );
+                            row.push((odbc_item, col).try_convert().unwrap());
                         }
                     }
                     result.data.push(row);
@@ -606,11 +381,7 @@ mod tests {
                     oid: 1043,
                     nullable: true,
                 }],
-                data: vec![vec![PgColumnItem {
-                    data: None,
-                    pg_type: PgType::VARCHAR,
-                    oid: 1043,
-                }]],
+                data: vec![vec![PgColumnItem { data: None }]],
             }
         );
     }
