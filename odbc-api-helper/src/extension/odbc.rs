@@ -596,7 +596,7 @@ impl TryConvert<(time::Date, time::Time)> for Timestamp {
             minute: self.minute,
             second: self.second,
         };
-        let nanosecond = self.fraction as u32;
+        let nanosecond = self.fraction;
         let time = (time, nanosecond).try_convert()?;
         Ok((date, time))
     }

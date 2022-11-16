@@ -6,4 +6,6 @@ pub enum OdbcHelperError {
     OdbcError(odbc_api::Error),
     #[error("invalid sql params `{0}` error")]
     SqlParamsError(String),
+    #[error("Failed to convert byte to {0}")]
+    TypeConversionError(String),
 }
