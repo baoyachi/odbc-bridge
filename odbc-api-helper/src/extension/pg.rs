@@ -22,16 +22,16 @@ use pg_helper::table::PgTableDesc;
 
 #[derive(Debug)]
 pub enum PgValueInput {
-    INT2(i16),
-    INT4(i32),
-    INT8(i64),
-    FLOAT4(f32),
-    FLOAT8(f64),
-    CHAR(String),
-    VARCHAR(String),
-    TEXT(String),
-    Bool(bool),
-    Binary(Vec<u8>),
+    INT2(Option<i16>),
+    INT4(Option<i32>),
+    INT8(Option<i64>),
+    FLOAT4(Option<f32>),
+    FLOAT8(Option<f64>),
+    CHAR(Option<String>),
+    VARCHAR(Option<String>),
+    TEXT(Option<String>),
+    Bool(Option<bool>),
+    Binary(Option<Vec<u8>>),
 }
 
 impl SqlValue for PgValueInput {
@@ -41,7 +41,6 @@ impl SqlValue for PgValueInput {
                 Either::Left(Box::new($($arg)*))
             }};
         }
-
         match self {
             Self::INT2(i) => left_param!(i.into_parameter()),
             Self::INT4(i) => left_param!(i.into_parameter()),
@@ -51,8 +50,8 @@ impl SqlValue for PgValueInput {
             Self::CHAR(i) => left_param!(i.into_parameter()),
             Self::VARCHAR(i) => left_param!(i.into_parameter()),
             Self::TEXT(i) => left_param!(i.into_parameter()),
-            Self::Bool(i) => left_param!(Bit::from_bool(i).into_parameter()),
-            PgValueInput::Binary(bytes) => left_param!(bytes.into_parameter()),
+            Self::Bool(i) => left_param!(i.map(Bit::from_bool).into_parameter()),
+            Self::Binary(i) => left_param!(i.into_parameter()),
         }
     }
 }
