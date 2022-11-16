@@ -40,6 +40,7 @@ pub enum PgValueInput {
     Timestampz(NaiveDateTime),
     Date(NaiveDate),
     Numeric(i32),
+    Name(String),
 }
 
 impl SqlValue for PgValueInput {
@@ -57,8 +58,7 @@ impl SqlValue for PgValueInput {
             Self::Float4(i) => left_param!(i.into_parameter()),
             Self::Float8(i) => left_param!(i.into_parameter()),
             Self::Char(i) => left_param!(i.into_parameter()),
-            Self::Varchar(i) => left_param!(i.into_parameter()),
-            Self::Text(i) => left_param!(i.into_parameter()),
+            Self::Varchar(i) | Self::Text(i) | Self::Name(i) => left_param!(i.into_parameter()),
             Self::Bool(i) => left_param!(Bit::from_bool(i).into_parameter()),
             Self::Bytea(bytes) => left_param!(bytes.into_parameter()),
             Self::Time(i) | Self::Timez(i) => left_param!(i.to_string().into_parameter()),
