@@ -15,6 +15,7 @@ pub struct DmTableItem {
     pub length: usize,
     pub scale: usize,
     pub nullable: bool,
+    pub is_identity: bool,
     pub default_val: Option<String>,
     pub table_name: String,
     pub create_time: String,
@@ -54,6 +55,8 @@ pub enum ColNameEnum {
     Scale,
     #[strum(to_string = "NULLABLE$")]
     Nullable,
+    #[strum(to_string = "IS_IDENTITY")]
+    IsIdentity,
     #[strum(to_string = "DEFVAL")]
     DefaultVal,
     #[strum(to_string = "TABLE_NAME")]
@@ -172,6 +175,11 @@ impl DmTableDesc {
                     ColNameEnum::DefaultVal => item.default_val = Some(val),
                     ColNameEnum::TableName => item.table_name = val,
                     ColNameEnum::CreateTime => item.create_time = val,
+                    ColNameEnum::IsIdentity => match val.as_ref() {
+                        "1" => item.is_identity = true,
+                        "0" => item.is_identity = false,
+                        _ => {}
+                    },
                 }
             }
 
