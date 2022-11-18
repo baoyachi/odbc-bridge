@@ -358,6 +358,7 @@ mod tests {
             length: 255,
             scale: 0,
             nullable: true,
+            is_identity: false,
             default_val: None,
             table_name: "".to_string(),
             create_time: "".to_string(),
