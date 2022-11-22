@@ -32,6 +32,7 @@ pub struct PgTableItem {
     // column date type scale
     pub scale: usize,
     pub nullable: bool,
+    pub is_identity: bool,
     pub default_val: Option<String>,
     pub table_name: String,
     pub create_time: String,

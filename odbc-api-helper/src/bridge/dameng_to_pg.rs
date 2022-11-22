@@ -56,6 +56,7 @@ impl TryConvert<PgTableItem> for DmTableItem {
             length: self.length,
             scale: self.scale,
             nullable: self.nullable,
+            is_identity: self.is_identity,
             default_val: self.default_val,
             table_name: self.table_name,
             create_time: self.create_time,
