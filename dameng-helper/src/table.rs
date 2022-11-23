@@ -19,6 +19,7 @@ pub struct DmTableItem {
     pub default_val: Option<String>,
     pub table_name: String,
     pub create_time: String,
+    pub subtype: Option<String>,
 }
 
 impl DmTableItem {
@@ -34,6 +35,7 @@ impl DmTableItem {
         vec.push(self.default_val.clone().unwrap_or_default());
         vec.push(self.table_name.to_string());
         vec.push(self.create_time.to_string());
+        vec.push(self.subtype.clone().unwrap_or_default());
         vec
     }
 }
@@ -63,6 +65,8 @@ pub enum ColNameEnum {
     TableName,
     #[strum(to_string = "CRTDATE")]
     CreateTime,
+    #[strum(to_string = "SUBTYPE$")]
+    SubType,
 }
 
 /// The table data. Execute sql get table describe
@@ -180,6 +184,7 @@ impl DmTableDesc {
                         "0" => item.is_identity = false,
                         _ => {}
                     },
+                    ColNameEnum::SubType => item.subtype = Some(val),
                 }
             }
 
