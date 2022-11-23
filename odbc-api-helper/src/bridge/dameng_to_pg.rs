@@ -60,6 +60,7 @@ impl TryConvert<PgTableItem> for DmTableItem {
             default_val: self.default_val,
             table_name: self.table_name,
             create_time: self.create_time,
+            subtype: self.subtype,
         })
     }
 }

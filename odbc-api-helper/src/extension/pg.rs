@@ -362,6 +362,7 @@ mod tests {
             default_val: None,
             table_name: "".to_string(),
             create_time: "".to_string(),
+            subtype: None,
         };
         let options = Options {
             database: SupportDatabase::Dameng,
