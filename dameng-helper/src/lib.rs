@@ -255,11 +255,11 @@ CREATE TABLE SYSDBA.T4 (
                 assert!(id > 0);
 
                 // validate CRTDATE value:2022-10-24 17:28:26.308000
-                let crtdate = x.last().unwrap();
+                let crtdate = &x[len - 1];
                 assert!(validate_crtdate(crtdate));
                 let _ = std::mem::replace(&mut x[1], "1058".to_string());
                 let _ =
-                    std::mem::replace(&mut x[len - 1], "2022-10-24 17:28:26.308000".to_string());
+                    std::mem::replace(&mut x[len - 2], "2022-10-24 17:28:26.308000".to_string());
                 x
             })
             .collect();
