@@ -24,23 +24,23 @@ use pg_helper::table::PgTableDesc;
 
 #[derive(Debug, PartialEq)]
 pub enum PgValueInput {
-    Int2(i16),
-    Int4(i32),
-    Int8(i64),
-    Float4(f32),
-    Float8(f64),
-    Char(i8),
-    Varchar(String),
-    Text(String),
-    Bool(bool),
-    Bytea(Vec<u8>),
-    Time(NaiveTime),
-    Timez(NaiveTime),
-    Timestamp(NaiveDateTime),
-    Timestampz(NaiveDateTime),
-    Date(NaiveDate),
-    Numeric(i32),
-    Name(String),
+    Int2(Option<i16>),
+    Int4(Option<i32>),
+    Int8(Option<i64>),
+    Float4(Option<f32>),
+    Float8(Option<f64>),
+    Char(Option<i8>),
+    Varchar(Option<String>),
+    Text(Option<String>),
+    Bool(Option<bool>),
+    Bytea(Option<Vec<u8>>),
+    Time(Option<NaiveTime>),
+    Timez(Option<NaiveTime>),
+    Timestamp(Option<NaiveDateTime>),
+    Timestampz(Option<NaiveDateTime>),
+    Date(Option<NaiveDate>),
+    Numeric(Option<i32>),
+    Name(Option<String>),
 }
 
 impl SqlValue for PgValueInput {
@@ -59,11 +59,15 @@ impl SqlValue for PgValueInput {
             Self::Float8(i) => left_param!(i.into_parameter()),
             Self::Char(i) => left_param!(i.into_parameter()),
             Self::Varchar(i) | Self::Text(i) | Self::Name(i) => left_param!(i.into_parameter()),
-            Self::Bool(i) => left_param!(Bit::from_bool(i).into_parameter()),
+            Self::Bool(i) => left_param!(i.map(Bit::from_bool).into_parameter()),
             Self::Bytea(bytes) => left_param!(bytes.into_parameter()),
-            Self::Time(i) | Self::Timez(i) => left_param!(i.to_string().into_parameter()),
-            Self::Timestamp(i) | Self::Timestampz(i) => left_param!(i.to_string().into_parameter()),
-            Self::Date(i) => left_param!(i.to_string().into_parameter()),
+            Self::Time(i) | Self::Timez(i) => {
+                left_param!(i.map(|i| i.to_string()).into_parameter())
+            }
+            Self::Timestamp(i) | Self::Timestampz(i) => {
+                left_param!(i.map(|i| i.to_string()).into_parameter())
+            }
+            Self::Date(i) => left_param!(i.map(|i| i.to_string()).into_parameter()),
         }
     }
 }
@@ -128,40 +132,40 @@ impl Convert<PgColumn> for OdbcColumn {
 impl Convert<PgColumnItem> for OdbcColumnItem {
     fn convert(self) -> PgColumnItem {
         let value = match self.odbc_type {
-            OdbcColumnType::Text | OdbcColumnType::WText => {
-                self.value.map(|x| PgValueInput::Text(parse_to_string(x)))
-            }
-            OdbcColumnType::Binary => self.value.map(|x| PgValueInput::Bytea(x.to_vec())),
+            OdbcColumnType::Text | OdbcColumnType::WText => self
+                .value
+                .map(|x| PgValueInput::Text(Some(parse_to_string(x)))),
+            OdbcColumnType::Binary => self.value.map(|x| PgValueInput::Bytea(Some(x.to_vec()))),
             OdbcColumnType::Date => self
                 .value
-                .map(|x| PgValueInput::Date(parse_to_date(x).unwrap())),
+                .map(|x| PgValueInput::Date(Some(parse_to_date(x).unwrap()))),
             OdbcColumnType::Time => self
                 .value
-                .map(|x| PgValueInput::Time(parse_to_time(x).unwrap())),
+                .map(|x| PgValueInput::Time(Some(parse_to_time(x).unwrap()))),
             OdbcColumnType::Timestamp => self
                 .value
-                .map(|x| PgValueInput::Timestamp(parse_to_data_time(x).unwrap())),
+                .map(|x| PgValueInput::Timestamp(Some(parse_to_data_time(x).unwrap()))),
             OdbcColumnType::F64 => self
                 .value
-                .map(|x| PgValueInput::Float8(parse_to_float8(x).unwrap())),
+                .map(|x| PgValueInput::Float8(Some(parse_to_float8(x).unwrap()))),
             OdbcColumnType::F32 => self
                 .value
-                .map(|x| PgValueInput::Float4(parse_to_float4(x).unwrap())),
+                .map(|x| PgValueInput::Float4(Some(parse_to_float4(x).unwrap()))),
             OdbcColumnType::I8 | OdbcColumnType::U8 => self
                 .value
-                .map(|x| PgValueInput::Char(parse_to_i8(x).unwrap())),
+                .map(|x| PgValueInput::Char(Some(parse_to_i8(x).unwrap()))),
             OdbcColumnType::I16 => self
                 .value
-                .map(|x| PgValueInput::Int2(parse_to_int2(x).unwrap())),
+                .map(|x| PgValueInput::Int2(Some(parse_to_int2(x).unwrap()))),
             OdbcColumnType::I32 => self
                 .value
-                .map(|x| PgValueInput::Int4(parse_to_int4(x).unwrap())),
+                .map(|x| PgValueInput::Int4(Some(parse_to_int4(x).unwrap()))),
             OdbcColumnType::I64 => self
                 .value
-                .map(|x| PgValueInput::Int8(parse_to_int8(x).unwrap())),
+                .map(|x| PgValueInput::Int8(Some(parse_to_int8(x).unwrap()))),
             OdbcColumnType::Bit => self
                 .value
-                .map(|x| PgValueInput::Bool(parse_to_bool(x).unwrap())),
+                .map(|x| PgValueInput::Bool(Some(parse_to_bool(x).unwrap()))),
         };
         PgColumnItem::new(value)
     }
@@ -229,32 +233,40 @@ impl TryConvert<PgColumnItem> for (&OdbcColumnItem, &PgColumn) {
         let pg_column = self.1;
 
         let value = match pg_column.pg_type {
-            PgType::TEXT => odbc_data.map(|v| PgValueInput::Text(parse_to_string(v))),
-            PgType::VARCHAR => odbc_data.map(|v| PgValueInput::Varchar(parse_to_string(v))),
-            PgType::BYTEA => odbc_data.map(|v| PgValueInput::Bytea(v.to_vec())),
-            PgType::DATE => odbc_data.map(|v| PgValueInput::Date(parse_to_date(v).unwrap())),
-            PgType::TIME => odbc_data.map(|v| PgValueInput::Time(parse_to_time(v).unwrap())),
-            PgType::TIMETZ => odbc_data.map(|v| PgValueInput::Timez(parse_to_time(v).unwrap())),
+            PgType::TEXT => odbc_data.map(|v| PgValueInput::Text(Some(parse_to_string(v)))),
+            PgType::VARCHAR => odbc_data.map(|v| PgValueInput::Varchar(Some(parse_to_string(v)))),
+            PgType::BYTEA => odbc_data.map(|v| PgValueInput::Bytea(Some(v.to_vec()))),
+            PgType::DATE => odbc_data.map(|v| PgValueInput::Date(Some(parse_to_date(v).unwrap()))),
+            PgType::TIME => odbc_data.map(|v| PgValueInput::Time(Some(parse_to_time(v).unwrap()))),
+            PgType::TIMETZ => {
+                odbc_data.map(|v| PgValueInput::Timez(Some(parse_to_time(v).unwrap())))
+            }
             PgType::TIMESTAMP => {
-                odbc_data.map(|v| PgValueInput::Timestamp(parse_to_data_time(v).unwrap()))
+                odbc_data.map(|v| PgValueInput::Timestamp(Some(parse_to_data_time(v).unwrap())))
             }
             PgType::TIMESTAMPTZ => {
-                odbc_data.map(|v| PgValueInput::Timestampz(parse_to_data_time(v).unwrap()))
+                odbc_data.map(|v| PgValueInput::Timestampz(Some(parse_to_data_time(v).unwrap())))
             }
-            PgType::FLOAT8 => odbc_data.map(|v| PgValueInput::Float8(parse_to_float8(v).unwrap())),
-            PgType::FLOAT4 => odbc_data.map(|v| PgValueInput::Float4(parse_to_float4(v).unwrap())),
-            PgType::CHAR => odbc_data.map(|v| PgValueInput::Char(parse_to_i8(v).unwrap())),
-            PgType::INT2 => odbc_data.map(|v| PgValueInput::Int2(parse_to_int2(v).unwrap())),
-            PgType::INT4 => odbc_data.map(|v| PgValueInput::Int4(parse_to_int4(v).unwrap())),
-            PgType::NUMERIC => odbc_data.map(|v| PgValueInput::Numeric(parse_to_int4(v).unwrap())),
-            PgType::INT8 => odbc_data.map(|v| PgValueInput::Int8(parse_to_int8(v).unwrap())),
-            PgType::BOOL => odbc_data.map(|v| PgValueInput::Bool(parse_to_bool(v).unwrap())),
+            PgType::FLOAT8 => {
+                odbc_data.map(|v| PgValueInput::Float8(Some(parse_to_float8(v).unwrap())))
+            }
+            PgType::FLOAT4 => {
+                odbc_data.map(|v| PgValueInput::Float4(Some(parse_to_float4(v).unwrap())))
+            }
+            PgType::CHAR => odbc_data.map(|v| PgValueInput::Char(Some(parse_to_i8(v).unwrap()))),
+            PgType::INT2 => odbc_data.map(|v| PgValueInput::Int2(Some(parse_to_int2(v).unwrap()))),
+            PgType::INT4 => odbc_data.map(|v| PgValueInput::Int4(Some(parse_to_int4(v).unwrap()))),
+            PgType::NUMERIC => {
+                odbc_data.map(|v| PgValueInput::Numeric(Some(parse_to_int4(v).unwrap())))
+            }
+            PgType::INT8 => odbc_data.map(|v| PgValueInput::Int8(Some(parse_to_int8(v).unwrap()))),
+            PgType::BOOL => odbc_data.map(|v| PgValueInput::Bool(Some(parse_to_bool(v).unwrap()))),
             _ => {
                 error!(
                     "There is no adaptation for this type, {}",
                     pg_column.pg_type
                 );
-                odbc_data.map(|v| PgValueInput::Text(parse_to_string(v)))
+                odbc_data.map(|v| PgValueInput::Text(Some(parse_to_string(v))))
             }
         };
 
