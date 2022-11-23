@@ -281,7 +281,8 @@ CREATE TABLE SYSDBA.T4 (
             "DEFVAL",
             "IS_IDENTITY",
             "TABLE_NAME",
-            "CRTDATE"
+            "CRTDATE",
+            "SUBTYPE$"
         ];
 
         let datas = vec![
@@ -297,6 +298,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "C2",
@@ -310,6 +312,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "C3",
@@ -323,6 +326,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "C4",
@@ -336,6 +340,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "C5",
@@ -349,6 +354,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "C6",
@@ -362,6 +368,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "NUMBER",
@@ -375,6 +382,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "DECIMAL",
@@ -388,6 +396,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "BIT",
@@ -401,6 +410,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "INTEGER",
@@ -414,6 +424,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "XXX_PLS_INTEGER",
@@ -427,6 +438,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "BIGINT",
@@ -440,6 +452,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "TINYINT",
@@ -453,6 +466,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "BYTE",
@@ -466,6 +480,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "SMALLINT",
@@ -479,6 +494,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "BINARY",
@@ -492,6 +508,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "VARBINARY",
@@ -505,6 +522,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "REAL",
@@ -518,6 +536,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "FLOAT",
@@ -531,6 +550,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "DOUBLE",
@@ -544,6 +564,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "DOUBLE_PRECISION",
@@ -557,6 +578,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "CHAR",
@@ -570,6 +592,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "VARCHAR",
@@ -582,7 +605,8 @@ CREATE TABLE SYSDBA.T4 (
                 "",
                 "0",
                 "T2",
-                "2022-10-24 17:28:26.308000"
+                "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "TEXT",
@@ -596,6 +620,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "IMAGE",
@@ -609,6 +634,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "BLOB",
@@ -622,6 +648,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "NOT_NULL_TEST",
@@ -634,7 +661,8 @@ CREATE TABLE SYSDBA.T4 (
                 "'default_value_hh'",
                 "0",
                 "T2",
-                "2022-10-24 17:28:26.308000"
+                "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "NOT_NULL_TEST_LEN",
@@ -648,6 +676,7 @@ CREATE TABLE SYSDBA.T4 (
                 "0",
                 "T2",
                 "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "C1",
@@ -660,7 +689,8 @@ CREATE TABLE SYSDBA.T4 (
                 "",
                 "0",
                 "T3",
-                "2022-10-24 17:28:26.308000"
+                "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "CASE_SENSITIVE",
@@ -673,7 +703,8 @@ CREATE TABLE SYSDBA.T4 (
                 "",
                 "0",
                 "T3",
-                "2022-10-24 17:28:26.308000"
+                "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "C3",
@@ -686,7 +717,8 @@ CREATE TABLE SYSDBA.T4 (
                 "",
                 "0",
                 "T3",
-                "2022-10-24 17:28:26.308000"
+                "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "C4",
@@ -699,7 +731,8 @@ CREATE TABLE SYSDBA.T4 (
                 "",
                 "0",
                 "T3",
-                "2022-10-24 17:28:26.308000"
+                "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "NOT_NULL_TEST_LEN",
@@ -712,7 +745,8 @@ CREATE TABLE SYSDBA.T4 (
                 "'default_value_hh'",
                 "0",
                 "T3",
-                "2022-10-24 17:28:26.308000"
+                "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "ID",
@@ -725,7 +759,8 @@ CREATE TABLE SYSDBA.T4 (
                 "",
                 "0",
                 "T4",
-                "2022-10-24 17:28:26.308000"
+                "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "USER_ID",
@@ -738,7 +773,8 @@ CREATE TABLE SYSDBA.T4 (
                 "",
                 "0",
                 "T4",
-                "2022-10-24 17:28:26.308000"
+                "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "USER_NAME",
@@ -751,7 +787,8 @@ CREATE TABLE SYSDBA.T4 (
                 "",
                 "0",
                 "T4",
-                "2022-10-24 17:28:26.308000"
+                "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "ROLE",
@@ -764,7 +801,8 @@ CREATE TABLE SYSDBA.T4 (
                 "",
                 "0",
                 "T4",
-                "2022-10-24 17:28:26.308000"
+                "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
             svec![
                 "SOURCE",
@@ -777,7 +815,8 @@ CREATE TABLE SYSDBA.T4 (
                 "",
                 "0",
                 "T4",
-                "2022-10-24 17:28:26.308000"
+                "2022-10-24 17:28:26.308000",
+                "UTAB"
             ],
         ];
         (headers, datas)
