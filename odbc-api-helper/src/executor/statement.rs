@@ -5,7 +5,7 @@ use either::Either;
 use odbc_api::parameter::InputParameter;
 use std::fmt::Debug;
 
-pub(crate) type EitherBoxParams = Either<Vec<Box<dyn InputParameter>>, ()>;
+pub(crate) type EitherInputParameter = Either<Vec<Box<dyn InputParameter>>, ()>;
 
 pub trait StatementInput {
     type Item: SqlValue;
@@ -18,11 +18,11 @@ pub trait StatementInput {
         todo!()
     }
 
-    fn values(self) -> Result<EitherBoxParams, OdbcHelperError>
+    fn input_values(self) -> Result<EitherInputParameter, OdbcHelperError>
     where
         Self: Sized,
     {
-        let params: EitherBoxParams = self.try_convert()?;
+        let params: EitherInputParameter = self.try_convert()?;
         Ok(params)
     }
 }
@@ -142,10 +142,10 @@ impl StatementInput for String {
 ///
 /// ```
 ///
-impl<T: StatementInput> TryConvert<EitherBoxParams> for T {
+impl<T: StatementInput> TryConvert<EitherInputParameter> for T {
     type Error = OdbcHelperError;
 
-    fn try_convert(self) -> Result<EitherBoxParams, Self::Error> {
+    fn try_convert(self) -> Result<EitherInputParameter, Self::Error> {
         match self.to_value() {
             Either::Left(values) => {
                 let params: Result<Vec<_>, Self::Error> = values

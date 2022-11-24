@@ -33,6 +33,15 @@ pub trait ConnectionTrait {
         table_names: Vec<String>,
     ) -> anyhow::Result<TableDescResult>;
 
+    fn show_table1<S>(
+        &self,
+        stmt:S
+    ) -> anyhow::Result<TableDescResult>
+    where S:StatementInput
+    {
+        todo!()
+    }
+
     fn batch<S>(&self, stmt: Vec<S>) -> anyhow::Result<BatchResult>
     where
         S: StatementInput;
@@ -108,7 +117,7 @@ impl<'a> ConnectionTrait for &OdbcDbConnection<'a> {
         S: StatementInput,
     {
         let sql = stmt.to_sql().to_string();
-        match stmt.values()? {
+        match stmt.input_values()? {
             Either::Left(params) => self.exec_result(sql, &params[..]),
             Either::Right(()) => self.exec_result(sql, ()),
         }
@@ -120,7 +129,7 @@ impl<'a> ConnectionTrait for &OdbcDbConnection<'a> {
     {
         let sql = stmt.to_sql().to_string();
 
-        match stmt.values()? {
+        match stmt.input_values()? {
             Either::Left(params) => self.query_result(&sql, &params[..]),
             Either::Right(()) => self.query_result(&sql, ()),
         }

@@ -1,6 +1,34 @@
+use either::Either;
+use odbc_api::parameter::InputParameter;
 use odbc_common::{Print, StyledString, Table, TableTheme, TextStyle};
+use crate::executor::batch::OdbcOperation;
+use crate::executor::statement::{SqlValue, StatementInput};
 
 pub type TableDescResult = (Vec<String>, Vec<Vec<String>>);
+
+pub type TableDescArgs<'a> = (&'a str, Vec<&'a str>);
+
+impl<'a> StatementInput for TableDescArgs<'a>{
+    type Item = Self;
+    type Operation = OdbcOperation;
+
+    fn to_value(self) -> Either<Vec<Self::Item>, ()> {
+        Either::Left(vec![self])
+    }
+
+    fn to_sql(&self) -> &str {
+        panic!("no need sql")
+    }
+}
+
+impl<'a> SqlValue for TableDescArgs<'a>{
+
+    fn to_value(self) -> Either<Box<dyn InputParameter>, ()> {
+        todo!()
+        // Either::Right(())
+    }
+}
+
 
 #[derive(Debug)]
 pub struct TableDescResultInner {
