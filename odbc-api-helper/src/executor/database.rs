@@ -161,10 +161,18 @@ impl<'a> OdbcDbConnection<'a> {
         params: impl ParameterCollectionRef,
     ) -> anyhow::Result<ExecResult> {
         let mut stmt = self.conn.preallocate()?;
-        stmt.execute(&sql.into(), params)?;
+        if let Err(e) = stmt.execute(&sql.into(), params) {
+            return Ok(ExecResult {
+                rows_affected: 0,
+                error_info: Some(e),
+            });
+        }
         let row_op = stmt.row_count()?;
         let result = row_op
-            .map(|r| ExecResult { rows_affected: r })
+            .map(|r| ExecResult {
+                rows_affected: r,
+                error_info: None,
+            })
             .unwrap_or_default();
         Ok(result)
     }
