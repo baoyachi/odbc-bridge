@@ -1,3 +1,5 @@
+use crate::executor::batch::BatchResult;
+use crate::executor::batch::Operation;
 use crate::executor::execute::ExecResult;
 use crate::executor::query::QueryResult;
 use crate::executor::statement::StatementInput;
@@ -15,7 +17,7 @@ use odbc_api::{
 use std::ops::IndexMut;
 
 pub trait ConnectionTrait {
-    /// Execute a `[Statement]`  INSETT,UPDATE,DELETE
+    /// Execute a `[Statement]`  INSERT,UPDATE,DELETE
     fn execute<S>(&self, stmt: S) -> anyhow::Result<ExecResult>
     where
         S: StatementInput;
@@ -30,6 +32,10 @@ pub trait ConnectionTrait {
         db_name: &str,
         table_names: Vec<String>,
     ) -> anyhow::Result<TableDescResult>;
+
+    fn batch<S>(&self, stmt: Vec<S>) -> anyhow::Result<BatchResult>
+    where
+        S: StatementInput;
 
     // begin transaction
     fn begin(&self) -> anyhow::Result<()>;
@@ -96,7 +102,7 @@ impl Options {
     }
 }
 
-impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
+impl<'a> ConnectionTrait for &OdbcDbConnection<'a> {
     fn execute<S>(&self, stmt: S) -> anyhow::Result<ExecResult>
     where
         S: StatementInput,
@@ -126,6 +132,23 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
         table_names: Vec<String>,
     ) -> anyhow::Result<TableDescResult> {
         self.table_desc(db_name, table_names)
+    }
+
+    fn batch<S>(&self, stmt: Vec<S>) -> anyhow::Result<BatchResult>
+    where
+        S: StatementInput,
+    {
+        let mut batch_result = BatchResult::default();
+        // TODO 1. Consider the current execution in the transaction
+        // TODO 2. need change to parallel execution
+        // TODO 3. consider when execute try_for_each result return error, transaction need rollback
+        // the detail link:<https://github.com/baoyachi/odbc-bridge/issues/38>
+        stmt.into_iter().try_for_each(|s| {
+            let op = s.operation();
+            op.call(&**self, s, &mut batch_result)
+        })?;
+
+        Ok(batch_result)
     }
 
     fn begin(&self) -> anyhow::Result<()> {

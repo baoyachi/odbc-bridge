@@ -1,3 +1,4 @@
+mod batch;
 pub mod database;
 pub mod execute;
 pub mod query;

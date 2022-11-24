@@ -1,4 +1,5 @@
 use crate::error::OdbcHelperError;
+use crate::executor::batch::{OdbcOperation, Operation};
 use crate::TryConvert;
 use either::Either;
 use odbc_api::parameter::InputParameter;
@@ -8,9 +9,14 @@ pub(crate) type EitherBoxParams = Either<Vec<Box<dyn InputParameter>>, ()>;
 
 pub trait StatementInput {
     type Item: SqlValue;
+    type Operation: Operation;
 
     fn to_value(self) -> Either<Vec<Self::Item>, ()>;
     fn to_sql(&self) -> &str;
+
+    fn operation(&self) -> Self::Operation {
+        todo!()
+    }
 
     fn values(self) -> Result<EitherBoxParams, OdbcHelperError>
     where
@@ -26,14 +32,19 @@ pub trait SqlValue {
 }
 
 #[derive(Debug)]
-pub struct Statement<T: Debug> {
+pub struct Statement<T, O>
+where
+    T: Debug,
+{
     /// The SQL query
     pub sql: String,
     /// The values for the SQL statement's parameters
     pub values: Vec<T>,
+    /// odbc-bridge operation,most are ignored, unless the batch operation is used
+    pub odbc_operation: Option<O>,
 }
 
-impl<T> Statement<T>
+impl<T, O> Statement<T, O>
 where
     T: SqlValue + Debug,
 {
@@ -41,7 +52,13 @@ where
         Statement {
             sql: sql.into(),
             values,
+            odbc_operation: None,
         }
+    }
+
+    pub fn operation(mut self, opt: O) -> Self {
+        self.odbc_operation = Some(opt);
+        self
     }
 }
 
@@ -57,11 +74,13 @@ impl SqlValue for String {
     }
 }
 
-impl<T> StatementInput for Statement<T>
+impl<T, OP> StatementInput for Statement<T, OP>
 where
     T: SqlValue + Debug,
+    OP: Operation,
 {
     type Item = T;
+    type Operation = OdbcOperation;
 
     fn to_value(self) -> Either<Vec<T>, ()> {
         Either::Left(self.values)
@@ -74,6 +93,7 @@ where
 
 impl StatementInput for &str {
     type Item = Self;
+    type Operation = OdbcOperation;
 
     fn to_value(self) -> Either<Vec<Self::Item>, ()> {
         Either::Right(())
@@ -86,6 +106,7 @@ impl StatementInput for &str {
 
 impl StatementInput for String {
     type Item = Self;
+    type Operation = OdbcOperation;
 
     fn to_value(self) -> Either<Vec<Self::Item>, ()> {
         Either::Right(())
