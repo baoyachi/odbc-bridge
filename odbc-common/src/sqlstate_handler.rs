@@ -16,14 +16,14 @@ macro_rules! pg_sqlstate_mapping {
             #[allow(non_upper_case_globals)]
             pub const $phrase: SqlState = SqlState {
                 state_odbc: $state_odbc,
-                state_pg: $state_odbc,
+                state_pg: $state_pg,
             };
         )+
 
         pub fn get_sqlstate_by_state_odbc(state_odbc: &str) -> Option<SqlState> {
             match state_odbc {
                 $(
-                    stringify!($state_odbc) => Some($phrase),
+                   $state_odbc => Some($phrase),
                 )+
                 _ => None
             }
@@ -32,7 +32,7 @@ macro_rules! pg_sqlstate_mapping {
         pub fn get_sqlstate_by_state_pg(state_pg: &str) -> Option<SqlState> {
             match state_pg {
                 $(
-                    stringify!($state_pg) => Some($phrase),
+                    $state_pg => Some($phrase),
                 )+
                 _ => None
             }
@@ -95,4 +95,34 @@ pg_sqlstate_mapping! {
     ( STMT_INVALID_NULL_ARG, "HY009", "S1009" );
     ( STMT_NO_RESPONSE, "08S01", "08S01" );
     ( STMT_COMMUNICATION_ERROR, "08S01", "08S01" );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_sqlstate_by_state_odbc() {
+        let state_odbc = "08S01";
+        let sql_state = get_sqlstate_by_state_odbc(state_odbc);
+        assert!(sql_state.is_some());
+        assert_eq!(sql_state.unwrap().state_pg, "08S01");
+    }
+
+    #[test]
+    fn test_get_sqlstate_by_state_pg() {
+        let state_pg = "S1009";
+        let sql_state = get_sqlstate_by_state_pg(state_pg);
+        assert!(sql_state.is_some());
+        assert_eq!(sql_state.unwrap().state_odbc, "HY024");
+    }
+
+    #[test]
+    fn test_get_sqlstate_by_phrase() {
+        let phrase = "STMT_STATUS_ERROR";
+        let sql_state = get_sqlstate_by_phrase(phrase);
+        assert!(sql_state.is_some());
+        assert_eq!(sql_state.unwrap().state_pg, "S1010");
+    }
+   
 }
