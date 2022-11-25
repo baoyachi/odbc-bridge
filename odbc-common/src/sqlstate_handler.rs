@@ -23,7 +23,8 @@ macro_rules! pg_sqlstate_mapping {
         pub fn get_sqlstate_by_state_odbc(state_odbc: &str) -> Option<SqlState> {
             match state_odbc {
                 $(
-                   $state_odbc => Some($phrase),
+                    #[allow(unreachable_patterns)]
+                    $state_odbc => Some($phrase),
                 )+
                 _ => None
             }
@@ -32,6 +33,7 @@ macro_rules! pg_sqlstate_mapping {
         pub fn get_sqlstate_by_state_pg(state_pg: &str) -> Option<SqlState> {
             match state_pg {
                 $(
+                    #[allow(unreachable_patterns)]
                     $state_pg => Some($phrase),
                 )+
                 _ => None
