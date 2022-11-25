@@ -1,5 +1,5 @@
 use crate::DmDateType;
-use odbc_common::{Print, StyledString, Table, TableTheme, TextStyle};
+use odbc_common::{error::OdbcStdResult, Print, StyledString, Table, TableTheme, TextStyle};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -116,7 +116,7 @@ pub struct DmTableDesc {
 }
 
 impl Print for DmTableDesc {
-    fn convert_table(self) -> anyhow::Result<Table> {
+    fn convert_table(self) -> OdbcStdResult<Table> {
         let headers: Vec<StyledString> = self
             .headers
             .values()
@@ -142,7 +142,7 @@ impl Print for DmTableDesc {
 }
 
 impl DmTableDesc {
-    pub fn new(headers: Vec<String>, data: Vec<Vec<String>>) -> anyhow::Result<Self> {
+    pub fn new(headers: Vec<String>, data: Vec<Vec<String>>) -> OdbcStdResult<Self> {
         macro_rules! to_type {
             ($val:expr,$t:ident) => {
                 $val.parse::<$t>()

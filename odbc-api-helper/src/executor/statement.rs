@@ -1,7 +1,7 @@
-use crate::error::OdbcHelperError;
 use crate::TryConvert;
 use either::Either;
 use odbc_api::parameter::InputParameter;
+use odbc_common::error::{OdbcStdError, OdbcStdResult};
 use std::fmt::Debug;
 
 pub(crate) type EitherBoxParams = Either<Vec<Box<dyn InputParameter>>, ()>;
@@ -12,7 +12,7 @@ pub trait StatementInput {
     fn to_value(self) -> Either<Vec<Self::Item>, ()>;
     fn to_sql(&self) -> &str;
 
-    fn values(self) -> Result<EitherBoxParams, OdbcHelperError>
+    fn values(self) -> OdbcStdResult<EitherBoxParams, OdbcStdError>
     where
         Self: Sized,
     {
@@ -122,17 +122,17 @@ impl StatementInput for String {
 /// ```
 ///
 impl<T: StatementInput> TryConvert<EitherBoxParams> for T {
-    type Error = OdbcHelperError;
+    type Error = OdbcStdError;
 
-    fn try_convert(self) -> Result<EitherBoxParams, Self::Error> {
+    fn try_convert(self) -> OdbcStdResult<EitherBoxParams, Self::Error> {
         match self.to_value() {
             Either::Left(values) => {
-                let params: Result<Vec<_>, Self::Error> = values
+                let params: OdbcStdResult<Vec<_>, Self::Error> = values
                     .into_iter()
                     .map(|v| v.to_value())
                     .map(|x| {
                         x.left().ok_or_else(|| {
-                            OdbcHelperError::SqlParamsError("value not include empty tuple".into())
+                            OdbcStdError::SqlParamsError("value not include empty tuple".into())
                         })
                     })
                     .collect();

@@ -9,6 +9,7 @@ use odbc_api::buffers::BufferKind;
 use odbc_api::parameter::InputParameter;
 use odbc_api::Bit;
 use odbc_api::IntoParameter;
+use odbc_common::error::{OdbcStdError, OdbcStdResult};
 use pg_helper::table::PgTableItem;
 use postgres_types::{Oid, Type as PgType};
 use std::collections::BTreeMap;
@@ -198,9 +199,9 @@ pub fn oid_typlen<C: Convert<PgType>>(c: C) -> i16 {
 }
 
 impl TryConvert<PgTableDesc> for (TableDescResult, &Options) {
-    type Error = anyhow::Error;
+    type Error = OdbcStdError;
 
-    fn try_convert(self) -> Result<PgTableDesc, Self::Error> {
+    fn try_convert(self) -> OdbcStdResult<PgTableDesc, Self::Error> {
         let pg = match self.1.database {
             SupportDatabase::Dameng => {
                 let dm = DmTableDesc::new(self.0 .0, self.0 .1)?;
@@ -222,9 +223,9 @@ impl TryConvert<PgTableDesc> for (TableDescResult, &Options) {
 }
 
 impl TryConvert<PgColumnItem> for (&OdbcColumnItem, &PgColumn) {
-    type Error = String;
+    type Error = OdbcStdError;
 
-    fn try_convert(self) -> Result<PgColumnItem, Self::Error> {
+    fn try_convert(self) -> OdbcStdResult<PgColumnItem, Self::Error> {
         let odbc_data = self.0.value.clone();
         let pg_column = self.1;
 
@@ -263,9 +264,9 @@ impl TryConvert<PgColumnItem> for (&OdbcColumnItem, &PgColumn) {
 }
 
 impl TryConvert<PgQueryResult> for (QueryResult, &Vec<PgTableItem>, &Options) {
-    type Error = String;
+    type Error = OdbcStdError;
 
-    fn try_convert(self) -> Result<PgQueryResult, Self::Error> {
+    fn try_convert(self) -> OdbcStdResult<PgQueryResult, Self::Error> {
         let res = self.0;
         let pg_all_columns = self.1;
         let options = self.2;
@@ -297,9 +298,9 @@ impl TryConvert<PgQueryResult> for (QueryResult, &Vec<PgTableItem>, &Options) {
 }
 
 impl TryConvert<Vec<PgColumn>> for (&Vec<OdbcColumn>, &Vec<PgTableItem>, &Options) {
-    type Error = String;
+    type Error = OdbcStdError;
 
-    fn try_convert(self) -> Result<Vec<PgColumn>, Self::Error> {
+    fn try_convert(self) -> OdbcStdResult<Vec<PgColumn>, Self::Error> {
         let odbc_columns = self.0;
         let pg_all_columns = self.1;
         let options = self.2;
