@@ -124,5 +124,4 @@ mod tests {
         assert!(sql_state.is_some());
         assert_eq!(sql_state.unwrap().state_pg, "S1010");
     }
-   
 }
