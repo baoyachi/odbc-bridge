@@ -1,13 +1,14 @@
 use crate::TryConvert;
 use dameng_helper::table::DmTableItem;
 use dameng_helper::DmDateType;
+use odbc_common::error::{OdbcStdError, OdbcStdResult};
 use pg_helper::table::PgTableItem;
 use pg_helper::PgType;
 
 impl TryConvert<PgType> for DmDateType {
-    type Error = anyhow::Error;
+    type Error = OdbcStdError;
 
-    fn try_convert(self) -> Result<PgType, Self::Error> {
+    fn try_convert(self) -> OdbcStdResult<PgType, Self::Error> {
         match self {
             DmDateType::NUMERIC => Ok(PgType::NUMERIC),
             DmDateType::NUMBER => Ok(PgType::NUMERIC),
@@ -44,9 +45,9 @@ impl TryConvert<PgType> for DmDateType {
 }
 
 impl TryConvert<PgTableItem> for DmTableItem {
-    type Error = anyhow::Error;
+    type Error = OdbcStdError;
 
-    fn try_convert(self) -> Result<PgTableItem, Self::Error> {
+    fn try_convert(self) -> OdbcStdResult<PgTableItem, Self::Error> {
         let pg_type: PgType = self.r#type.try_convert()?;
         Ok(PgTableItem {
             name: self.name.to_string(),

@@ -11,6 +11,7 @@ pub use data_type::*;
 use odbc_api::buffers::TextRowSet;
 use odbc_api::handles::StatementImpl;
 use odbc_api::{Cursor, CursorImpl, ResultSetMetadata};
+use odbc_common::error::OdbcStdResult;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
@@ -29,7 +30,7 @@ pub trait DmAdapter {
     fn get_table_desc(
         self,
         describe: TableSqlDescribe,
-    ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)>;
+    ) -> OdbcStdResult<(Vec<String>, Vec<Vec<String>>)>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -71,7 +72,7 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
     fn get_table_desc(
         mut self,
         describe: TableSqlDescribe,
-    ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
+    ) -> OdbcStdResult<(Vec<String>, Vec<Vec<String>>)> {
         debug!("describe:{:?}", describe);
         let case_sensitive_fn = |row_index: usize, name: Cow<str>| -> String {
             if !describe.case_sensitive
