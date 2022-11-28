@@ -131,7 +131,7 @@ impl StatementInput for String {
 /// ```rust
 /// use std::any::Any;
 /// use either::Either;
-/// use odbc_api::parameter::InputParameter;
+/// use odbc_common::odbc_api::parameter::InputParameter;
 /// use odbc_api_helper::executor::batch::OdbcOperation;
 /// use odbc_api_helper::executor::statement::Statement;
 /// use odbc_api_helper::extension::pg::PgValueInput;

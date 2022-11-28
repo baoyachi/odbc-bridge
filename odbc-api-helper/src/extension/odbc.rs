@@ -517,7 +517,7 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
 ///
 /// ```rust
 /// # use time::{Date, macros::date};
-/// # use odbc_api::sys::Date as OdbcDate;
+/// # use odbc_common::odbc_api::sys::Date as OdbcDate;
 /// use odbc_api_helper::TryConvert;
 ///
 /// let odbc_data = OdbcDate{year: 2020,month: 1,day: 1};
@@ -545,7 +545,7 @@ impl TryConvert<time::Date> for Date {
 ///
 /// ```rust
 /// # use time::{Date, macros::time};
-/// # use odbc_api::sys::Time as OdbcTime;
+/// # use odbc_common::odbc_api::sys::Time as OdbcTime;
 /// use odbc_api_helper::TryConvert;
 ///
 /// let odbc_time = OdbcTime { hour: 3,minute: 1,second: 1 };
