@@ -19,6 +19,7 @@ pub struct DmTableItem {
     pub default_val: Option<String>,
     pub table_name: String,
     pub create_time: String,
+    pub subtype: Option<String>,
 }
 
 impl DmTableItem {
@@ -32,8 +33,10 @@ impl DmTableItem {
         vec.push(self.scale.to_string());
         vec.push(self.nullable.to_string());
         vec.push(self.default_val.clone().unwrap_or_default());
+        vec.push(self.is_identity.to_string());
         vec.push(self.table_name.to_string());
         vec.push(self.create_time.to_string());
+        vec.push(self.subtype.clone().unwrap_or_default());
         vec
     }
 }
@@ -63,6 +66,8 @@ pub enum ColNameEnum {
     TableName,
     #[strum(to_string = "CRTDATE")]
     CreateTime,
+    #[strum(to_string = "SUBTYPE$")]
+    SubType,
 }
 
 /// The table data. Execute sql get table describe
@@ -180,6 +185,7 @@ impl DmTableDesc {
                         "0" => item.is_identity = false,
                         _ => {}
                     },
+                    ColNameEnum::SubType => item.subtype = Some(val),
                 }
             }
 
@@ -209,50 +215,50 @@ mod tests {
         info!("{}", string);
 
         let expect = r#"
-╭───────────────────┬──────┬───────┬────────────────────────────────┬────────────┬───────┬───────────┬────────────────────┬─────────────┬────────────────────────────┬─────────╮
-│              NAME │  ID  │ COLID │             TYPE$              │  LENGTH$   │ SCALE │ NULLABLE$ │       DEFVAL       │ IS_IDENTITY │         TABLE_NAME         │ CRTDATE │
-├───────────────────┼──────┼───────┼────────────────────────────────┼────────────┼───────┼───────────┼────────────────────┼─────────────┼────────────────────────────┼─────────┤
-│ C1                │ 1058 │ 0     │ TIMESTAMP_WITH_TIME_ZONE       │ 10         │ 6     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ C2                │ 1058 │ 1     │ TIMESTAMP                      │ 8          │ 6     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ C3                │ 1058 │ 2     │ VARCHAR                        │ 100        │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ C4                │ 1058 │ 3     │ NUMERIC                        │ 0          │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ C5                │ 1058 │ 4     │ TIME_WITH_TIME_ZONE            │ 7          │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ C6                │ 1058 │ 5     │ TIMESTAMP_WITH_LOCAL_TIME_ZONE │ 8          │ 4102  │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ NUMBER            │ 1058 │ 6     │ NUMBER                         │ 0          │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ DECIMAL           │ 1058 │ 7     │ DECIMAL                        │ 0          │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ BIT               │ 1058 │ 8     │ BIT                            │ 1          │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ INTEGER           │ 1058 │ 9     │ INTEGER                        │ 4          │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ XXX_PLS_INTEGER   │ 1058 │ 10    │ INTEGER                        │ 4          │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ BIGINT            │ 1058 │ 11    │ BIGINT                         │ 8          │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ TINYINT           │ 1058 │ 12    │ TINYINT                        │ 1          │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ BYTE              │ 1058 │ 13    │ BYTE                           │ 1          │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ SMALLINT          │ 1058 │ 14    │ SMALLINT                       │ 2          │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ BINARY            │ 1058 │ 15    │ BINARY                         │ 1          │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ VARBINARY         │ 1058 │ 16    │ VARBINARY                      │ 8188       │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ REAL              │ 1058 │ 17    │ REAL                           │ 4          │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ FLOAT             │ 1058 │ 18    │ FLOAT                          │ 8          │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ DOUBLE            │ 1058 │ 19    │ DOUBLE                         │ 8          │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ DOUBLE_PRECISION  │ 1058 │ 20    │ DOUBLE_PRECISION               │ 8          │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ CHAR              │ 1058 │ 21    │ CHAR                           │ 1          │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ VARCHAR           │ 1058 │ 22    │ VARCHAR                        │ 8188       │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ TEXT              │ 1058 │ 23    │ TEXT                           │ 2147483647 │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ IMAGE             │ 1058 │ 24    │ IMAGE                          │ 2147483647 │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ BLOB              │ 1058 │ 25    │ BLOB                           │ 2147483647 │ 0     │ true      │                    │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ NOT_NULL_TEST     │ 1058 │ 26    │ VARCHAR                        │ 100        │ 0     │ false     │ 'default_value_hh' │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ NOT_NULL_TEST_LEN │ 1058 │ 27    │ VARCHAR                        │ 100        │ 0     │ false     │ 'default_value_hh' │ T2          │ 2022-10-24 17:28:26.308000 │         │
-│ C1                │ 1058 │ 0     │ TIMESTAMP_WITH_TIME_ZONE       │ 10         │ 6     │ true      │                    │ T3          │ 2022-10-24 17:28:26.308000 │         │
-│ CASE_SENSITIVE    │ 1058 │ 1     │ TIMESTAMP                      │ 8          │ 6     │ true      │                    │ T3          │ 2022-10-24 17:28:26.308000 │         │
-│ C3                │ 1058 │ 2     │ VARCHAR                        │ 100        │ 0     │ true      │                    │ T3          │ 2022-10-24 17:28:26.308000 │         │
-│ C4                │ 1058 │ 3     │ NUMERIC                        │ 0          │ 0     │ true      │                    │ T3          │ 2022-10-24 17:28:26.308000 │         │
-│ NOT_NULL_TEST_LEN │ 1058 │ 4     │ VARCHAR                        │ 100        │ 0     │ false     │ 'default_value_hh' │ T3          │ 2022-10-24 17:28:26.308000 │         │
-│ ID                │ 1058 │ 0     │ INTEGER                        │ 4          │ 0     │ false     │                    │ T4          │ 2022-10-24 17:28:26.308000 │         │
-│ USER_ID           │ 1058 │ 1     │ VARCHAR                        │ 8188       │ 0     │ false     │                    │ T4          │ 2022-10-24 17:28:26.308000 │         │
-│ USER_NAME         │ 1058 │ 2     │ TEXT                           │ 2147483647 │ 0     │ false     │                    │ T4          │ 2022-10-24 17:28:26.308000 │         │
-│ ROLE              │ 1058 │ 3     │ TEXT                           │ 2147483647 │ 0     │ false     │                    │ T4          │ 2022-10-24 17:28:26.308000 │         │
-│ SOURCE            │ 1058 │ 4     │ TEXT                           │ 2147483647 │ 0     │ false     │                    │ T4          │ 2022-10-24 17:28:26.308000 │         │
-├───────────────────┼──────┼───────┼────────────────────────────────┼────────────┼───────┼───────────┼────────────────────┼─────────────┼────────────────────────────┼─────────┤
-│              NAME │  ID  │ COLID │             TYPE$              │  LENGTH$   │ SCALE │ NULLABLE$ │       DEFVAL       │ IS_IDENTITY │         TABLE_NAME         │ CRTDATE │
-╰───────────────────┴──────┴───────┴────────────────────────────────┴────────────┴───────┴───────────┴────────────────────┴─────────────┴────────────────────────────┴─────────╯"#;
+╭───────────────────┬──────┬───────┬────────────────────────────────┬────────────┬───────┬───────────┬────────────────────┬─────────────┬────────────┬────────────────────────────┬──────────╮
+│              NAME │  ID  │ COLID │             TYPE$              │  LENGTH$   │ SCALE │ NULLABLE$ │       DEFVAL       │ IS_IDENTITY │ TABLE_NAME │          CRTDATE           │ SUBTYPE$ │
+├───────────────────┼──────┼───────┼────────────────────────────────┼────────────┼───────┼───────────┼────────────────────┼─────────────┼────────────┼────────────────────────────┼──────────┤
+│ C1                │ 1058 │ 0     │ TIMESTAMP_WITH_TIME_ZONE       │ 10         │ 6     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ C2                │ 1058 │ 1     │ TIMESTAMP                      │ 8          │ 6     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ C3                │ 1058 │ 2     │ VARCHAR                        │ 100        │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ C4                │ 1058 │ 3     │ NUMERIC                        │ 0          │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ C5                │ 1058 │ 4     │ TIME_WITH_TIME_ZONE            │ 7          │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ C6                │ 1058 │ 5     │ TIMESTAMP_WITH_LOCAL_TIME_ZONE │ 8          │ 4102  │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ NUMBER            │ 1058 │ 6     │ NUMBER                         │ 0          │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ DECIMAL           │ 1058 │ 7     │ DECIMAL                        │ 0          │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ BIT               │ 1058 │ 8     │ BIT                            │ 1          │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ INTEGER           │ 1058 │ 9     │ INTEGER                        │ 4          │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ XXX_PLS_INTEGER   │ 1058 │ 10    │ INTEGER                        │ 4          │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ BIGINT            │ 1058 │ 11    │ BIGINT                         │ 8          │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ TINYINT           │ 1058 │ 12    │ TINYINT                        │ 1          │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ BYTE              │ 1058 │ 13    │ BYTE                           │ 1          │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ SMALLINT          │ 1058 │ 14    │ SMALLINT                       │ 2          │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ BINARY            │ 1058 │ 15    │ BINARY                         │ 1          │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ VARBINARY         │ 1058 │ 16    │ VARBINARY                      │ 8188       │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ REAL              │ 1058 │ 17    │ REAL                           │ 4          │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ FLOAT             │ 1058 │ 18    │ FLOAT                          │ 8          │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ DOUBLE            │ 1058 │ 19    │ DOUBLE                         │ 8          │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ DOUBLE_PRECISION  │ 1058 │ 20    │ DOUBLE_PRECISION               │ 8          │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ CHAR              │ 1058 │ 21    │ CHAR                           │ 1          │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ VARCHAR           │ 1058 │ 22    │ VARCHAR                        │ 8188       │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ TEXT              │ 1058 │ 23    │ TEXT                           │ 2147483647 │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ IMAGE             │ 1058 │ 24    │ IMAGE                          │ 2147483647 │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ BLOB              │ 1058 │ 25    │ BLOB                           │ 2147483647 │ 0     │ true      │                    │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ NOT_NULL_TEST     │ 1058 │ 26    │ VARCHAR                        │ 100        │ 0     │ false     │ 'default_value_hh' │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ NOT_NULL_TEST_LEN │ 1058 │ 27    │ VARCHAR                        │ 100        │ 0     │ false     │ 'default_value_hh' │ false       │ T2         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ C1                │ 1058 │ 0     │ TIMESTAMP_WITH_TIME_ZONE       │ 10         │ 6     │ true      │                    │ false       │ T3         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ CASE_SENSITIVE    │ 1058 │ 1     │ TIMESTAMP                      │ 8          │ 6     │ true      │                    │ false       │ T3         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ C3                │ 1058 │ 2     │ VARCHAR                        │ 100        │ 0     │ true      │                    │ false       │ T3         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ C4                │ 1058 │ 3     │ NUMERIC                        │ 0          │ 0     │ true      │                    │ false       │ T3         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ NOT_NULL_TEST_LEN │ 1058 │ 4     │ VARCHAR                        │ 100        │ 0     │ false     │ 'default_value_hh' │ false       │ T3         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ ID                │ 1058 │ 0     │ INTEGER                        │ 4          │ 0     │ false     │                    │ false       │ T4         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ USER_ID           │ 1058 │ 1     │ VARCHAR                        │ 8188       │ 0     │ false     │                    │ false       │ T4         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ USER_NAME         │ 1058 │ 2     │ TEXT                           │ 2147483647 │ 0     │ false     │                    │ false       │ T4         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ ROLE              │ 1058 │ 3     │ TEXT                           │ 2147483647 │ 0     │ false     │                    │ false       │ T4         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+│ SOURCE            │ 1058 │ 4     │ TEXT                           │ 2147483647 │ 0     │ false     │                    │ false       │ T4         │ 2022-10-24 17:28:26.308000 │ UTAB     │
+├───────────────────┼──────┼───────┼────────────────────────────────┼────────────┼───────┼───────────┼────────────────────┼─────────────┼────────────┼────────────────────────────┼──────────┤
+│              NAME │  ID  │ COLID │             TYPE$              │  LENGTH$   │ SCALE │ NULLABLE$ │       DEFVAL       │ IS_IDENTITY │ TABLE_NAME │          CRTDATE           │ SUBTYPE$ │
+╰───────────────────┴──────┴───────┴────────────────────────────────┴────────────┴───────┴───────────┴────────────────────┴─────────────┴────────────┴────────────────────────────┴──────────╯"#;
         assert_eq!(string, expect);
     }
 }
