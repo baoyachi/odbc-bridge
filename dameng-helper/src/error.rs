@@ -1,4 +1,4 @@
-use odbc_api::Error;
+use crate::odbc_api::Error;
 use thiserror::Error as ThisError;
 
 #[derive(Debug, ThisError)]

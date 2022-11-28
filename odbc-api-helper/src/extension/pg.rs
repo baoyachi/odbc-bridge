@@ -2,15 +2,16 @@ use crate::executor::database::Options;
 use crate::executor::query::QueryResult;
 use crate::executor::statement::SqlValue;
 use crate::extension::odbc::{OdbcColumn, OdbcColumnItem, OdbcColumnType};
+use crate::odbc_api::buffers::BufferKind;
+use crate::odbc_api::parameter::InputParameter;
+use crate::odbc_api::Bit;
+use crate::odbc_api::IntoParameter;
 use crate::{Convert, TryConvert};
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use either::Either;
-use odbc_api::buffers::BufferKind;
-use odbc_api::parameter::InputParameter;
-use odbc_api::Bit;
-use odbc_api::IntoParameter;
 use pg_helper::table::PgTableItem;
 use postgres_types::{Oid, Type as PgType};
+use std::any::Any;
 use std::collections::BTreeMap;
 
 use crate::executor::table::TableDescResult;
@@ -44,7 +45,7 @@ pub enum PgValueInput {
 }
 
 impl SqlValue for PgValueInput {
-    fn to_value(self) -> Either<Box<dyn InputParameter>, ()> {
+    fn to_value(self) -> Either<Box<dyn InputParameter>, Box<dyn Any>> {
         macro_rules! left_param {
             ($($arg:tt)*) => {{
                 Either::Left(Box::new($($arg)*))
@@ -332,7 +333,7 @@ impl TryConvert<Vec<PgColumn>> for (&Vec<OdbcColumn>, &Vec<PgTableItem>, &Option
 #[cfg(test)]
 mod tests {
     use super::*;
-    use odbc_api::DataType;
+    use crate::odbc_api::DataType;
 
     #[test]
     fn test_query_result_convert() {
@@ -362,6 +363,7 @@ mod tests {
             default_val: None,
             table_name: "".to_string(),
             create_time: "".to_string(),
+            subtype: None,
         };
         let options = Options {
             database: SupportDatabase::Dameng,

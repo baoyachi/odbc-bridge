@@ -1,3 +1,4 @@
+use crate::odbc_api;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
