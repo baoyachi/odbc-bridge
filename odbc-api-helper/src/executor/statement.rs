@@ -1,8 +1,8 @@
 use crate::error::OdbcHelperError;
 use crate::executor::batch::{OdbcOperation, Operation};
+use crate::odbc_api::parameter::InputParameter;
 use crate::TryConvert;
 use either::Either;
-use odbc_api::parameter::InputParameter;
 use std::any::Any;
 use std::fmt::Debug;
 

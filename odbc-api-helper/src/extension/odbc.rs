@@ -1,9 +1,9 @@
 use crate::executor::database::Options;
+use crate::odbc_api::buffers::{AnySlice, BufferDescription, BufferKind};
+use crate::odbc_api::sys::{Date, Time, Timestamp, NULL_DATA};
+use crate::odbc_api::DataType;
 use crate::{Convert, TryConvert};
 use bytes::BytesMut;
-use odbc_api::buffers::{AnySlice, BufferDescription, BufferKind};
-use odbc_api::sys::{Date, Time, Timestamp, NULL_DATA};
-use odbc_api::DataType;
 use std::cmp::min;
 
 #[derive(Debug, Clone)]

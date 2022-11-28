@@ -6,14 +6,14 @@ use crate::executor::statement::StatementInput;
 use crate::executor::table::{TableDescArgsString, TableDescResult};
 use crate::executor::SupportDatabase;
 use crate::extension::odbc::{OdbcColumn, OdbcColumnItem};
+use crate::odbc_api::buffers::{AnySlice, BufferDescription, ColumnarAnyBuffer};
+use crate::odbc_api::handles::StatementImpl;
+use crate::odbc_api::{
+    ColumnDescription, Connection, Cursor, CursorImpl, ParameterCollectionRef, ResultSetMetadata,
+};
 use crate::{Convert, TryConvert};
 use dameng_helper::DmAdapter;
 use either::Either;
-use odbc_api::buffers::{AnySlice, BufferDescription, ColumnarAnyBuffer};
-use odbc_api::handles::StatementImpl;
-use odbc_api::{
-    ColumnDescription, Connection, Cursor, CursorImpl, ParameterCollectionRef, ResultSetMetadata,
-};
 use std::ops::IndexMut;
 
 pub trait ConnectionTrait {

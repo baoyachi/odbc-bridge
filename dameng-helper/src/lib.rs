@@ -7,10 +7,12 @@ pub mod data_type;
 pub mod error;
 pub mod table;
 
+pub use odbc_common::odbc_api;
+
+use crate::odbc_api::buffers::TextRowSet;
+use crate::odbc_api::handles::StatementImpl;
+use crate::odbc_api::{Cursor, CursorImpl, ResultSetMetadata};
 pub use data_type::*;
-use odbc_api::buffers::TextRowSet;
-use odbc_api::handles::StatementImpl;
-use odbc_api::{Cursor, CursorImpl, ResultSetMetadata};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
@@ -109,7 +111,7 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
 mod tests {
     const DAMENG_CONNECTION: &str = "Driver={DM8};Server=0.0.0.0;UID=SYSDBA;PWD=SYSDBA001;";
 
-    use odbc_api::Environment;
+    use crate::odbc_api::Environment;
     use odbc_api_helper::executor::database::{ConnectionTrait, OdbcDbConnection, Options};
     use odbc_api_helper::executor::execute::ExecResult;
     use odbc_api_helper::executor::table::{TableDescArgs, TableDescResult};
