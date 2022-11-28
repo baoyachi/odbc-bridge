@@ -23,7 +23,7 @@ fn init_test() {
 pub trait DmAdapter {
     fn get_table_sql(
         table_names: Vec<String>,
-        db_name: &str,
+        db_name: String,
         case_sensitive: bool,
     ) -> TableSqlDescribe;
     fn get_table_desc(
@@ -45,7 +45,7 @@ pub struct TableSqlDescribe {
 impl DmAdapter for CursorImpl<StatementImpl<'_>> {
     fn get_table_sql(
         table_names: Vec<String>,
-        db_name: &str,
+        db_name: String,
         case_sensitive: bool,
     ) -> TableSqlDescribe {
         // Use sql: `SELECT A.*, B.NAME AS TABLE_NAME FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ("X")`;
@@ -60,7 +60,7 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
             tables, db_name
         );
         TableSqlDescribe {
-            db_name: db_name.to_string(),
+            db_name,
             describe_sql,
             column_name_index: 0,
             table_name_index: 8,

@@ -3,7 +3,7 @@ use crate::executor::batch::Operation;
 use crate::executor::execute::ExecResult;
 use crate::executor::query::QueryResult;
 use crate::executor::statement::StatementInput;
-use crate::executor::table::TableDescResult;
+use crate::executor::table::{TableDescArgsString, TableDescResult};
 use crate::executor::SupportDatabase;
 use crate::extension::odbc::{OdbcColumn, OdbcColumnItem};
 use crate::{Convert, TryConvert};
@@ -33,14 +33,9 @@ pub trait ConnectionTrait {
         table_names: Vec<String>,
     ) -> anyhow::Result<TableDescResult>;
 
-    fn show_table1<S>(
-        &self,
-        stmt:S
-    ) -> anyhow::Result<TableDescResult>
-    where S:StatementInput
-    {
-        todo!()
-    }
+    fn show_table1<S>(&self, stmt: S) -> anyhow::Result<TableDescResult>
+    where
+        S: StatementInput;
 
     fn batch<S>(&self, stmt: Vec<S>) -> anyhow::Result<BatchResult>
     where
@@ -119,7 +114,7 @@ impl<'a> ConnectionTrait for &OdbcDbConnection<'a> {
         let sql = stmt.to_sql().to_string();
         match stmt.input_values()? {
             Either::Left(params) => self.exec_result(sql, &params[..]),
-            Either::Right(()) => self.exec_result(sql, ()),
+            Either::Right(_) => self.exec_result(sql, ()),
         }
     }
 
@@ -131,16 +126,29 @@ impl<'a> ConnectionTrait for &OdbcDbConnection<'a> {
 
         match stmt.input_values()? {
             Either::Left(params) => self.query_result(&sql, &params[..]),
-            Either::Right(()) => self.query_result(&sql, ()),
+            Either::Right(_) => self.query_result(&sql, ()),
         }
     }
 
+    fn show_table1<S>(&self, stmt: S) -> anyhow::Result<TableDescResult>
+    where
+        S: StatementInput,
+    {
+        let any = stmt
+            .to_value()
+            .right()
+            .ok_or_else(|| anyhow!("expect table desc args"))?;
+        let args = any
+            .downcast::<TableDescArgsString>()
+            .map_err(|_| anyhow!("cast TableDescArgsString error"))?;
+        self.table_desc(args.0, args.1)
+    }
     fn show_table(
         &self,
         db_name: &str,
         table_names: Vec<String>,
     ) -> anyhow::Result<TableDescResult> {
-        self.table_desc(db_name, table_names)
+        self.table_desc(db_name.to_string(), table_names)
     }
 
     fn batch<S>(&self, stmt: Vec<S>) -> anyhow::Result<BatchResult>
@@ -266,7 +274,7 @@ impl<'a> OdbcDbConnection<'a> {
 
     fn table_desc(
         &self,
-        db_name: &str,
+        db_name: String,
         table_names: Vec<String>,
     ) -> anyhow::Result<TableDescResult> {
         let db = &self.options.database;

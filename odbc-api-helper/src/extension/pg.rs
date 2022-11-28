@@ -11,6 +11,7 @@ use odbc_api::Bit;
 use odbc_api::IntoParameter;
 use pg_helper::table::PgTableItem;
 use postgres_types::{Oid, Type as PgType};
+use std::any::Any;
 use std::collections::BTreeMap;
 
 use crate::executor::table::TableDescResult;
@@ -44,7 +45,7 @@ pub enum PgValueInput {
 }
 
 impl SqlValue for PgValueInput {
-    fn to_value(self) -> Either<Box<dyn InputParameter>, ()> {
+    fn to_value(self) -> Either<Box<dyn InputParameter>, Box<dyn Any>> {
         macro_rules! left_param {
             ($($arg:tt)*) => {{
                 Either::Left(Box::new($($arg)*))
