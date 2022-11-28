@@ -1,8 +1,8 @@
 use clap::Parser;
 use odbc_api_helper::executor::database::{OdbcDbConnection, Options};
 use odbc_api_helper::executor::SupportDatabase;
-use odbc_api_helper::odbc_api::Environment;
 use odbc_api_helper::Print;
+use odbc_common::odbc_api::Environment;
 use serde::{Deserialize, Serialize};
 use std::fs;
 

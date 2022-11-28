@@ -36,4 +36,5 @@ pub struct PgTableItem {
     pub default_val: Option<String>,
     pub table_name: String,
     pub create_time: String,
+    pub subtype: Option<String>,
 }
