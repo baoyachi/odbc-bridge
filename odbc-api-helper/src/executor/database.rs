@@ -27,13 +27,7 @@ pub trait ConnectionTrait {
     where
         S: StatementInput;
 
-    fn show_table(
-        &self,
-        db_name: &str,
-        table_names: Vec<String>,
-    ) -> anyhow::Result<TableDescResult>;
-
-    fn show_table1<S>(&self, stmt: S) -> anyhow::Result<TableDescResult>
+    fn show_table<S>(&self, stmt: S) -> anyhow::Result<TableDescResult>
     where
         S: StatementInput;
 
@@ -130,7 +124,8 @@ impl<'a> ConnectionTrait for &OdbcDbConnection<'a> {
         }
     }
 
-    fn show_table1<S>(&self, stmt: S) -> anyhow::Result<TableDescResult>
+    /// The `TableDescArgs` impl  `StatementInput` trait.
+    fn show_table<S>(&self, stmt: S) -> anyhow::Result<TableDescResult>
     where
         S: StatementInput,
     {
@@ -143,29 +138,32 @@ impl<'a> ConnectionTrait for &OdbcDbConnection<'a> {
             .map_err(|_| anyhow!("cast TableDescArgsString error"))?;
         self.table_desc(args.0, args.1)
     }
-    fn show_table(
-        &self,
-        db_name: &str,
-        table_names: Vec<String>,
-    ) -> anyhow::Result<TableDescResult> {
-        self.table_desc(db_name.to_string(), table_names)
-    }
 
     fn batch<S>(&self, stmt: Vec<S>) -> anyhow::Result<BatchResult>
     where
         S: StatementInput,
     {
+        self.begin()?;
         let mut batch_result = BatchResult::default();
         // TODO 1. Consider the current execution in the transaction
         // TODO 2. need change to parallel execution
         // TODO 3. consider when execute try_for_each result return error, transaction need rollback
         // the detail link:<https://github.com/baoyachi/odbc-bridge/issues/38>
-        stmt.into_iter().try_for_each(|s| {
+        let result = stmt.into_iter().try_for_each(|s| {
             let op = s.operation();
             op.call(&**self, s, &mut batch_result)
-        })?;
-
-        Ok(batch_result)
+        });
+        match result {
+            Ok(_) => {
+                self.commit()?;
+                self.finish()?;
+                Ok(batch_result)
+            }
+            Err(err) => {
+                self.rollback()?;
+                Err(err)
+            }
+        }
     }
 
     fn begin(&self) -> anyhow::Result<()> {

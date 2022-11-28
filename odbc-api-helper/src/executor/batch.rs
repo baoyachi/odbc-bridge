@@ -38,10 +38,7 @@ impl Operation for OdbcOperation {
         match self {
             OdbcOperation::Execute => Ok(conn.execute(stmt)?.to_batch(batch_result)),
             OdbcOperation::Query => Ok(conn.query(stmt)?.to_batch(batch_result)),
-            OdbcOperation::ShowTable => {
-                //TODO adapter
-                todo!()
-            }
+            OdbcOperation::ShowTable => Ok(conn.show_table(stmt)?.to_batch(batch_result)),
         }
     }
 }
