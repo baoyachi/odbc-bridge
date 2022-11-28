@@ -7,7 +7,7 @@ use crate::executor::table::TableDescResult;
 pub trait Operation {
     fn call<Conn, S>(
         &self,
-        conn: Conn,
+        conn: &Conn,
         stmt: S,
         batch_result: &mut BatchResult,
     ) -> anyhow::Result<()>
@@ -26,7 +26,7 @@ pub enum OdbcOperation {
 impl Operation for OdbcOperation {
     fn call<Conn, S>(
         &self,
-        conn: Conn,
+        conn: &Conn,
         stmt: S,
         batch_result: &mut BatchResult,
     ) -> anyhow::Result<()>

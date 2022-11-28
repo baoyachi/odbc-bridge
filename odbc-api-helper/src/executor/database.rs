@@ -100,7 +100,7 @@ impl Options {
     }
 }
 
-impl<'a> ConnectionTrait for &OdbcDbConnection<'a> {
+impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
     fn execute<S>(&self, stmt: S) -> anyhow::Result<ExecResult>
     where
         S: StatementInput,
@@ -151,7 +151,7 @@ impl<'a> ConnectionTrait for &OdbcDbConnection<'a> {
         // the detail link:<https://github.com/baoyachi/odbc-bridge/issues/38>
         let result = stmt.into_iter().try_for_each(|s| {
             let op = s.operation();
-            op.call(&**self, s, &mut batch_result)
+            op.call(self, s, &mut batch_result)
         });
         match result {
             Ok(_) => {

@@ -112,7 +112,7 @@ mod tests {
     use odbc_api::Environment;
     use odbc_api_helper::executor::database::{ConnectionTrait, OdbcDbConnection, Options};
     use odbc_api_helper::executor::execute::ExecResult;
-    use odbc_api_helper::executor::table::TableDescResult;
+    use odbc_api_helper::executor::table::{TableDescArgs, TableDescResult};
     use odbc_api_helper::executor::SupportDatabase;
     use odbc_common::Print;
     use once_cell::sync::Lazy;
@@ -238,12 +238,12 @@ CREATE TABLE SYSDBA.T4 (
         cursor_impl.print_all_tables().unwrap();
 
         //2. query table
-        let mut table_desc = connection
-            .show_table(
-                "SYSDBA",
-                vec!["T2".to_string(), "T3".to_string(), "T4".to_string()],
-            )
-            .unwrap();
+
+        let args: TableDescArgs<_, _> = (
+            "SYSDBA",
+            vec!["T2".to_string(), "T3".to_string(), "T4".to_string()],
+        );
+        let mut table_desc = connection.show_table(args).unwrap();
 
         let _: Vec<_> = table_desc
             .1
