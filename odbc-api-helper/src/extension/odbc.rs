@@ -1,9 +1,9 @@
 use crate::executor::database::Options;
+use crate::odbc_api::buffers::{AnySlice, BufferDescription, BufferKind};
+use crate::odbc_api::sys::{Date, Time, Timestamp, NULL_DATA};
+use crate::odbc_api::DataType;
 use crate::{Convert, TryConvert};
 use bytes::BytesMut;
-use odbc_api::buffers::{AnySlice, BufferDescription, BufferKind};
-use odbc_api::sys::{Date, Time, Timestamp, NULL_DATA};
-use odbc_api::DataType;
 use std::cmp::min;
 
 #[derive(Debug, Clone)]
@@ -517,7 +517,7 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
 ///
 /// ```rust
 /// # use time::{Date, macros::date};
-/// # use odbc_api::sys::Date as OdbcDate;
+/// # use odbc_common::odbc_api::sys::Date as OdbcDate;
 /// use odbc_api_helper::TryConvert;
 ///
 /// let odbc_data = OdbcDate{year: 2020,month: 1,day: 1};
@@ -545,7 +545,7 @@ impl TryConvert<time::Date> for Date {
 ///
 /// ```rust
 /// # use time::{Date, macros::time};
-/// # use odbc_api::sys::Time as OdbcTime;
+/// # use odbc_common::odbc_api::sys::Time as OdbcTime;
 /// use odbc_api_helper::TryConvert;
 ///
 /// let odbc_time = OdbcTime { hour: 3,minute: 1,second: 1 };
