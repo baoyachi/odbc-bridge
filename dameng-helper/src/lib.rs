@@ -7,10 +7,12 @@ pub mod data_type;
 pub mod table;
 
 pub use data_type::*;
-use odbc_api::buffers::TextRowSet;
-use odbc_api::handles::StatementImpl;
-use odbc_api::{Cursor, CursorImpl, ResultSetMetadata};
-use odbc_common::error::OdbcStdResult;
+use odbc_common::{
+    error::OdbcStdResult,
+    odbc_api::{
+        buffers::TextRowSet, handles::StatementImpl, Cursor, CursorImpl, ResultSetMetadata,
+    },
+};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
@@ -23,7 +25,7 @@ fn init_test() {
 pub trait DmAdapter {
     fn get_table_sql(
         table_names: Vec<String>,
-        db_name: &str,
+        db_name: String,
         case_sensitive: bool,
     ) -> TableSqlDescribe;
     fn get_table_desc(
@@ -45,7 +47,7 @@ pub struct TableSqlDescribe {
 impl DmAdapter for CursorImpl<StatementImpl<'_>> {
     fn get_table_sql(
         table_names: Vec<String>,
-        db_name: &str,
+        db_name: String,
         case_sensitive: bool,
     ) -> TableSqlDescribe {
         // Use sql: `SELECT A.*, B.NAME AS TABLE_NAME FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ("X")`;
@@ -60,7 +62,7 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
             tables, db_name
         );
         TableSqlDescribe {
-            db_name: db_name.to_string(),
+            db_name,
             describe_sql,
             column_name_index: 0,
             table_name_index: 8,
@@ -109,10 +111,10 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
 mod tests {
     const DAMENG_CONNECTION: &str = "Driver={DM8};Server=0.0.0.0;UID=SYSDBA;PWD=SYSDBA001;";
 
-    use odbc_api::Environment;
+    use odbc_common::odbc_api::Environment;
     use odbc_api_helper::executor::database::{ConnectionTrait, OdbcDbConnection, Options};
     use odbc_api_helper::executor::execute::ExecResult;
-    use odbc_api_helper::executor::table::TableDescResult;
+    use odbc_api_helper::executor::table::{TableDescArgs, TableDescResult};
     use odbc_api_helper::executor::SupportDatabase;
     use odbc_common::Print;
     use once_cell::sync::Lazy;
@@ -238,12 +240,12 @@ CREATE TABLE SYSDBA.T4 (
         cursor_impl.print_all_tables().unwrap();
 
         //2. query table
-        let mut table_desc = connection
-            .show_table(
-                "SYSDBA",
-                vec!["T2".to_string(), "T3".to_string(), "T4".to_string()],
-            )
-            .unwrap();
+
+        let args: TableDescArgs<_, _> = (
+            "SYSDBA",
+            vec!["T2".to_string(), "T3".to_string(), "T4".to_string()],
+        );
+        let mut table_desc = connection.show_table(args).unwrap();
 
         let _: Vec<_> = table_desc
             .1

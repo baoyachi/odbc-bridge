@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate log;
 
+pub extern crate odbc_api;
+
 pub mod error;
 pub mod print_table;
 pub mod sqlstate_handler;

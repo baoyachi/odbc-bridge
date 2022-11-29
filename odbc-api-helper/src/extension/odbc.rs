@@ -1,11 +1,12 @@
 use crate::executor::database::Options;
+use crate::odbc_api::{
+    buffers::{AnySlice, BufferDesc},
+    sys::{Date, Time, Timestamp, NULL_DATA},
+    DataType,
+};
 use crate::{Convert, TryConvert};
 use bytes::BytesMut;
-use odbc_api::buffers::{AnySlice, BufferDescription, BufferKind};
-use odbc_api::sys::{Date, Time, Timestamp, NULL_DATA};
-use odbc_api::DataType;
 use std::cmp::min;
-
 #[derive(Debug, Clone)]
 pub struct OdbcColumn {
     pub name: String,
@@ -23,43 +24,40 @@ impl OdbcColumn {
     }
 }
 
-impl TryConvert<BufferDescription> for (&OdbcColumn, &Options) {
+impl TryConvert<BufferDesc> for (&OdbcColumn, &Options) {
     type Error = String;
 
-    fn try_convert(self) -> Result<BufferDescription, Self::Error> {
+    fn try_convert(self) -> Result<BufferDesc, Self::Error> {
         let c = self.0;
         let option = self.1;
-        let mut description = BufferDescription {
-            nullable: c.nullable,
-            kind: BufferKind::from_data_type(c.data_type)
-                .ok_or_else(|| format!("covert DataType:{:?} to BufferKind error", c.data_type))?,
-        };
+        let mut desc = BufferDesc::from_data_type(c.data_type, c.nullable)
+            .ok_or_else(|| format!("covert DataType:{:?} to BufferDesc error", c.data_type))?;
 
         // When use `BufferKind::from_data_type` get result with `BufferKind::Text`
         // It's maybe caused panic,it need use `Option.max_str_len` to readjust size.
         // Link: <https://github.com/pacman82/odbc-api/issues/268>
-        match description.kind {
-            // TODO Notice: The kind of `BufferKind::Text` mix up varchar or text type
+        match desc {
+            // TODO Notice: The kind of `BufferDesc::Text` mix up varchar or text type
             // Need to distinguish between text type or varchar type
-            BufferKind::Text { max_str_len } => {
-                description.kind = BufferKind::Text {
+            BufferDesc::Text { max_str_len } => {
+                desc = BufferDesc::WText {
                     max_str_len: min(max_str_len, option.max_str_len),
                 };
             }
-            BufferKind::WText { max_str_len } => {
-                description.kind = BufferKind::WText {
+            BufferDesc::WText { max_str_len } => {
+                desc = BufferDesc::WText {
                     max_str_len: min(max_str_len, option.max_str_len),
                 };
             }
-            BufferKind::Binary { length } => {
-                description.kind = BufferKind::Binary {
+            BufferDesc::Binary { length } => {
+                desc = BufferDesc::Binary {
                     length: min(length, option.max_binary_len),
-                }
+                };
             }
             _ => {}
         }
 
-        Ok(description)
+        Ok(desc)
     }
 }
 
@@ -517,7 +515,7 @@ impl Convert<Vec<OdbcColumnItem>> for AnySlice<'_> {
 ///
 /// ```rust
 /// # use time::{Date, macros::date};
-/// # use odbc_api::sys::Date as OdbcDate;
+/// # use odbc_common::odbc_api::sys::Date as OdbcDate;
 /// use odbc_api_helper::TryConvert;
 ///
 /// let odbc_data = OdbcDate{year: 2020,month: 1,day: 1};
@@ -545,7 +543,7 @@ impl TryConvert<time::Date> for Date {
 ///
 /// ```rust
 /// # use time::{Date, macros::time};
-/// # use odbc_api::sys::Time as OdbcTime;
+/// # use odbc_common::odbc_api::sys::Time as OdbcTime;
 /// use odbc_api_helper::TryConvert;
 ///
 /// let odbc_time = OdbcTime { hour: 3,minute: 1,second: 1 };

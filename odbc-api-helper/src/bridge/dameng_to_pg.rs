@@ -4,7 +4,6 @@ use dameng_helper::DmDateType;
 use odbc_common::error::{OdbcStdError, OdbcStdResult};
 use pg_helper::table::PgTableItem;
 use pg_helper::PgType;
-
 impl TryConvert<PgType> for DmDateType {
     type Error = OdbcStdError;
 

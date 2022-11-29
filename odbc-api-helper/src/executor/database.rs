@@ -1,22 +1,32 @@
+use crate::executor::batch::BatchResult;
+use crate::executor::batch::Operation;
 use crate::executor::execute::ExecResult;
 use crate::executor::query::QueryResult;
 use crate::executor::statement::StatementInput;
-use crate::executor::table::TableDescResult;
+use crate::executor::table::{TableDescArgsString, TableDescResult};
 use crate::executor::SupportDatabase;
 use crate::extension::odbc::{OdbcColumn, OdbcColumnItem};
+
 use crate::{Convert, TryConvert};
 use dameng_helper::DmAdapter;
 use either::Either;
-use odbc_api::buffers::{AnySlice, BufferDescription, ColumnarAnyBuffer};
-use odbc_api::handles::StatementImpl;
-use odbc_api::{
-    ColumnDescription, Connection, Cursor, CursorImpl, ParameterCollectionRef, ResultSetMetadata,
-};
-use odbc_common::error::{OdbcStdError, OdbcStdResult, OdbcWrapperError};
+use odbc_common::error::OdbcStdError;
+use odbc_common::error::OdbcStdResult;
+use odbc_common::error::OdbcWrapperError;
+use odbc_common::odbc_api::buffers::AnySlice;
+use odbc_common::odbc_api::buffers::BufferDesc;
+use odbc_common::odbc_api::buffers::ColumnarAnyBuffer;
+use odbc_common::odbc_api::handles::StatementImpl;
+use odbc_common::odbc_api::ColumnDescription;
+use odbc_common::odbc_api::Connection;
+use odbc_common::odbc_api::Cursor;
+use odbc_common::odbc_api::CursorImpl;
+use odbc_common::odbc_api::ParameterCollectionRef;
+use odbc_common::odbc_api::ResultSetMetadata;
 use std::ops::IndexMut;
 
 pub trait ConnectionTrait {
-    /// Execute a `[Statement]`  INSETT,UPDATE,DELETE
+    /// Execute a `[Statement]`  INSERT,UPDATE,DELETE
     fn execute<S>(&self, stmt: S) -> OdbcStdResult<ExecResult>
     where
         S: StatementInput;
@@ -26,8 +36,13 @@ pub trait ConnectionTrait {
     where
         S: StatementInput;
 
-    fn show_table(&self, db_name: &str, table_names: Vec<String>)
-        -> OdbcStdResult<TableDescResult>;
+    fn show_table<S>(&self, stmt: S) -> OdbcStdResult<TableDescResult>
+    where
+        S: StatementInput;
+
+    fn batch<S>(&self, stmt: Vec<S>) -> OdbcStdResult<BatchResult>
+    where
+        S: StatementInput;
 
     // begin transaction
     fn begin(&self) -> OdbcStdResult<()>;
@@ -100,9 +115,9 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
         S: StatementInput,
     {
         let sql = stmt.to_sql().to_string();
-        match stmt.values()? {
+        match stmt.input_values()? {
             Either::Left(params) => self.exec_result(sql, &params[..]),
-            Either::Right(()) => self.exec_result(sql, ()),
+            Either::Right(_) => self.exec_result(sql, ()),
         }
     }
 
@@ -112,18 +127,53 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
     {
         let sql = stmt.to_sql().to_string();
 
-        match stmt.values()? {
+        match stmt.input_values()? {
             Either::Left(params) => self.query_result(&sql, &params[..]),
-            Either::Right(()) => self.query_result(&sql, ()),
+            Either::Right(_) => self.query_result(&sql, ()),
         }
     }
 
-    fn show_table(
-        &self,
-        db_name: &str,
-        table_names: Vec<String>,
-    ) -> OdbcStdResult<TableDescResult> {
-        self.table_desc(db_name, table_names)
+    /// The `TableDescArgs` impl  `StatementInput` trait.
+    fn show_table<S>(&self, stmt: S) -> OdbcStdResult<TableDescResult>
+    where
+        S: StatementInput,
+    {
+        let any = stmt.to_value().right().ok_or_else(|| {
+            OdbcStdError::OdbcError(OdbcWrapperError::DataHandlerError(
+                "expect table desc args".to_string(),
+            ))
+        })?;
+        let args = any.downcast::<TableDescArgsString>().map_err(|_| {
+            OdbcStdError::TypeConversionError("cast TableDescArgsString error".to_string())
+        })?;
+        self.table_desc(args.0, args.1)
+    }
+
+    fn batch<S>(&self, stmt: Vec<S>) -> OdbcStdResult<BatchResult>
+    where
+        S: StatementInput,
+    {
+        self.begin()?;
+        let mut batch_result = BatchResult::default();
+        // TODO 1. Consider the current execution in the transaction
+        // TODO 2. need change to parallel execution
+        // TODO 3. consider when execute try_for_each result return error, transaction need rollback
+        // the detail link:<https://github.com/baoyachi/odbc-bridge/issues/38>
+        let result = stmt.into_iter().try_for_each(|s| {
+            let op = s.operation();
+            op.call(self, s, &mut batch_result)
+        });
+        match result {
+            Ok(_) => {
+                self.commit()?;
+                self.finish()?;
+                Ok(batch_result)
+            }
+            Err(err) => {
+                self.rollback()?;
+                Err(err)
+            }
+        }
     }
 
     fn begin(&self) -> OdbcStdResult<()> {
@@ -182,15 +232,12 @@ impl<'a> OdbcDbConnection<'a> {
         debug!("columns:{:?}", query_result.columns);
 
         let descs = query_result.columns.iter().map(|c| {
-            <(&OdbcColumn, &Options) as TryConvert<BufferDescription>>::try_convert((
-                c,
-                &self.options,
-            ))
-            .unwrap()
+            <(&OdbcColumn, &Options) as TryConvert<BufferDesc>>::try_convert((c, &self.options))
+                .unwrap()
         });
 
         let row_set_buffer =
-            ColumnarAnyBuffer::try_from_description(self.options.max_batch_size, descs).unwrap();
+            ColumnarAnyBuffer::try_from_descs(self.options.max_batch_size, descs).unwrap();
 
         let mut row_set_cursor = cursor.bind_buffer(row_set_buffer).unwrap();
 
@@ -233,7 +280,7 @@ impl<'a> OdbcDbConnection<'a> {
 
     fn table_desc(
         &self,
-        db_name: &str,
+        db_name: String,
         table_names: Vec<String>,
     ) -> OdbcStdResult<TableDescResult> {
         let db = &self.options.database;
