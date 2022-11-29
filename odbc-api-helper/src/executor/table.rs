@@ -53,6 +53,10 @@ where
         Either::Right(Box::new(any))
     }
 
+    fn operation(&self) -> Option<Self::Operation> {
+        Some(OdbcOperation::ShowTable)
+    }
+
     fn to_sql(&self) -> &str {
         panic!("no need sql")
     }
