@@ -12,9 +12,9 @@ Extension based on **[odbc-api](https://github.com/pacman82/odbc-api)**
 
 ## Features
 - [x] Print database columns table
+- [x] Convert Postgres Database
+- [x] Support Dameng database 
 - [ ] Rust Asynchronous
-- [ ] Convert Postgres Database
-- [ ] Support Dameng database 
 - [ ] Embed ORM framework 
 
 
