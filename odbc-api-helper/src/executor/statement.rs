@@ -139,7 +139,7 @@ impl StatementInput for String {
 ///
 /// let statement:Statement<PgValueInput,OdbcOperation> = Statement::new("select * from empty where name=? and age=?",vec![
 ///     PgValueInput::Varchar("foo".into()),
-///     PgValueInput::Int2(8)
+///     PgValueInput::Int2(Some(8))
 /// ]);
 ///
 /// let left:Vec<Box<dyn InputParameter>> = statement.try_convert().unwrap().left().unwrap();
