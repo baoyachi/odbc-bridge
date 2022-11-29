@@ -16,7 +16,7 @@ license = "Apache-2.0"
 
 [dependencies]
 nu-protocol = "=0.69.1"
-nu-table = "=0.69.1"
+nu-table = "=0.71.0"
 log = "0.4.17"
 odbc-api = "0.52.2"
 anyhow = "1.0.66"
