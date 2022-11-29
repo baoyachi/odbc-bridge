@@ -5,6 +5,7 @@ extern crate log;
 
 pub extern crate odbc_common;
 pub extern crate pg_helper;
+pub extern crate dameng_helper;
 
 pub mod bridge;
 pub mod executor;
