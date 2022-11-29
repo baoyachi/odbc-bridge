@@ -1,7 +1,9 @@
 use crate::executor::database::Options;
-use crate::odbc_api::buffers::{AnySlice, BufferDescription, BufferKind};
-use crate::odbc_api::sys::{Date, Time, Timestamp, NULL_DATA};
-use crate::odbc_api::DataType;
+use crate::odbc_api::{
+    buffers::{AnySlice, BufferDesc},
+    sys::{Date, Time, Timestamp, NULL_DATA},
+    DataType,
+};
 use crate::{Convert, TryConvert};
 use bytes::BytesMut;
 use std::cmp::min;
@@ -23,43 +25,40 @@ impl OdbcColumn {
     }
 }
 
-impl TryConvert<BufferDescription> for (&OdbcColumn, &Options) {
+impl TryConvert<BufferDesc> for (&OdbcColumn, &Options) {
     type Error = String;
 
-    fn try_convert(self) -> Result<BufferDescription, Self::Error> {
+    fn try_convert(self) -> Result<BufferDesc, Self::Error> {
         let c = self.0;
         let option = self.1;
-        let mut description = BufferDescription {
-            nullable: c.nullable,
-            kind: BufferKind::from_data_type(c.data_type)
-                .ok_or_else(|| format!("covert DataType:{:?} to BufferKind error", c.data_type))?,
-        };
+        let mut desc = BufferDesc::from_data_type(c.data_type, c.nullable)
+            .ok_or_else(|| format!("covert DataType:{:?} to BufferDesc error", c.data_type))?;
 
         // When use `BufferKind::from_data_type` get result with `BufferKind::Text`
         // It's maybe caused panic,it need use `Option.max_str_len` to readjust size.
         // Link: <https://github.com/pacman82/odbc-api/issues/268>
-        match description.kind {
-            // TODO Notice: The kind of `BufferKind::Text` mix up varchar or text type
+        match desc {
+            // TODO Notice: The kind of `BufferDesc::Text` mix up varchar or text type
             // Need to distinguish between text type or varchar type
-            BufferKind::Text { max_str_len } => {
-                description.kind = BufferKind::Text {
+            BufferDesc::Text { max_str_len } => {
+                desc = BufferDesc::WText {
                     max_str_len: min(max_str_len, option.max_str_len),
                 };
             }
-            BufferKind::WText { max_str_len } => {
-                description.kind = BufferKind::WText {
+            BufferDesc::WText { max_str_len } => {
+                desc = BufferDesc::WText {
                     max_str_len: min(max_str_len, option.max_str_len),
                 };
             }
-            BufferKind::Binary { length } => {
-                description.kind = BufferKind::Binary {
+            BufferDesc::Binary { length } => {
+                desc = BufferDesc::Binary {
                     length: min(length, option.max_binary_len),
-                }
+                };
             }
             _ => {}
         }
 
-        Ok(description)
+        Ok(desc)
     }
 }
 
