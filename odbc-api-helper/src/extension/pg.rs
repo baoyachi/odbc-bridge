@@ -2,7 +2,7 @@ use crate::executor::database::Options;
 use crate::executor::query::QueryResult;
 use crate::executor::statement::SqlValue;
 use crate::extension::odbc::{OdbcColumn, OdbcColumnItem, OdbcColumnType};
-use crate::odbc_api::buffers::BufferKind;
+use crate::odbc_api::buffers::BufferDesc;
 use crate::odbc_api::parameter::InputParameter;
 use crate::odbc_api::Bit;
 use crate::odbc_api::IntoParameter;
@@ -21,6 +21,7 @@ use crate::extension::util::{
     parse_to_i8, parse_to_int2, parse_to_int4, parse_to_int8, parse_to_string, parse_to_time,
 };
 use dameng_helper::table::DmTableDesc;
+
 use pg_helper::table::PgTableDesc;
 
 #[derive(Debug, PartialEq)]
@@ -96,24 +97,24 @@ impl PgColumnItem {
 
 impl Convert<PgColumn> for OdbcColumn {
     fn convert(self) -> PgColumn {
-        let buffer_kind = BufferKind::from_data_type(self.data_type).unwrap();
-        let pg_type = match buffer_kind {
-            BufferKind::Binary { .. } => PgType::BYTEA,
-            BufferKind::Text { .. } => PgType::TEXT,
-            BufferKind::WText { .. } => PgType::TEXT,
-            BufferKind::F64 => PgType::FLOAT8,
-            BufferKind::F32 => PgType::FLOAT4,
-            BufferKind::Date => PgType::DATE,
-            BufferKind::Time => PgType::TIME,
-            BufferKind::Timestamp => PgType::TIMESTAMP,
-            BufferKind::I8 => PgType::CHAR,
-            BufferKind::I16 => PgType::INT2,
-            BufferKind::I32 => PgType::INT4,
-            BufferKind::I64 => PgType::INT8,
-            BufferKind::U8 => {
+        let desc = BufferDesc::from_data_type(self.data_type, self.nullable).unwrap();
+        let pg_type = match desc {
+            BufferDesc::Binary { .. } => PgType::BYTEA,
+            BufferDesc::Text { .. } => PgType::TEXT,
+            BufferDesc::WText { .. } => PgType::TEXT,
+            BufferDesc::F64 { .. } => PgType::FLOAT8,
+            BufferDesc::F32 { .. } => PgType::FLOAT4,
+            BufferDesc::Date { .. } => PgType::DATE,
+            BufferDesc::Time { .. } => PgType::TIME,
+            BufferDesc::Timestamp { .. } => PgType::TIMESTAMP,
+            BufferDesc::I8 { .. } => PgType::CHAR,
+            BufferDesc::I16 { .. } => PgType::INT2,
+            BufferDesc::I32 { .. } => PgType::INT4,
+            BufferDesc::I64 { .. } => PgType::INT8,
+            BufferDesc::U8 { .. } => {
                 panic!("not coverage U8");
             }
-            BufferKind::Bit => PgType::BOOL,
+            BufferDesc::Bit { .. } => PgType::BOOL,
         };
         let oid = pg_type.oid();
         PgColumn {

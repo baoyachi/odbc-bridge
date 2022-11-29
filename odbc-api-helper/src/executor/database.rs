@@ -6,9 +6,9 @@ use crate::executor::statement::StatementInput;
 use crate::executor::table::{TableDescArgsString, TableDescResult};
 use crate::executor::SupportDatabase;
 use crate::extension::odbc::{OdbcColumn, OdbcColumnItem};
-use crate::odbc_api::buffers::{AnySlice, BufferDescription, ColumnarAnyBuffer};
-use crate::odbc_api::handles::StatementImpl;
 use crate::odbc_api::{
+    buffers::{AnySlice, BufferDesc, ColumnarAnyBuffer},
+    handles::StatementImpl,
     ColumnDescription, Connection, Cursor, CursorImpl, ParameterCollectionRef, ResultSetMetadata,
 };
 use crate::{Convert, TryConvert};
@@ -221,15 +221,12 @@ impl<'a> OdbcDbConnection<'a> {
         debug!("columns:{:?}", query_result.columns);
 
         let descs = query_result.columns.iter().map(|c| {
-            <(&OdbcColumn, &Options) as TryConvert<BufferDescription>>::try_convert((
-                c,
-                &self.options,
-            ))
-            .unwrap()
+            <(&OdbcColumn, &Options) as TryConvert<BufferDesc>>::try_convert((c, &self.options))
+                .unwrap()
         });
 
         let row_set_buffer =
-            ColumnarAnyBuffer::try_from_description(self.options.max_batch_size, descs).unwrap();
+            ColumnarAnyBuffer::try_from_descs(self.options.max_batch_size, descs).unwrap();
 
         let mut row_set_cursor = cursor.bind_buffer(row_set_buffer).unwrap();
 
