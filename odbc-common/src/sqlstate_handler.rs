@@ -1,7 +1,7 @@
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct SqlState {
-    state_odbc: &'static str,
-    state_pg: &'static str,
+    pub state_odbc: &'static str,
+    pub state_pg: &'static str,
 }
 
 macro_rules! pg_sqlstate_mapping {
