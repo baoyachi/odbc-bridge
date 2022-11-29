@@ -1,11 +1,11 @@
 use crate::executor::database::Options;
-use crate::odbc_api::{
+use crate::{Convert, TryConvert};
+use bytes::BytesMut;
+use odbc_common::odbc_api::{
     buffers::{AnySlice, BufferDesc},
     sys::{Date, Time, Timestamp, NULL_DATA},
     DataType,
 };
-use crate::{Convert, TryConvert};
-use bytes::BytesMut;
 use std::cmp::min;
 #[derive(Debug, Clone)]
 pub struct OdbcColumn {

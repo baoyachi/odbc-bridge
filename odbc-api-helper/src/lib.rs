@@ -2,10 +2,9 @@
 
 #[macro_use]
 extern crate log;
-pub extern crate dameng_helper;
-pub extern crate pg_helper;
 
-pub(crate) use odbc_common::odbc_api;
+pub extern crate odbc_common;
+pub extern crate pg_helper;
 
 pub mod bridge;
 pub mod executor;

@@ -2,14 +2,13 @@ use crate::executor::database::Options;
 use crate::executor::query::QueryResult;
 use crate::executor::statement::SqlValue;
 use crate::extension::odbc::{OdbcColumn, OdbcColumnItem, OdbcColumnType};
-use crate::odbc_api::parameter::InputParameter;
-use crate::odbc_api::Bit;
-use crate::odbc_api::IntoParameter;
 use crate::{Convert, TryConvert};
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use either::Either;
 use odbc_common::error::{OdbcStdError, OdbcStdResult};
 use odbc_common::odbc_api::buffers::BufferDesc;
+use odbc_common::odbc_api::parameter::InputParameter;
+use odbc_common::odbc_api::{Bit, IntoParameter};
 use pg_helper::table::PgTableItem;
 use postgres_types::{Oid, Type as PgType};
 use std::any::Any;
@@ -346,8 +345,9 @@ impl TryConvert<Vec<PgColumn>> for (&Vec<OdbcColumn>, &Vec<PgTableItem>, &Option
 
 #[cfg(test)]
 mod tests {
+    use odbc_common::odbc_api::DataType;
+
     use super::*;
-    use crate::odbc_api::DataType;
 
     #[test]
     fn test_query_result_convert() {
