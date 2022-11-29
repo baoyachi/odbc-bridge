@@ -25,6 +25,12 @@ pub enum OdbcStdError {
     StringError(String),
 }
 
+impl Default for OdbcStdError {
+    fn default() -> Self {
+        OdbcStdError::StringError(String::new())
+    }
+}
+
 impl From<odbc_api::Error> for OdbcStdError {
     fn from(e: odbc_api::Error) -> Self {
         OdbcStdError::OdbcError(e.into())
