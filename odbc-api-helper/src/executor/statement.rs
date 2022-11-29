@@ -138,7 +138,7 @@ impl StatementInput for String {
 /// use odbc_api_helper::TryConvert;
 ///
 /// let statement:Statement<PgValueInput,OdbcOperation> = Statement::new("select * from empty where name=? and age=?",vec![
-///     PgValueInput::Varchar("foo".into()),
+///     PgValueInput::Varchar(Some("foo".into())),
 ///     PgValueInput::Int2(Some(8))
 /// ]);
 ///
