@@ -111,11 +111,11 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
 mod tests {
     const DAMENG_CONNECTION: &str = "Driver={DM8};Server=0.0.0.0;UID=SYSDBA;PWD=SYSDBA001;";
 
-    use odbc_common::odbc_api::Environment;
     use odbc_api_helper::executor::database::{ConnectionTrait, OdbcDbConnection, Options};
     use odbc_api_helper::executor::execute::ExecResult;
     use odbc_api_helper::executor::table::{TableDescArgs, TableDescResult};
     use odbc_api_helper::executor::SupportDatabase;
+    use odbc_common::odbc_api::Environment;
     use odbc_common::Print;
     use once_cell::sync::Lazy;
     use regex::Regex;
