@@ -34,6 +34,12 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
       - name: Build Release
         run: cargo build --release
+      - name: install rust nightly
+        run: rustup toolchain install nightly
+      - name: install cargo-udeps
+        run: cargo install cargo-udeps --locked
+      - name: cargo-udep check
+        run: cargo +nightly udeps
   test:
     name: Build & Test Linux
     runs-on: ubuntu-latest
