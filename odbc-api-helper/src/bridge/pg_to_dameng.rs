@@ -1,11 +1,12 @@
 use crate::TryConvert;
 use dameng_helper::DmDateType;
+use odbc_common::error::{OdbcStdError, OdbcStdResult};
 use pg_helper::PgType;
 
 impl TryConvert<DmDateType> for &PgType {
-    type Error = anyhow::Error;
+    type Error = OdbcStdError;
 
-    fn try_convert(self) -> Result<DmDateType, Self::Error> {
+    fn try_convert(self) -> OdbcStdResult<DmDateType, Self::Error> {
         match *self {
             PgType::NUMERIC => Ok(DmDateType::NUMERIC),
             PgType::BOOL => Ok(DmDateType::BIT),
@@ -24,7 +25,10 @@ impl TryConvert<DmDateType> for &PgType {
             PgType::TIMESTAMP => Ok(DmDateType::TIMESTAMP),
             PgType::TIMETZ => Ok(DmDateType::TIME_WITH_TIME_ZONE),
             PgType::TIMESTAMPTZ => Ok(DmDateType::TIMESTAMP_WITH_TIME_ZONE),
-            _ => bail!("convert pg data_type to dameng data_type error:{}", self),
+            _ => Err(OdbcStdError::TypeConversionError(format!(
+                "convert pg data_type to dameng data_type error:{}",
+                self
+            ))),
         }
     }
 }

@@ -1,3 +1,5 @@
+use odbc_common::error::OdbcStdResult;
+
 use crate::executor::database::ConnectionTrait;
 use crate::executor::execute::ExecResult;
 use crate::executor::query::QueryResult;
@@ -10,7 +12,7 @@ pub trait Operation {
         conn: &Conn,
         stmt: S,
         batch_result: &mut BatchResult,
-    ) -> anyhow::Result<()>
+    ) -> OdbcStdResult<()>
     where
         Conn: ConnectionTrait,
         S: StatementInput;
@@ -29,7 +31,7 @@ impl Operation for OdbcOperation {
         conn: &Conn,
         stmt: S,
         batch_result: &mut BatchResult,
-    ) -> anyhow::Result<()>
+    ) -> OdbcStdResult<()>
     where
         Conn: ConnectionTrait,
         S: StatementInput,

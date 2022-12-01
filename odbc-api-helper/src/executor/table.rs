@@ -1,7 +1,7 @@
 use crate::executor::batch::OdbcOperation;
 use crate::executor::statement::StatementInput;
 use either::Either;
-use odbc_common::{Print, StyledString, Table, TableTheme, TextStyle};
+use odbc_common::{error::OdbcStdResult, Print, StyledString, Table, TableTheme, TextStyle};
 use std::any::Any;
 
 pub type TableDescResult = (Vec<String>, Vec<Vec<String>>);
@@ -74,7 +74,7 @@ impl From<TableDescResult> for TableDescResultInner {
 }
 
 impl Print for TableDescResultInner {
-    fn convert_table(self) -> anyhow::Result<Table> {
+    fn convert_table(self) -> OdbcStdResult<Table> {
         let headers: Vec<StyledString> = self
             .column_names
             .iter()
