@@ -9,8 +9,6 @@ use chrono::ParseError;
 use odbc_api::handles::slice_to_cow_utf8;
 use thiserror::Error;
 
-use crate::sqlstate_handler::{get_sqlstate_by_state_odbc, SqlState, STMT_INTERNAL_ERROR};
-
 pub type OdbcStdResult<T, E = OdbcStdError> = core::result::Result<T, E>;
 
 #[derive(Error, Debug)]
@@ -83,7 +81,7 @@ pub enum OdbcWrapperError {
 
 #[derive(Debug, Error)]
 pub struct StatementError {
-    pub state: SqlState,
+    pub state: String,
     pub error_msg: String,
 }
 
@@ -118,18 +116,13 @@ impl From<odbc_api::Error> for OdbcWrapperError {
                         return OdbcWrapperError::DataHandlerError(e.to_string());
                     }
                 };
-                if let Some(sql_state) = get_sqlstate_by_state_odbc(state) {
-                    return OdbcWrapperError::StatementError(StatementError {
-                        state: sql_state,
-                        error_msg: msg_info.to_string(),
-                    });
-                }
+                return OdbcWrapperError::StatementError(StatementError {
+                    state: state.to_string(),
+                    error_msg: msg_info.to_string(),
+                });
             }
             _ => {}
         }
-        OdbcWrapperError::StatementError(StatementError {
-            state: STMT_INTERNAL_ERROR,
-            error_msg: error.to_string(),
-        })
+        OdbcWrapperError::DataHandlerError(error.to_string())
     }
 }
