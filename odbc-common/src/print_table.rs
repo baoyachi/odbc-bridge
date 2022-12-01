@@ -1,4 +1,3 @@
-use anyhow::anyhow;
 use nu_protocol::Config;
 use nu_table::Table;
 use nu_table::{Alignments, StyledString, TableTheme, TextStyle};
@@ -6,16 +5,18 @@ use odbc_api::buffers::TextRowSet;
 use odbc_api::Cursor;
 use std::collections::HashMap;
 
+use crate::error::{OdbcStdError, OdbcStdResult};
+
 pub trait Print: Sized {
-    fn print_all_tables(self) -> anyhow::Result<()> {
+    fn print_all_tables(self) -> OdbcStdResult<()> {
         let p = self.table_string()?;
         debug!("\n{}", p);
         Ok(())
     }
 
-    fn convert_table(self) -> anyhow::Result<Table>;
+    fn convert_table(self) -> OdbcStdResult<Table>;
 
-    fn table_string(self) -> anyhow::Result<String> {
+    fn table_string(self) -> OdbcStdResult<String> {
         let table = self.convert_table()?;
         let cfg = Config::default();
         let styles = HashMap::default();
@@ -23,7 +24,9 @@ pub trait Print: Sized {
 
         let p = table
             .draw_table(&cfg, &styles, alignments, usize::MAX)
-            .ok_or_else(|| anyhow!("convert table to string error"))?;
+            .ok_or_else(|| {
+                OdbcStdError::TypeConversionError("convert table to string error".to_string())
+            })?;
         Ok(p)
     }
 }
@@ -44,7 +47,7 @@ impl<T> Print for T
 where
     T: Cursor,
 {
-    fn convert_table(mut self) -> anyhow::Result<Table> {
+    fn convert_table(mut self) -> OdbcStdResult<Table> {
         let headers: Vec<StyledString> = self
             .column_names()?
             .collect::<Result<Vec<String>, _>>()?

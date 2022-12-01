@@ -14,9 +14,8 @@ license = "Apache-2.0"
 
 
 [dependencies]
+serde = { version = "1.0.147", features = ["derive"] }
 log = "0.4.17"
-thiserror = "1.0"
-anyhow = "1.0.64"
 postgres-types = "0.2.4"
 postgres-protocol = "0.6.4"
 bytes = "1.2.1"
@@ -26,3 +25,6 @@ chrono = "0.4.22"
 dameng-helper = { path = "../dameng-helper", version = "0.2.4" }
 odbc-common = { path = "../odbc-common", version = "0.2.3" }
 pg-helper = { path = "../pg-helper", version = "0.2.3" }
+
+[dev-dependencies]
+serde_json = "1.0.87"

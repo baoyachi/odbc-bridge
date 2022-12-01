@@ -1,4 +1,5 @@
 use crate::extension::odbc::{OdbcColumn, OdbcColumnItem};
+use odbc_common::error::OdbcStdResult;
 use odbc_common::print_table::Print;
 use odbc_common::{StyledString, Table, TableTheme, TextStyle};
 
@@ -11,7 +12,7 @@ pub struct QueryResult {
 }
 
 impl Print for QueryResult {
-    fn convert_table(self) -> anyhow::Result<Table> {
+    fn convert_table(self) -> OdbcStdResult<Table> {
         let headers: Vec<StyledString> = self
             .columns
             .iter()

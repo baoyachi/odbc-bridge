@@ -1,9 +1,13 @@
 #![deny(missing_debug_implementations)]
 #![allow(dead_code)]
 
-mod parser;
-pub mod table;
+#[macro_use]
+extern crate serde;
+extern crate odbc_common;
 
+mod parser;
+pub mod state;
+pub mod table;
 pub use postgres_types::Type as PgType;
 
 pub fn oid_typlen(pg_type: PgType) -> i16 {
