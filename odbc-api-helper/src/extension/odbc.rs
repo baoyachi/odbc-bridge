@@ -6,15 +6,23 @@ use odbc_common::odbc_api::{
     sys::{Date, Time, Timestamp, NULL_DATA},
     DataType,
 };
+use odbc_common::odbc_api::{Nullability, ColumnDescription};
+use odbc_common::odbc_api::handles::ParameterDescription;
 use std::cmp::min;
 #[derive(Debug, Clone)]
-pub struct OdbcColumn {
+pub struct OdbcColumnDescription {
     pub name: String,
     pub data_type: DataType,
     pub nullable: bool,
 }
 
-impl OdbcColumn {
+#[derive(Debug, Clone)]
+pub struct OdbcParamsDescription {
+    pub data_type: DataType,
+    pub nullable: bool,
+}
+
+impl OdbcColumnDescription {
     pub fn new(name: String, data_type: DataType, nullable: bool) -> Self {
         Self {
             name,
@@ -24,7 +32,35 @@ impl OdbcColumn {
     }
 }
 
-impl TryConvert<BufferDesc> for (&OdbcColumn, &Options) {
+impl TryFrom<ParameterDescription> for OdbcParamsDescription {
+    type Error = odbc_common::error::OdbcStdError;
+
+    fn try_from(description: ParameterDescription) -> Result<Self, Self::Error> {
+        let nullable = match description.nullable {
+            Nullability::Nullable | Nullability::Unknown => true,
+            Nullability::NoNulls => false,
+        };
+
+        Ok(OdbcParamsDescription {
+            data_type: description.data_type,
+            nullable,
+        })
+    }
+}
+
+impl TryFrom<ColumnDescription> for OdbcColumnDescription {
+    type Error = odbc_common::error::OdbcStdError;
+
+    fn try_from(column_description: ColumnDescription) -> Result<Self, Self::Error> {
+        Ok(OdbcColumnDescription::new(
+            column_description.name_to_string()?,
+            column_description.data_type,
+            column_description.could_be_nullable(),
+        ))
+    }
+}
+
+impl TryConvert<BufferDesc> for (&OdbcColumnDescription, &Options) {
     type Error = String;
 
     fn try_convert(self) -> Result<BufferDesc, Self::Error> {
