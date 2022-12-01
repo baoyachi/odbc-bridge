@@ -4,15 +4,16 @@ extern crate log;
 
 #[allow(non_camel_case_types)]
 pub mod data_type;
-pub mod error;
 pub mod table;
 
-pub use odbc_common::odbc_api;
-
-use crate::odbc_api::buffers::TextRowSet;
-use crate::odbc_api::handles::StatementImpl;
-use crate::odbc_api::{Cursor, CursorImpl, ResultSetMetadata};
 pub use data_type::*;
+pub use odbc_common::odbc_api;
+use odbc_common::{
+    error::OdbcStdResult,
+    odbc_api::{
+        buffers::TextRowSet, handles::StatementImpl, Cursor, CursorImpl, ResultSetMetadata,
+    },
+};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
@@ -31,7 +32,7 @@ pub trait DmAdapter {
     fn get_table_desc(
         self,
         describe: TableSqlDescribe,
-    ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)>;
+    ) -> OdbcStdResult<(Vec<String>, Vec<Vec<String>>)>;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -73,7 +74,7 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
     fn get_table_desc(
         mut self,
         describe: TableSqlDescribe,
-    ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
+    ) -> OdbcStdResult<(Vec<String>, Vec<Vec<String>>)> {
         debug!("describe:{:?}", describe);
         let case_sensitive_fn = |row_index: usize, name: Cow<str>| -> String {
             if !describe.case_sensitive
@@ -111,11 +112,11 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
 mod tests {
     const DAMENG_CONNECTION: &str = "Driver={DM8};Server=0.0.0.0;UID=SYSDBA;PWD=SYSDBA001;";
 
-    use crate::odbc_api::Environment;
     use odbc_api_helper::executor::database::{ConnectionTrait, OdbcDbConnection, Options};
     use odbc_api_helper::executor::execute::ExecResult;
     use odbc_api_helper::executor::table::{TableDescArgs, TableDescResult};
     use odbc_api_helper::executor::SupportDatabase;
+    use odbc_common::odbc_api::Environment;
     use odbc_common::Print;
     use once_cell::sync::Lazy;
     use regex::Regex;
