@@ -6,12 +6,8 @@ extern crate log;
 pub mod data_type;
 pub mod table;
 
-pub use odbc_common::odbc_api;
-
-use crate::odbc_api::buffers::TextRowSet;
-use crate::odbc_api::handles::StatementImpl;
-use crate::odbc_api::{Cursor, CursorImpl, ResultSetMetadata};
 pub use data_type::*;
+pub use odbc_common::odbc_api;
 use odbc_common::{
     error::OdbcStdResult,
     odbc_api::{
