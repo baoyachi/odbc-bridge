@@ -6,44 +6,47 @@ use crate::executor::statement::StatementInput;
 use crate::executor::table::{TableDescArgsString, TableDescResult};
 use crate::executor::SupportDatabase;
 use crate::extension::odbc::{OdbcColumn, OdbcColumnItem};
-use crate::odbc_api::{
+use crate::{Convert, TryConvert};
+use dameng_helper::DmAdapter;
+use either::Either;
+use odbc_common::error::OdbcStdError;
+use odbc_common::error::OdbcStdResult;
+use odbc_common::error::OdbcWrapperError;
+use odbc_common::odbc_api::{
     buffers::{AnySlice, BufferDesc, ColumnarAnyBuffer},
     handles::StatementImpl,
     ColumnDescription, Connection, Cursor, CursorImpl, ParameterCollectionRef, ResultSetMetadata,
 };
-use crate::{Convert, TryConvert};
-use dameng_helper::DmAdapter;
-use either::Either;
 use std::ops::IndexMut;
 
 pub trait ConnectionTrait {
     /// Execute a `[Statement]`  INSERT,UPDATE,DELETE
-    fn execute<S>(&self, stmt: S) -> anyhow::Result<ExecResult>
+    fn execute<S>(&self, stmt: S) -> OdbcStdResult<ExecResult>
     where
         S: StatementInput;
 
     /// Execute a `[Statement]` and return a collection Vec<[QueryResult]> on success
-    fn query<S>(&self, stmt: S) -> anyhow::Result<QueryResult>
+    fn query<S>(&self, stmt: S) -> OdbcStdResult<QueryResult>
     where
         S: StatementInput;
 
-    fn show_table<S>(&self, stmt: S) -> anyhow::Result<TableDescResult>
+    fn show_table<S>(&self, stmt: S) -> OdbcStdResult<TableDescResult>
     where
         S: StatementInput;
 
-    fn batch<S>(&self, stmt: Vec<S>) -> anyhow::Result<BatchResult>
+    fn batch<S>(&self, stmt: Vec<S>) -> OdbcStdResult<BatchResult>
     where
         S: StatementInput;
 
     // begin transaction
-    fn begin(&self) -> anyhow::Result<()>;
+    fn begin(&self) -> OdbcStdResult<()>;
 
     // finish transaction
-    fn finish(&self) -> anyhow::Result<()>;
+    fn finish(&self) -> OdbcStdResult<()>;
 
-    fn commit(&self) -> anyhow::Result<()>;
+    fn commit(&self) -> OdbcStdResult<()>;
 
-    fn rollback(&self) -> anyhow::Result<()>;
+    fn rollback(&self) -> OdbcStdResult<()>;
 }
 
 #[allow(missing_debug_implementations)]
@@ -101,7 +104,7 @@ impl Options {
 }
 
 impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
-    fn execute<S>(&self, stmt: S) -> anyhow::Result<ExecResult>
+    fn execute<S>(&self, stmt: S) -> OdbcStdResult<ExecResult>
     where
         S: StatementInput,
     {
@@ -112,7 +115,7 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
         }
     }
 
-    fn query<S>(&self, stmt: S) -> anyhow::Result<QueryResult>
+    fn query<S>(&self, stmt: S) -> OdbcStdResult<QueryResult>
     where
         S: StatementInput,
     {
@@ -125,21 +128,22 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
     }
 
     /// The `TableDescArgs` impl  `StatementInput` trait.
-    fn show_table<S>(&self, stmt: S) -> anyhow::Result<TableDescResult>
+    fn show_table<S>(&self, stmt: S) -> OdbcStdResult<TableDescResult>
     where
         S: StatementInput,
     {
-        let any = stmt
-            .to_value()
-            .right()
-            .ok_or_else(|| anyhow!("expect table desc args"))?;
-        let args = any
-            .downcast::<TableDescArgsString>()
-            .map_err(|_| anyhow!("cast TableDescArgsString error"))?;
+        let any = stmt.to_value().right().ok_or_else(|| {
+            OdbcStdError::OdbcError(OdbcWrapperError::DataHandlerError(
+                "expect table desc args".to_string(),
+            ))
+        })?;
+        let args = any.downcast::<TableDescArgsString>().map_err(|_| {
+            OdbcStdError::TypeConversionError("cast TableDescArgsString error".to_string())
+        })?;
         self.table_desc(args.0, args.1)
     }
 
-    fn batch<S>(&self, stmt: Vec<S>) -> anyhow::Result<BatchResult>
+    fn batch<S>(&self, stmt: Vec<S>) -> OdbcStdResult<BatchResult>
     where
         S: StatementInput,
     {
@@ -166,28 +170,28 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
         }
     }
 
-    fn begin(&self) -> anyhow::Result<()> {
+    fn begin(&self) -> OdbcStdResult<()> {
         Ok(self.conn.set_autocommit(false)?)
     }
 
-    fn finish(&self) -> anyhow::Result<()> {
+    fn finish(&self) -> OdbcStdResult<()> {
         self.conn.set_autocommit(true)?;
         Ok(())
     }
 
-    fn commit(&self) -> anyhow::Result<()> {
+    fn commit(&self) -> OdbcStdResult<()> {
         self.conn.commit()?;
         Ok(())
     }
 
-    fn rollback(&self) -> anyhow::Result<()> {
+    fn rollback(&self) -> OdbcStdResult<()> {
         self.conn.rollback()?;
         Ok(())
     }
 }
 
 impl<'a> OdbcDbConnection<'a> {
-    pub fn new(conn: Connection<'a>, options: Options) -> anyhow::Result<Self> {
+    pub fn new(conn: Connection<'a>, options: Options) -> OdbcStdResult<Self> {
         let options = options.check();
         let connection = Self { conn, options };
         Ok(connection)
@@ -197,7 +201,7 @@ impl<'a> OdbcDbConnection<'a> {
         &self,
         sql: S,
         params: impl ParameterCollectionRef,
-    ) -> anyhow::Result<ExecResult> {
+    ) -> OdbcStdResult<ExecResult> {
         let mut stmt = self.conn.preallocate()?;
         stmt.execute(&sql.into(), params)?;
         let row_op = stmt.row_count()?;
@@ -211,11 +215,12 @@ impl<'a> OdbcDbConnection<'a> {
         &self,
         sql: &str,
         params: impl ParameterCollectionRef,
-    ) -> anyhow::Result<QueryResult> {
-        let mut cursor = self
-            .conn
-            .execute(sql, params)?
-            .ok_or_else(|| anyhow!("query error"))?;
+    ) -> OdbcStdResult<QueryResult> {
+        let mut cursor = self.conn.execute(sql, params)?.ok_or_else(|| {
+            OdbcStdError::OdbcError(OdbcWrapperError::DataHandlerError(
+                "query error".to_string(),
+            ))
+        })?;
 
         let mut query_result = Self::get_cursor_columns(&mut cursor)?;
         debug!("columns:{:?}", query_result.columns);
@@ -251,7 +256,7 @@ impl<'a> OdbcDbConnection<'a> {
         Ok(query_result)
     }
 
-    fn get_cursor_columns(cursor: &mut CursorImpl<StatementImpl>) -> anyhow::Result<QueryResult> {
+    fn get_cursor_columns(cursor: &mut CursorImpl<StatementImpl>) -> OdbcStdResult<QueryResult> {
         let mut query_result = QueryResult::default();
         for index in 0..cursor.num_result_cols()?.try_into()? {
             let mut column_description = ColumnDescription::default();
@@ -271,7 +276,7 @@ impl<'a> OdbcDbConnection<'a> {
         &self,
         db_name: String,
         table_names: Vec<String>,
-    ) -> anyhow::Result<TableDescResult> {
+    ) -> OdbcStdResult<TableDescResult> {
         let db = &self.options.database;
         match db {
             SupportDatabase::Dameng => {
@@ -280,12 +285,17 @@ impl<'a> OdbcDbConnection<'a> {
                 let cursor = self
                     .conn
                     .execute(&describe.describe_sql, ())?
-                    .ok_or_else(|| anyhow!("query error"))?;
+                    .ok_or_else(|| {
+                        OdbcStdError::OdbcError(OdbcWrapperError::DataHandlerError(
+                            "query table describe error".to_string(),
+                        ))
+                    })?;
                 cursor.get_table_desc(describe)
             }
-            _ => {
-                bail!("current not support database:{:?}", db)
-            }
+            _ => Err(OdbcStdError::StringError(format!(
+                "current not support database:{:?}",
+                db
+            ))),
         }
     }
 }

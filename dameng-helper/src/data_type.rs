@@ -1,4 +1,4 @@
-use crate::error::DmError;
+use odbc_common::error::{OdbcStdError, OdbcStdResult};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -93,9 +93,9 @@ impl Default for DmDateType {
 }
 
 impl FromStr for DmDateType {
-    type Err = DmError;
+    type Err = OdbcStdError;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> OdbcStdResult<Self, Self::Err> {
         let data_type = match &*s.to_uppercase() {
             "NUMERIC" => Self::NUMERIC,
             "NUMBER" => Self::NUMBER,
@@ -125,7 +125,7 @@ impl FromStr for DmDateType {
             "TIME WITH TIME ZONE" => Self::TIME_WITH_TIME_ZONE,
             "DATETIME WITH TIME ZONE" => Self::TIMESTAMP_WITH_TIME_ZONE,
             "TIMESTAMP WITH LOCAL TIME ZONE" => Self::TIMESTAMP_WITH_LOCAL_TIME_ZONE,
-            _ => return Err(DmError::DataTypeError(s.to_string())),
+            _ => return Err(OdbcStdError::TypeConversionError(s.to_string())),
         };
         Ok(data_type)
     }
@@ -133,13 +133,13 @@ impl FromStr for DmDateType {
 
 pub trait TryToString {
     type Err;
-    fn try_to_string(&self) -> Result<String, Self::Err>;
+    fn try_to_string(&self) -> OdbcStdResult<String, Self::Err>;
 }
 
 impl TryToString for DmDateType {
-    type Err = DmError;
+    type Err = OdbcStdError;
 
-    fn try_to_string(&self) -> Result<String, Self::Err> {
+    fn try_to_string(&self) -> OdbcStdResult<String, Self::Err> {
         match self {
             DmDateType::NUMERIC => Ok("NUMERIC".to_string()),
             DmDateType::NUMBER => Ok("NUMBER".to_string()),
@@ -171,7 +171,7 @@ impl TryToString for DmDateType {
             DmDateType::TIMESTAMP_WITH_LOCAL_TIME_ZONE => {
                 Ok("TIMESTAMP WITH LOCAL TIME ZONE".to_string())
             }
-            _ => Err(DmError::DataTypeError(format!("{:?}", self))),
+            _ => Err(OdbcStdError::TypeConversionError(format!("{:?}", self))),
         }
     }
 }

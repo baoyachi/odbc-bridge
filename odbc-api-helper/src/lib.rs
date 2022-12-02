@@ -1,18 +1,13 @@
 #![deny(missing_debug_implementations)]
 
 #[macro_use]
-extern crate anyhow;
-
-#[macro_use]
 extern crate log;
 
 pub extern crate dameng_helper;
+pub extern crate odbc_common;
 pub extern crate pg_helper;
 
-pub(crate) use odbc_common::odbc_api;
-
 pub mod bridge;
-pub mod error;
 pub mod executor;
 pub mod extension;
 

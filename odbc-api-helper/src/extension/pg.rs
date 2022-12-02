@@ -2,13 +2,14 @@ use crate::executor::database::Options;
 use crate::executor::query::QueryResult;
 use crate::executor::statement::SqlValue;
 use crate::extension::odbc::{OdbcColumn, OdbcColumnItem, OdbcColumnType};
-use crate::odbc_api::buffers::BufferDesc;
-use crate::odbc_api::parameter::InputParameter;
-use crate::odbc_api::Bit;
-use crate::odbc_api::IntoParameter;
 use crate::{Convert, TryConvert};
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use either::Either;
+use odbc_common::error::{OdbcStdError, OdbcStdResult};
+use odbc_common::odbc_api::buffers::BufferDesc;
+use odbc_common::odbc_api::parameter::InputParameter;
+use odbc_common::odbc_api::Bit;
+use odbc_common::odbc_api::IntoParameter;
 use pg_helper::table::PgTableItem;
 use postgres_types::{Oid, Type as PgType};
 use std::any::Any;
@@ -21,7 +22,6 @@ use crate::extension::util::{
     parse_to_i8, parse_to_int2, parse_to_int4, parse_to_int8, parse_to_string, parse_to_time,
 };
 use dameng_helper::table::DmTableDesc;
-
 use pg_helper::table::PgTableDesc;
 
 #[derive(Debug, PartialEq)]
@@ -204,9 +204,9 @@ pub fn oid_typlen<C: Convert<PgType>>(c: C) -> i16 {
 }
 
 impl TryConvert<PgTableDesc> for (TableDescResult, &Options) {
-    type Error = anyhow::Error;
+    type Error = OdbcStdError;
 
-    fn try_convert(self) -> Result<PgTableDesc, Self::Error> {
+    fn try_convert(self) -> OdbcStdResult<PgTableDesc, Self::Error> {
         let pg = match self.1.database {
             SupportDatabase::Dameng => {
                 let dm = DmTableDesc::new(self.0 .0, self.0 .1)?;
@@ -228,9 +228,9 @@ impl TryConvert<PgTableDesc> for (TableDescResult, &Options) {
 }
 
 impl TryConvert<PgColumnItem> for (&OdbcColumnItem, &PgColumn) {
-    type Error = String;
+    type Error = OdbcStdError;
 
-    fn try_convert(self) -> Result<PgColumnItem, Self::Error> {
+    fn try_convert(self) -> OdbcStdResult<PgColumnItem, Self::Error> {
         let odbc_data = self.0.value.clone();
         let pg_column = self.1;
 
@@ -277,9 +277,9 @@ impl TryConvert<PgColumnItem> for (&OdbcColumnItem, &PgColumn) {
 }
 
 impl TryConvert<PgQueryResult> for (QueryResult, &Vec<PgTableItem>, &Options) {
-    type Error = String;
+    type Error = OdbcStdError;
 
-    fn try_convert(self) -> Result<PgQueryResult, Self::Error> {
+    fn try_convert(self) -> OdbcStdResult<PgQueryResult, Self::Error> {
         let res = self.0;
         let pg_all_columns = self.1;
         let options = self.2;
@@ -311,9 +311,9 @@ impl TryConvert<PgQueryResult> for (QueryResult, &Vec<PgTableItem>, &Options) {
 }
 
 impl TryConvert<Vec<PgColumn>> for (&Vec<OdbcColumn>, &Vec<PgTableItem>, &Options) {
-    type Error = String;
+    type Error = OdbcStdError;
 
-    fn try_convert(self) -> Result<Vec<PgColumn>, Self::Error> {
+    fn try_convert(self) -> OdbcStdResult<Vec<PgColumn>, Self::Error> {
         let odbc_columns = self.0;
         let pg_all_columns = self.1;
         let options = self.2;
@@ -346,7 +346,7 @@ impl TryConvert<Vec<PgColumn>> for (&Vec<OdbcColumn>, &Vec<PgTableItem>, &Option
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::odbc_api::DataType;
+    use odbc_common::odbc_api::DataType;
 
     #[test]
     fn test_query_result_convert() {
