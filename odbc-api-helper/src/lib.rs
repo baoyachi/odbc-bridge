@@ -4,7 +4,6 @@
 extern crate log;
 
 pub extern crate dameng_helper;
-
 pub extern crate odbc_common;
 pub extern crate pg_helper;
 

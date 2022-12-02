@@ -287,7 +287,7 @@ impl<'a> OdbcDbConnection<'a> {
                     .execute(&describe.describe_sql, ())?
                     .ok_or_else(|| {
                         OdbcStdError::OdbcError(OdbcWrapperError::DataHandlerError(
-                            "query error".to_string(),
+                            "query table describe error".to_string(),
                         ))
                     })?;
                 cursor.get_table_desc(describe)
