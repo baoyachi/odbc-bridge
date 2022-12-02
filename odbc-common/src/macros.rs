@@ -1,10 +1,10 @@
 #[macro_export]
 macro_rules! sqlstate_mapping {
     (
-        $objectname:ident,
+        $obj:ident,
         $(
             $(#[$docs:meta])*
-            ($phrase:ident, $state_pg:expr);
+            ($phrase:ident, $state:expr);
         )+
     ) => {
         use serde::*;
@@ -12,27 +12,27 @@ macro_rules! sqlstate_mapping {
         #[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
         #[allow(non_upper_case_globals)]
         #[allow(non_camel_case_types)]
-        pub enum $objectname {
+        pub enum $obj {
             $(
-                #[serde(rename = $state_pg)]
+                #[serde(rename = $state)]
                 $phrase,
             )+
         }
-        impl std::fmt::Display for $objectname {
+        impl std::fmt::Display for $obj {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 match self {
                     $(
-                        Self::$phrase => write!(f, $state_pg),
+                        Self::$phrase => write!(f, $state),
                     )+
                 }
             }
         }
 
         #[allow(unreachable_patterns)]
-        pub fn get_obj_by_state(state: &str) -> Option<$objectname> {
+        pub fn get_obj_by_state(state: &str) -> Option<$obj> {
             match state {
                 $(
-                    $state_pg => Some($objectname::$phrase),
+                    $state => Some($obj::$phrase),
                 )+
                 _ => None
             }
