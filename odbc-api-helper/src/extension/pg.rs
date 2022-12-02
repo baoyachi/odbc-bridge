@@ -22,7 +22,6 @@ use crate::extension::util::{
     parse_to_i8, parse_to_int2, parse_to_int4, parse_to_int8, parse_to_string, parse_to_time,
 };
 use dameng_helper::table::DmTableDesc;
-
 use pg_helper::table::PgTableDesc;
 
 #[derive(Debug, PartialEq)]
@@ -346,9 +345,8 @@ impl TryConvert<Vec<PgColumn>> for (&Vec<OdbcColumn>, &Vec<PgTableItem>, &Option
 
 #[cfg(test)]
 mod tests {
-    use odbc_common::odbc_api::DataType;
-
     use super::*;
+    use odbc_common::odbc_api::DataType;
 
     #[test]
     fn test_query_result_convert() {

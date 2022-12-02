@@ -1,5 +1,3 @@
-use std::fmt;
-
 odbc_common::sqlstate_mapping! {
     PgState,
     ( STMT_OK,   "00000" ); /* OK */
@@ -31,21 +29,20 @@ mod tests {
     use super::*;
 
     #[derive(Debug, PartialEq, Eq, Clone, Hash, Serialize, Deserialize)]
-    struct TestStruct {
+    struct Foo {
         pg_state: PgState,
         pg_msg: String,
     }
     #[test]
     fn test_pg_state() {
-        let test_struct = TestStruct {
+        let f = Foo {
             pg_state: PgState::STMT_OK,
             pg_msg: "test".to_string(),
         };
-        let test_struct_string = serde_json::to_value(test_struct).unwrap().to_string();
-        let test_struct: TestStruct = serde_json::from_str(&test_struct_string).unwrap();
-        assert_eq!(test_struct.pg_state, PgState::STMT_OK);
-        let pg_ss = test_struct.pg_state.to_string();
-        assert_eq!(pg_ss, "00000");
+        let json = serde_json::to_string(&f).unwrap();
+        let f: Foo = serde_json::from_str(&json).unwrap();
+        assert_eq!(f.pg_state, PgState::STMT_OK);
+        assert_eq!(f.pg_state.to_string(), "00000");
 
         assert_eq!(
             get_obj_by_state("08000").unwrap(),
