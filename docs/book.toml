@@ -1,0 +1,16 @@
+[book]
+authors = ["baoyachi"]
+language = "en"
+multilingual = false
+src = "src"
+title = "odbc-bridge"
+
+[preprocessor]
+
+[preprocessor.catppuccin]
+assets_version = "0.1.1" # DO NOT EDIT: Managed by `mdbook-catppuccin install`
+
+[output]
+
+[output.html]
+additional-css = ["./theme/catppuccin.css", "./theme/catppuccin-highlight.css"]
