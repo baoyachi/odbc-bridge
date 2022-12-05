@@ -14,7 +14,26 @@ pub trait Print: Sized {
         Ok(())
     }
 
-    fn convert_table(self) -> OdbcStdResult<Table>;
+    fn header_data(self) -> OdbcStdResult<(Vec<String>, Vec<Vec<String>>)>;
+
+    fn convert_table(self) -> OdbcStdResult<Table> {
+        let (headers, data) = self.header_data()?;
+        let headers: Vec<StyledString> = headers
+            .into_iter()
+            .map(|x| StyledString::new(x, TextStyle::default_header()))
+            .collect();
+
+        let rows = data
+            .iter()
+            .map(|x| {
+                x.iter()
+                    .map(|x| StyledString::new(x.to_string(), TextStyle::basic_left()))
+                    .collect()
+            })
+            .collect::<Vec<Vec<StyledString>>>();
+
+        Ok(Table::new(headers, rows, TableTheme::rounded()))
+    }
 
     fn table_string(self) -> OdbcStdResult<String> {
         let table = self.convert_table()?;
@@ -47,20 +66,15 @@ impl<T> Print for T
 where
     T: Cursor,
 {
-    fn convert_table(mut self) -> OdbcStdResult<Table> {
-        let headers: Vec<StyledString> = self
-            .column_names()?
-            .collect::<Result<Vec<String>, _>>()?
-            .into_iter()
-            .map(|x| StyledString::new(x, TextStyle::default_header()))
-            .collect();
+    fn header_data(mut self) -> OdbcStdResult<(Vec<String>, Vec<Vec<String>>)> {
+        let headers: Vec<String> = self.column_names()?.collect::<Result<Vec<String>, _>>()?;
 
         // Use schema in cursor to initialize a text buffer large enough to hold the largest
         // possible strings for each column up to an upper limit of 4KiB.
         let mut buffers = TextRowSet::for_cursor(BATCH_SIZE, &mut self, Some(4096))?;
         // Bind the buffer to the cursor. It is now being filled with every call to fetch.
         let mut row_set_cursor = self.bind_buffer(&mut buffers)?;
-        let mut rows = vec![];
+        let mut data = vec![];
         // Iterate over batches
         while let Some(batch) = row_set_cursor.fetch()? {
             // Within a batch, iterate over every row
@@ -70,13 +84,10 @@ where
                     .map(|col_index| batch.at(col_index, row_index).unwrap_or(&[]))
                     .into_iter()
                     .map(|x| String::from_utf8_lossy(x).to_string())
-                    .map(|x| StyledString::new(x, TextStyle::basic_left()))
                     .collect();
-                rows.push(row_data);
+                data.push(row_data);
             }
         }
-        let table = Table::new(headers, rows, TableTheme::rounded());
-
-        Ok(table)
+        Ok((headers, data))
     }
 }

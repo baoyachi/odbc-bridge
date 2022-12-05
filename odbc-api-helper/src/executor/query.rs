@@ -1,7 +1,6 @@
 use crate::extension::odbc::{OdbcColumnDesc, OdbcColumnItem};
 use odbc_common::error::OdbcStdResult;
 use odbc_common::print_table::Print;
-use odbc_common::{StyledString, Table, TableTheme, TextStyle};
 
 pub type OdbcRow = Vec<OdbcColumnItem>;
 
@@ -14,23 +13,14 @@ pub struct QueryResult {
 }
 
 impl Print for QueryResult {
-    fn convert_table(self) -> OdbcStdResult<Table> {
-        let headers: Vec<StyledString> = self
-            .columns
-            .iter()
-            .map(|x| StyledString::new(x.name.to_string(), TextStyle::default_header()))
-            .collect();
+    fn header_data(self) -> OdbcStdResult<(Vec<String>, Vec<Vec<String>>)> {
+        let headers: Vec<String> = self.columns.iter().map(|x| x.name.to_string()).collect();
 
-        let rows = self
+        let data = self
             .data
             .iter()
-            .map(|x| {
-                x.iter()
-                    .map(|y| y.to_string())
-                    .map(|y| StyledString::new(y, TextStyle::basic_left()))
-                    .collect::<Vec<_>>()
-            })
+            .map(|x| x.iter().map(|y| y.to_string()).collect::<Vec<_>>())
             .collect();
-        Ok(Table::new(headers, rows, TableTheme::rounded()))
+        Ok((headers, data))
     }
 }

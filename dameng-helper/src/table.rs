@@ -1,5 +1,5 @@
 use crate::DmDateType;
-use odbc_common::{error::OdbcStdResult, Print, StyledString, Table, TableTheme, TextStyle};
+use odbc_common::{error::OdbcStdResult, Print};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -116,28 +116,18 @@ pub struct DmTableDesc {
 }
 
 impl Print for DmTableDesc {
-    fn convert_table(self) -> OdbcStdResult<Table> {
-        let headers: Vec<StyledString> = self
-            .headers
-            .values()
-            .map(|x| StyledString::new(x.to_string(), TextStyle::default_header()))
-            .collect();
+    fn header_data(self) -> OdbcStdResult<(Vec<String>, Vec<Vec<String>>)> {
+        let headers: Vec<String> = self.headers.values().map(|x| x.to_string()).collect();
 
         let items: Vec<DmTableItem> = self.data.into_iter().fold(vec![], |mut vec, (_, mut x)| {
             vec.append(&mut x);
             vec
         });
-        let rows = items
+        let data = items
             .iter()
-            .map(|x| {
-                x.to_vec()
-                    .into_iter()
-                    .map(|x| StyledString::new(x, TextStyle::basic_left()))
-                    .collect()
-            })
-            .collect::<Vec<Vec<StyledString>>>();
-
-        Ok(Table::new(headers, rows, TableTheme::rounded()))
+            .map(|x| x.to_vec())
+            .collect::<Vec<Vec<String>>>();
+        Ok((headers, data))
     }
 }
 
