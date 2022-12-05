@@ -1,6 +1,7 @@
 use crate::executor::batch::BatchResult;
 use crate::executor::batch::Operation;
 use crate::executor::execute::ExecResult;
+use crate::executor::prepare::OdbcPrepared;
 use crate::executor::query::QueryResult;
 use crate::executor::statement::StatementInput;
 use crate::executor::table::{TableDescArgsString, TableDescResult};
@@ -191,36 +192,6 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
     }
 }
 
-#[allow(missing_debug_implementations)]
-pub struct OdbcPrepared<S> {
-    pub prepared: Prepared<S>,
-    pub result_cols_desc: Vec<OdbcColumnDesc>,
-    pub params_desc: Vec<OdbcParamDesc>,
-}
-
-impl<S> OdbcPrepared<S> {
-    pub fn result_cols_description(&self) -> &[OdbcColumnDesc] {
-        &self.result_cols_desc
-    }
-    pub fn params_description(&self) -> &[OdbcParamDesc] {
-        &self.params_desc
-    }
-}
-
-impl<S> OdbcPrepared<S> {
-    pub fn new(
-        prepared: Prepared<S>,
-        result_cols_des: Vec<OdbcColumnDesc>,
-        params_des: Vec<OdbcParamDesc>,
-    ) -> Self {
-        Self {
-            prepared,
-            result_cols_desc: result_cols_des,
-            params_desc: params_des,
-        }
-    }
-}
-
 impl<'a> OdbcDbConnection<'a> {
     pub fn new(conn: Connection<'a>, options: Options) -> OdbcStdResult<Self> {
         let options = options.check();
@@ -241,6 +212,7 @@ impl<'a> OdbcDbConnection<'a> {
             .unwrap_or_default();
         Ok(result)
     }
+
     pub fn prepare(&self, sql: impl AsRef<str>) -> OdbcStdResult<OdbcPrepared<StatementImpl<'_>>> {
         let mut prepared = self.conn.prepare(sql.as_ref())?;
 
