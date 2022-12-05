@@ -1,11 +1,7 @@
-use nu_protocol::Config;
-use nu_table::Table;
-use nu_table::{Alignments, StyledString, TableTheme, TextStyle};
 use odbc_api::buffers::TextRowSet;
 use odbc_api::Cursor;
-use std::collections::HashMap;
 
-use crate::error::{OdbcStdError, OdbcStdResult};
+use crate::error::OdbcStdResult;
 
 pub trait Print: Sized {
     fn print_all_tables(self) -> OdbcStdResult<()> {
@@ -16,37 +12,17 @@ pub trait Print: Sized {
 
     fn header_data(self) -> OdbcStdResult<(Vec<String>, Vec<Vec<String>>)>;
 
-    fn convert_table(self) -> OdbcStdResult<Table> {
+    fn convert_table(self) -> OdbcStdResult<tabled::Table> {
         let (headers, data) = self.header_data()?;
-        let headers: Vec<StyledString> = headers
-            .into_iter()
-            .map(|x| StyledString::new(x, TextStyle::default_header()))
-            .collect();
 
-        let rows = data
-            .iter()
-            .map(|x| {
-                x.iter()
-                    .map(|x| StyledString::new(x.to_string(), TextStyle::basic_left()))
-                    .collect()
-            })
-            .collect::<Vec<Vec<StyledString>>>();
-
-        Ok(Table::new(headers, rows, TableTheme::rounded()))
+        use tabled::builder::Builder;
+        let mut builder = Builder::from(data.clone());
+        builder.set_columns(headers.clone());
+        Ok(builder.build())
     }
 
     fn table_string(self) -> OdbcStdResult<String> {
-        let table = self.convert_table()?;
-        let cfg = Config::default();
-        let styles = HashMap::default();
-        let alignments = Alignments::default();
-
-        let p = table
-            .draw_table(&cfg, &styles, alignments, usize::MAX)
-            .ok_or_else(|| {
-                OdbcStdError::TypeConversionError("convert table to string error".to_string())
-            })?;
-        Ok(p)
+        Ok(self.convert_table()?.to_string())
     }
 }
 
