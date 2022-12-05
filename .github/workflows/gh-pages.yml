@@ -25,6 +25,7 @@ jobs:
       - run: |
           rustc -Vv
           mdbook -V
+          cargo install mdbook-catppuccin
           mdbook build
         working-directory: ./docs
       - name: Move docs
