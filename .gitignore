@@ -12,3 +12,4 @@ Cargo.lock
 .DS_Store
 test.json
 */tmp/*
+docs/book/*
