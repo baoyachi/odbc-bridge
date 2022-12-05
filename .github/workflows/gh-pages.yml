@@ -25,11 +25,11 @@ jobs:
         working-directory: ./docs
       - name: Move docs
         run: |
-          mkdir ./book
-          mv ./docs/book ./book/
+          mkdir ./public
+          mv ./docs/book ./public/
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.ref == 'refs/heads/main' }}
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./book
+          publish_dir: ./public
