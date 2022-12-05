@@ -13,7 +13,6 @@ use either::Either;
 use odbc_common::error::OdbcStdError;
 use odbc_common::error::OdbcStdResult;
 use odbc_common::error::OdbcWrapperError;
-use odbc_common::odbc_api::Prepared;
 use odbc_common::odbc_api::{
     buffers::{AnySlice, BufferDesc, ColumnarAnyBuffer},
     handles::StatementImpl,
@@ -213,22 +212,18 @@ impl<'a> OdbcDbConnection<'a> {
         Ok(result)
     }
 
+    //TODO add test case
     pub fn prepare(&self, sql: impl AsRef<str>) -> OdbcStdResult<OdbcPrepared<StatementImpl<'_>>> {
         let mut prepared = self.conn.prepare(sql.as_ref())?;
 
-        let mut result_cols: Vec<OdbcColumnDesc> = Vec::new();
-        for i in 1..=prepared.num_result_cols()?.try_into()? {
-            let mut description = ColumnDescription::default();
-            prepared.describe_col(i, &mut description)?;
-            result_cols.push(description.try_into()?)
-        }
+        let columns: Vec<OdbcColumnDesc> = Self::get_cursor_columns(&mut prepared)?;
 
         let mut params: Vec<OdbcParamDesc> = Vec::new();
         for i in 1..=prepared.num_params()? {
             params.push(prepared.describe_param(i)?.try_into()?)
         }
 
-        Ok(OdbcPrepared::new(prepared, result_cols, params))
+        Ok(OdbcPrepared::new(prepared, columns, params))
     }
 
     fn query_result(
@@ -242,7 +237,8 @@ impl<'a> OdbcDbConnection<'a> {
             ))
         })?;
 
-        let columns = Self::get_cursor_columns(&mut cursor)?;
+        let columns: Vec<OdbcColumnDesc> = Self::get_cursor_columns(&mut cursor)?;
+
         debug!("columns:{:?}", columns);
 
         let descs = columns.iter().map(|c| {
@@ -280,11 +276,11 @@ impl<'a> OdbcDbConnection<'a> {
         })
     }
 
-    fn get_cursor_columns(meta: &mut impl ResultSetMetadata) -> OdbcStdResult<Vec<OdbcColumnDesc>> {
+    fn get_cursor_columns<C: ResultSetMetadata>(c: &mut C) -> OdbcStdResult<Vec<OdbcColumnDesc>> {
         let mut result_cols: Vec<OdbcColumnDesc> = Vec::new();
-        for i in 1..=meta.num_result_cols()?.try_into()? {
+        for i in 1..=c.num_result_cols()?.try_into()? {
             let mut description = ColumnDescription::default();
-            meta.describe_col(i, &mut description)?;
+            c.describe_col(i, &mut description)?;
             result_cols.push(description.try_into()?)
         }
         Ok(result_cols)

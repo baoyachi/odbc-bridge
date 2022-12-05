@@ -4,6 +4,7 @@ use crate::executor::statement::SqlValue;
 use crate::extension::odbc::{OdbcColumnDesc, OdbcColumnItem, OdbcColumnType};
 use crate::{Convert, TryConvert};
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use dameng_helper::odbc_api::DataType;
 use either::Either;
 use odbc_common::error::{OdbcStdError, OdbcStdResult};
 use odbc_common::odbc_api::buffers::BufferDesc;
@@ -101,8 +102,21 @@ impl PgColumnItem {
 
 impl Convert<PgColumn> for OdbcColumnDesc {
     fn convert(self) -> PgColumn {
-        let desc = BufferDesc::from_data_type(self.data_type, self.nullable).unwrap();
-        let pg_type = match desc {
+        let pg_type: PgType = (self.data_type, self.nullable).convert();
+        let oid = pg_type.oid();
+        PgColumn {
+            name: self.name,
+            pg_type,
+            oid,
+            nullable: self.nullable,
+        }
+    }
+}
+
+impl Convert<PgType> for (DataType, bool) {
+    fn convert(self) -> PgType {
+        let desc = BufferDesc::from_data_type(self.0, self.1).unwrap();
+        match desc {
             BufferDesc::Binary { .. } => PgType::BYTEA,
             BufferDesc::Text { .. } => PgType::TEXT,
             BufferDesc::WText { .. } => PgType::TEXT,
@@ -119,13 +133,6 @@ impl Convert<PgColumn> for OdbcColumnDesc {
                 panic!("not coverage U8");
             }
             BufferDesc::Bit { .. } => PgType::BOOL,
-        };
-        let oid = pg_type.oid();
-        PgColumn {
-            name: self.name,
-            pg_type,
-            oid,
-            nullable: self.nullable,
         }
     }
 }
