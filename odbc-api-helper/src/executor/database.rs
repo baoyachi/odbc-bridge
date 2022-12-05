@@ -5,14 +5,13 @@ use crate::executor::query::QueryResult;
 use crate::executor::statement::StatementInput;
 use crate::executor::table::{TableDescArgsString, TableDescResult};
 use crate::executor::SupportDatabase;
-use crate::extension::odbc::{OdbcColumnDescription, OdbcColumnItem, OdbcParamsDescription};
+use crate::extension::odbc::{OdbcColumnDesc, OdbcColumnItem, OdbcParamDesc};
 use crate::{Convert, TryConvert};
 use dameng_helper::DmAdapter;
 use either::Either;
 use odbc_common::error::OdbcStdError;
 use odbc_common::error::OdbcStdResult;
 use odbc_common::error::OdbcWrapperError;
-use odbc_common::odbc_api::handles::AsStatementRef;
 use odbc_common::odbc_api::Prepared;
 use odbc_common::odbc_api::{
     buffers::{AnySlice, BufferDesc, ColumnarAnyBuffer},
@@ -20,8 +19,6 @@ use odbc_common::odbc_api::{
     ColumnDescription, Connection, Cursor, CursorImpl, ParameterCollectionRef, ResultSetMetadata,
 };
 use std::ops::IndexMut;
-
-use super::query::OdbcRow;
 
 pub trait ConnectionTrait {
     /// Execute a `[Statement]`  INSERT,UPDATE,DELETE
@@ -194,58 +191,32 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
     }
 }
 
+#[allow(missing_debug_implementations)]
 pub struct OdbcPrepared<S> {
     pub prepared: Prepared<S>,
-    pub result_cols_des: Vec<OdbcColumnDescription>,
-    pub params_des: Vec<OdbcParamsDescription>,
-    pub options: Options,
+    pub result_cols_desc: Vec<OdbcColumnDesc>,
+    pub params_desc: Vec<OdbcParamDesc>,
 }
 
 impl<S> OdbcPrepared<S> {
-    pub fn result_cols_description(&self) -> &[OdbcColumnDescription] {
-        &self.result_cols_des
+    pub fn result_cols_description(&self) -> &[OdbcColumnDesc] {
+        &self.result_cols_desc
     }
-    pub fn params_description(&self) -> &[OdbcParamsDescription] {
-        &self.params_des
-    }
-}
-
-impl<S> OdbcPrepared<S>
-where
-    S: AsStatementRef,
-{
-    #[allow(dead_code)]
-    fn query_result(&mut self, params: impl ParameterCollectionRef) -> OdbcStdResult<QueryResult> {
-        let cursor = self.prepared.execute(params)?.ok_or_else(|| {
-            OdbcStdError::OdbcError(OdbcWrapperError::DataHandlerError(
-                "query error".to_string(),
-            ))
-        })?;
-
-        let columns = self.result_cols_des.clone();
-        debug!("columns:{:?}", columns);
-
-        let row_set = query_result_from_cursor(cursor, &columns, &self.options)?;
-
-        Ok(QueryResult {
-            columns,
-            data: row_set,
-        })
+    pub fn params_description(&self) -> &[OdbcParamDesc] {
+        &self.params_desc
     }
 }
 
 impl<S> OdbcPrepared<S> {
     pub fn new(
         prepared: Prepared<S>,
-        result_cols_des: Vec<OdbcColumnDescription>,
-        params_des: Vec<OdbcParamsDescription>,
-        options: Options,
+        result_cols_des: Vec<OdbcColumnDesc>,
+        params_des: Vec<OdbcParamDesc>,
     ) -> Self {
         Self {
             prepared,
-            result_cols_des,
-            params_des,
-            options,
+            result_cols_desc: result_cols_des,
+            params_desc: params_des,
         }
     }
 }
@@ -273,14 +244,14 @@ impl<'a> OdbcDbConnection<'a> {
     pub fn prepare(&self, sql: impl AsRef<str>) -> OdbcStdResult<OdbcPrepared<StatementImpl<'_>>> {
         let mut prepared = self.conn.prepare(sql.as_ref())?;
 
-        let mut result_cols: Vec<OdbcColumnDescription> = Vec::new();
+        let mut result_cols: Vec<OdbcColumnDesc> = Vec::new();
         for i in 1..=prepared.num_result_cols()?.try_into()? {
             let mut description = ColumnDescription::default();
             prepared.describe_col(i, &mut description)?;
             result_cols.push(description.try_into()?)
         }
 
-        let mut params: Vec<OdbcParamsDescription> = Vec::new();
+        let mut params: Vec<OdbcParamDesc> = Vec::new();
         for i in 1..=prepared.num_params()? {
             params.push(prepared.describe_param(i)?.try_into()?)
         }
@@ -289,7 +260,6 @@ impl<'a> OdbcDbConnection<'a> {
             prepared,
             result_cols,
             params,
-            self.options.clone(),
         ))
     }
 
@@ -307,18 +277,44 @@ impl<'a> OdbcDbConnection<'a> {
         let columns = Self::get_cursor_columns(&mut cursor)?;
         debug!("columns:{:?}", columns);
 
-        let row_set = query_result_from_cursor(cursor, &columns, &self.options)?;
+        let descs = columns.iter().map(|c| {
+            <(&OdbcColumnDesc, &Options) as TryConvert<BufferDesc>>::try_convert((c, &self.options))
+                .unwrap()
+        });
+
+        let row_set_buffer = ColumnarAnyBuffer::try_from_descs(self.options.max_batch_size, descs).unwrap();
+
+        let mut row_set_cursor = cursor.bind_buffer(row_set_buffer).unwrap();
+
+        let mut total_row = vec![];
+        while let Some(row_set) = row_set_cursor.fetch()? {
+            for index in 0..columns.len() {
+                let column_view: AnySlice = row_set.column(index);
+                let column_types: Vec<OdbcColumnItem> = column_view.convert();
+                if index == 0 {
+                    // Set the entire first column
+                    for c in column_types.into_iter() {
+                        total_row.push(vec![c]);
+                    }
+                } else {
+                    for (col_index, c) in column_types.into_iter().enumerate() {
+                        let row = total_row.index_mut(col_index);
+                        row.push(c)
+                    }
+                }
+            }
+        }
 
         Ok(QueryResult {
             columns,
-            data: row_set,
+            data: total_row,
         })
     }
 
     fn get_cursor_columns(
         meta: &mut impl ResultSetMetadata,
-    ) -> OdbcStdResult<Vec<OdbcColumnDescription>> {
-        let mut result_cols: Vec<OdbcColumnDescription> = Vec::new();
+    ) -> OdbcStdResult<Vec<OdbcColumnDesc>> {
+        let mut result_cols: Vec<OdbcColumnDesc> = Vec::new();
         for i in 1..=meta.num_result_cols()?.try_into()? {
             let mut description = ColumnDescription::default();
             meta.describe_col(i, &mut description)?;
@@ -353,39 +349,4 @@ impl<'a> OdbcDbConnection<'a> {
             ))),
         }
     }
-}
-
-fn query_result_from_cursor(
-    cursor: impl Cursor,
-    columns: &[OdbcColumnDescription],
-    options: &Options,
-) -> OdbcStdResult<Vec<OdbcRow>> {
-    let descs = columns.iter().map(|c| {
-        <(&OdbcColumnDescription, &Options) as TryConvert<BufferDesc>>::try_convert((c, options))
-            .unwrap()
-    });
-
-    let row_set_buffer = ColumnarAnyBuffer::try_from_descs(options.max_batch_size, descs).unwrap();
-
-    let mut row_set_cursor = cursor.bind_buffer(row_set_buffer).unwrap();
-
-    let mut total_row = vec![];
-    while let Some(row_set) = row_set_cursor.fetch()? {
-        for index in 0..columns.len() {
-            let column_view: AnySlice = row_set.column(index);
-            let column_types: Vec<OdbcColumnItem> = column_view.convert();
-            if index == 0 {
-                // Set the entire first column
-                for c in column_types.into_iter() {
-                    total_row.push(vec![c]);
-                }
-            } else {
-                for (col_index, c) in column_types.into_iter().enumerate() {
-                    let row = total_row.index_mut(col_index);
-                    row.push(c)
-                }
-            }
-        }
-    }
-    Ok(total_row)
 }

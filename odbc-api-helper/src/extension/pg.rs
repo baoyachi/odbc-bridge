@@ -1,7 +1,7 @@
 use crate::executor::database::Options;
 use crate::executor::query::QueryResult;
 use crate::executor::statement::SqlValue;
-use crate::extension::odbc::{OdbcColumnDescription, OdbcColumnItem, OdbcColumnType};
+use crate::extension::odbc::{OdbcColumnDesc, OdbcColumnItem, OdbcColumnType};
 use crate::{Convert, TryConvert};
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use either::Either;
@@ -100,7 +100,7 @@ impl PgColumnItem {
     }
 }
 
-impl Convert<PgColumn> for OdbcColumnDescription {
+impl Convert<PgColumn> for OdbcColumnDesc {
     fn convert(self) -> PgColumn {
         let pg_type: PgType = (self.data_type, self.nullable).convert();
         let oid = pg_type.oid();
@@ -317,7 +317,7 @@ impl TryConvert<PgQueryResult> for (QueryResult, &Vec<PgTableItem>, &Options) {
     }
 }
 
-impl TryConvert<Vec<PgColumn>> for (&Vec<OdbcColumnDescription>, &Vec<PgTableItem>, &Options) {
+impl TryConvert<Vec<PgColumn>> for (&Vec<OdbcColumnDesc>, &Vec<PgTableItem>, &Options) {
     type Error = OdbcStdError;
 
     fn try_convert(self) -> OdbcStdResult<Vec<PgColumn>, Self::Error> {
@@ -357,7 +357,7 @@ mod tests {
 
     #[test]
     fn test_query_result_convert() {
-        let column = OdbcColumnDescription {
+        let column = OdbcColumnDesc {
             name: "trace_id".to_string(),
             data_type: DataType::Varchar { length: 255 },
             nullable: true,

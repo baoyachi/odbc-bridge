@@ -1,4 +1,4 @@
-use crate::extension::odbc::{OdbcColumnDescription, OdbcColumnItem};
+use crate::extension::odbc::{OdbcColumnDesc, OdbcColumnItem};
 use odbc_common::error::OdbcStdResult;
 use odbc_common::print_table::Print;
 use odbc_common::{StyledString, Table, TableTheme, TextStyle};
@@ -7,8 +7,8 @@ pub type OdbcRow = Vec<OdbcColumnItem>;
 
 #[derive(Debug, Default)]
 pub struct QueryResult {
-    // table columns header
-    pub columns: Vec<OdbcColumnDescription>,
+    // table columns describe
+    pub columns: Vec<OdbcColumnDesc>,
     // table columns data
     pub data: Vec<OdbcRow>,
 }
