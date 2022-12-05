@@ -1,14 +1,16 @@
-use crate::extension::odbc::{OdbcColumn, OdbcColumnItem};
+use crate::extension::odbc::{OdbcColumnDescription, OdbcColumnItem};
 use odbc_common::error::OdbcStdResult;
 use odbc_common::print_table::Print;
 use odbc_common::{StyledString, Table, TableTheme, TextStyle};
 
+pub type OdbcRow = Vec<OdbcColumnItem>;
+
 #[derive(Debug, Default)]
 pub struct QueryResult {
     // table columns header
-    pub columns: Vec<OdbcColumn>,
+    pub columns: Vec<OdbcColumnDescription>,
     // table columns data
-    pub data: Vec<Vec<OdbcColumnItem>>,
+    pub data: Vec<OdbcRow>,
 }
 
 impl Print for QueryResult {

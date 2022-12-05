@@ -1,7 +1,7 @@
 use crate::executor::database::Options;
 use crate::executor::query::QueryResult;
 use crate::executor::statement::SqlValue;
-use crate::extension::odbc::{OdbcColumn, OdbcColumnItem, OdbcColumnType};
+use crate::extension::odbc::{OdbcColumnDescription, OdbcColumnItem, OdbcColumnType};
 use crate::{Convert, TryConvert};
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use either::Either;
@@ -9,6 +9,7 @@ use odbc_common::error::{OdbcStdError, OdbcStdResult};
 use odbc_common::odbc_api::buffers::BufferDesc;
 use odbc_common::odbc_api::parameter::InputParameter;
 use odbc_common::odbc_api::Bit;
+use odbc_common::odbc_api::DataType;
 use odbc_common::odbc_api::IntoParameter;
 use pg_helper::table::PgTableItem;
 use postgres_types::{Oid, Type as PgType};
@@ -99,10 +100,23 @@ impl PgColumnItem {
     }
 }
 
-impl Convert<PgColumn> for OdbcColumn {
+impl Convert<PgColumn> for OdbcColumnDescription {
     fn convert(self) -> PgColumn {
-        let desc = BufferDesc::from_data_type(self.data_type, self.nullable).unwrap();
-        let pg_type = match desc {
+        let pg_type: PgType = (self.data_type, self.nullable).convert();
+        let oid = pg_type.oid();
+        PgColumn {
+            name: self.name,
+            pg_type,
+            oid,
+            nullable: self.nullable,
+        }
+    }
+}
+
+impl Convert<PgType> for (DataType, bool) {
+    fn convert(self) -> PgType {
+        let desc = BufferDesc::from_data_type(self.0, self.1).unwrap();
+        match desc {
             BufferDesc::Binary { .. } => PgType::BYTEA,
             BufferDesc::Text { .. } => PgType::TEXT,
             BufferDesc::WText { .. } => PgType::TEXT,
@@ -119,13 +133,6 @@ impl Convert<PgColumn> for OdbcColumn {
                 panic!("not coverage U8");
             }
             BufferDesc::Bit { .. } => PgType::BOOL,
-        };
-        let oid = pg_type.oid();
-        PgColumn {
-            name: self.name,
-            pg_type,
-            oid,
-            nullable: self.nullable,
         }
     }
 }
@@ -310,7 +317,7 @@ impl TryConvert<PgQueryResult> for (QueryResult, &Vec<PgTableItem>, &Options) {
     }
 }
 
-impl TryConvert<Vec<PgColumn>> for (&Vec<OdbcColumn>, &Vec<PgTableItem>, &Options) {
+impl TryConvert<Vec<PgColumn>> for (&Vec<OdbcColumnDescription>, &Vec<PgTableItem>, &Options) {
     type Error = OdbcStdError;
 
     fn try_convert(self) -> OdbcStdResult<Vec<PgColumn>, Self::Error> {
@@ -350,7 +357,7 @@ mod tests {
 
     #[test]
     fn test_query_result_convert() {
-        let column = OdbcColumn {
+        let column = OdbcColumnDescription {
             name: "trace_id".to_string(),
             data_type: DataType::Varchar { length: 255 },
             nullable: true,

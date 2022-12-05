@@ -7,13 +7,16 @@ pub struct PgTableDesc {
 }
 
 impl PgTableDesc {
-    pub fn get_data(&self, key: String, case_sensitive: bool) -> Option<&Vec<PgTableItem>> {
-        let key = if case_sensitive {
-            key
+    pub fn get_data(
+        &self,
+        key: impl AsRef<str>,
+        case_sensitive: bool,
+    ) -> Option<&Vec<PgTableItem>> {
+        if case_sensitive {
+            self.data.get(key.as_ref())
         } else {
-            key.to_uppercase()
-        };
-        self.data.get(&key)
+            self.data.get(&key.as_ref().to_uppercase())
+        }
     }
 }
 

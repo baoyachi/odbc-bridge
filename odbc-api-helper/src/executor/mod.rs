@@ -5,7 +5,7 @@ pub mod query;
 pub mod statement;
 pub mod table;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum SupportDatabase {
     Dameng,
     Pg,
