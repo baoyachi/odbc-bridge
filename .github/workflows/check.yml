@@ -34,12 +34,7 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
       - name: Build Release
         run: cargo build --release
-      - name: Install rust nightly
-        run: rustup toolchain install nightly
-      - name: Install cargo-udeps
-        run: cargo install cargo-udeps --locked
-      - name: Check cargo-udep
-        run: cargo +nightly udeps
+
   test:
     name: Build & Test Linux
     runs-on: ubuntu-latest
@@ -53,3 +48,20 @@ jobs:
 
       - name: Test
         run: docker-compose --file docker-compose.yml run dev
+  check:
+    name: Check cargo dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - name: Install cargo-udeps
+        run: cargo install cargo-udeps --locked
+      - name: Check cargo-udep
+        run: cargo +nightly udeps
