@@ -56,7 +56,7 @@ pub struct OdbcDbConnection<'a> {
     pub options: Options,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Options {
     pub database: SupportDatabase,
     pub max_batch_size: usize,
@@ -256,11 +256,7 @@ impl<'a> OdbcDbConnection<'a> {
             params.push(prepared.describe_param(i)?.try_into()?)
         }
 
-        Ok(OdbcPrepared::new(
-            prepared,
-            result_cols,
-            params,
-        ))
+        Ok(OdbcPrepared::new(prepared, result_cols, params))
     }
 
     fn query_result(
@@ -282,7 +278,8 @@ impl<'a> OdbcDbConnection<'a> {
                 .unwrap()
         });
 
-        let row_set_buffer = ColumnarAnyBuffer::try_from_descs(self.options.max_batch_size, descs).unwrap();
+        let row_set_buffer =
+            ColumnarAnyBuffer::try_from_descs(self.options.max_batch_size, descs).unwrap();
 
         let mut row_set_cursor = cursor.bind_buffer(row_set_buffer).unwrap();
 
@@ -311,9 +308,7 @@ impl<'a> OdbcDbConnection<'a> {
         })
     }
 
-    fn get_cursor_columns(
-        meta: &mut impl ResultSetMetadata,
-    ) -> OdbcStdResult<Vec<OdbcColumnDesc>> {
+    fn get_cursor_columns(meta: &mut impl ResultSetMetadata) -> OdbcStdResult<Vec<OdbcColumnDesc>> {
         let mut result_cols: Vec<OdbcColumnDesc> = Vec::new();
         for i in 1..=meta.num_result_cols()?.try_into()? {
             let mut description = ColumnDescription::default();

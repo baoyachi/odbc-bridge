@@ -1,12 +1,12 @@
 pub mod batch;
 pub mod database;
 pub mod execute;
+pub mod prepare;
 pub mod query;
 pub mod statement;
 pub mod table;
-pub mod prepare;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub enum SupportDatabase {
     Dameng,
     Pg,
