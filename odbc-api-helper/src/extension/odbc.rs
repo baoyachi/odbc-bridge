@@ -1,13 +1,13 @@
 use crate::executor::database::Options;
 use crate::{Convert, TryConvert};
 use bytes::BytesMut;
+use odbc_common::odbc_api::handles::ParameterDescription;
 use odbc_common::odbc_api::{
     buffers::{AnySlice, BufferDesc},
     sys::{Date, Time, Timestamp, NULL_DATA},
     DataType,
 };
-use odbc_common::odbc_api::{Nullability, ColumnDescription};
-use odbc_common::odbc_api::handles::ParameterDescription;
+use odbc_common::odbc_api::{ColumnDescription, Nullability};
 use std::cmp::min;
 #[derive(Debug, Clone)]
 pub struct OdbcColumnDescription {

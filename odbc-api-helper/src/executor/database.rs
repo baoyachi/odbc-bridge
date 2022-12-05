@@ -12,13 +12,13 @@ use either::Either;
 use odbc_common::error::OdbcStdError;
 use odbc_common::error::OdbcStdResult;
 use odbc_common::error::OdbcWrapperError;
+use odbc_common::odbc_api::handles::AsStatementRef;
+use odbc_common::odbc_api::Prepared;
 use odbc_common::odbc_api::{
     buffers::{AnySlice, BufferDesc, ColumnarAnyBuffer},
     handles::StatementImpl,
     ColumnDescription, Connection, Cursor, CursorImpl, ParameterCollectionRef, ResultSetMetadata,
 };
-use odbc_common::odbc_api::Prepared;
-use odbc_common::odbc_api::handles::AsStatementRef;
 use std::ops::IndexMut;
 
 use super::query::OdbcRow;
@@ -216,14 +216,11 @@ where
 {
     #[allow(dead_code)]
     fn query_result(&mut self, params: impl ParameterCollectionRef) -> OdbcStdResult<QueryResult> {
-        let cursor = self
-            .prepared
-            .execute(params)?
-            .ok_or_else(|| {
-                OdbcStdError::OdbcError(OdbcWrapperError::DataHandlerError(
-                    "query error".to_string(),
-                ))
-            })?;
+        let cursor = self.prepared.execute(params)?.ok_or_else(|| {
+            OdbcStdError::OdbcError(OdbcWrapperError::DataHandlerError(
+                "query error".to_string(),
+            ))
+        })?;
 
         let columns = self.result_cols_des.clone();
         debug!("columns:{:?}", columns);
@@ -273,10 +270,7 @@ impl<'a> OdbcDbConnection<'a> {
             .unwrap_or_default();
         Ok(result)
     }
-    pub fn prepare(
-        &self,
-        sql: impl AsRef<str>,
-    ) -> OdbcStdResult<OdbcPrepared<StatementImpl<'_>>> {
+    pub fn prepare(&self, sql: impl AsRef<str>) -> OdbcStdResult<OdbcPrepared<StatementImpl<'_>>> {
         let mut prepared = self.conn.prepare(sql.as_ref())?;
 
         let mut result_cols: Vec<OdbcColumnDescription> = Vec::new();
@@ -367,14 +361,11 @@ fn query_result_from_cursor(
     options: &Options,
 ) -> OdbcStdResult<Vec<OdbcRow>> {
     let descs = columns.iter().map(|c| {
-        <(&OdbcColumnDescription, &Options) as TryConvert<BufferDesc>>::try_convert((
-            c, options,
-        ))
-        .unwrap()
+        <(&OdbcColumnDescription, &Options) as TryConvert<BufferDesc>>::try_convert((c, options))
+            .unwrap()
     });
 
-    let row_set_buffer =
-        ColumnarAnyBuffer::try_from_descs(options.max_batch_size, descs).unwrap();
+    let row_set_buffer = ColumnarAnyBuffer::try_from_descs(options.max_batch_size, descs).unwrap();
 
     let mut row_set_cursor = cursor.bind_buffer(row_set_buffer).unwrap();
 
