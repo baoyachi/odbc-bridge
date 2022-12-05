@@ -59,7 +59,7 @@ jobs:
           submodules: true
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable, nightly
+          toolchain: nightly
           override: true
       - name: Install cargo-udeps
         run: cargo install cargo-udeps --locked
