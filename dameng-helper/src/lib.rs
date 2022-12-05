@@ -51,7 +51,7 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
         db_name: String,
         case_sensitive: bool,
     ) -> TableSqlDescribe {
-        // Use sql: `SELECT A.*, B.NAME AS TABLE_NAME FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ("X")`;
+        // Use sql: `SELECT A.*, B.* FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ("X")`;
         // The X is table name;
         let tables = table_names
             .iter()
