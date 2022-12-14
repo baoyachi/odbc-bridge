@@ -28,6 +28,18 @@ impl Default for OdbcStdError {
     }
 }
 
+impl From<&str> for OdbcStdError {
+    fn from(e: &str) -> Self {
+        OdbcStdError::StringError(e.into())
+    }
+}
+
+impl From<String> for OdbcStdError {
+    fn from(e: String) -> Self {
+        OdbcStdError::StringError(e)
+    }
+}
+
 impl From<odbc_api::Error> for OdbcStdError {
     fn from(e: odbc_api::Error) -> Self {
         OdbcStdError::OdbcError(e.into())

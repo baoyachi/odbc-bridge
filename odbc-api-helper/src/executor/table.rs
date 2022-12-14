@@ -56,6 +56,10 @@ where
     fn to_sql(&self) -> &str {
         panic!("no need sql")
     }
+
+    fn operation(&self) -> Option<Self::Operation> {
+        Some(OdbcOperation::ShowTable)
+    }
 }
 
 #[derive(Debug)]

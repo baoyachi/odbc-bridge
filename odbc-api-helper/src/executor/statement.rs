@@ -15,8 +15,8 @@ pub trait StatementInput {
     fn to_value(self) -> Either<Vec<Self::Item>, Box<dyn Any>>;
     fn to_sql(&self) -> &str;
 
-    fn operation(&self) -> Self::Operation {
-        todo!()
+    fn operation(&self) -> Option<Self::Operation> {
+        None
     }
 
     fn input_values(self) -> Result<EitherInputParameter, OdbcStdError>
@@ -85,10 +85,10 @@ impl SqlValue for () {
 impl<T, OP> StatementInput for Statement<T, OP>
 where
     T: SqlValue + Debug,
-    OP: Operation,
+    OP: Operation + Clone,
 {
     type Item = T;
-    type Operation = OdbcOperation;
+    type Operation = OP;
 
     fn to_value(self) -> Either<Vec<T>, Box<dyn Any>> {
         Either::Left(self.values)
@@ -96,6 +96,10 @@ where
 
     fn to_sql(&self) -> &str {
         &self.sql
+    }
+
+    fn operation(&self) -> Option<Self::Operation> {
+        self.odbc_operation.clone()
     }
 }
 
