@@ -289,12 +289,38 @@ impl OdbcDataBuf {
         buf: &mut [u8],
         cursor_row: &mut CursorRow,
     ) -> OdbcStdResult<Option<BytesMut>> {
+        // Indicator::Length(len) 如果截断了, 那么len是截断前的数据库期待的返回长度, 而不是这一次get_data实际返回的长度
+        // 如果没有截断, 那么len就是这一次get_data实际返回的长度.
+
+        // 对于达梦, 数据库的字段为34个中文,那通过get_data方法, 理应需要返回102个字节.
+        // 如果buf的长度是101字节, 应该要截断
+        // 分两次返回:
+        //   第一次返回 33个中文*3 = 99byte, 第100位是odbc规定截断的字符串后面要接 0x00(The null-termination character), 而101位不会被驱动更改, 如果原来是1,那get_data之后还是1
+        //   第二次返回 1个中文*3 = 3 byte, 除了前3个byte,后续的其他位都不会被修改
+
+        // 如果buf的长度是102字节, 实际还是会被截断. (只有buf长度比data_length大1才不会被截断)
+        // 分两次返回:
+        //   第一次返回 33个中文*3 = 99byte, 第100位是odbc规定截断的字符串后面要接 0x00(The null-termination character), 而101和102位都不会被驱动更改,
+        //   第二次返回 1个中文*3 = 3 byte, 除了前3个byte,后续的其他位都不会被修改
+
+        // 通过查看target.is_complete()的判断条件可以知道, buf的最后一个u8必须要是0.
+        if let Some(last) = buf.last_mut() {
+            *last = 0;
+        }
+
         let mut actual = Option::<bytes::BytesMut>::None;
         let mut target: odbc_common::odbc_api::parameter::VarCharSliceMut<'_> =
             odbc_common::odbc_api::parameter::VarChar::from_buffer(buf, Indicator::Null);
+
         loop {
             cursor_row.get_data(column_number, &mut target)?;
-            if let Some(v) = target.as_bytes() {
+            if let Some(mut v) = target.as_bytes() {
+                if !target.is_complete() {
+                    if let Some(prefix) = v.splitn(2, |num| *num == 0).next() {
+                        v = prefix;
+                    };
+                }
+
                 match actual {
                     Some(ref mut actual) => {
                         actual.extend_from_slice(v);
@@ -389,18 +415,21 @@ impl OdbcDataBuf {
             DataType::BigInt => OdbcDataBuf::I64(Nullable::<i64>::null()),
             DataType::TinyInt => OdbcDataBuf::I8(Nullable::<i8>::null()),
             DataType::Bit => OdbcDataBuf::Bit(Nullable::<Bit>::null()),
-            DataType::Varbinary {length }
+            DataType::Varbinary { length }
             | DataType::Binary { length }
             | DataType::LongVarbinary { length } => {
-                OdbcDataBuf::Binary(vec![0u8; min(max_binary_len, length) ])
+                OdbcDataBuf::Binary(vec![0u8; min(max_binary_len, length)])
             }
 
             DataType::WVarchar { length } | DataType::WChar { length } => {
-                OdbcDataBuf::WText(vec![0u8; min(max_str_len, length) ])
+                OdbcDataBuf::WText(vec![0u8; min(max_str_len, length) + 1])
             }
 
-            DataType::Varchar { length } | DataType::Char { length } | DataType::LongVarchar { length } => {
-                OdbcDataBuf::Text(vec![0u8; min(max_str_len, length) ])
+            // Plus one, since the null-termination character.
+            DataType::Varchar { length }
+            | DataType::Char { length }
+            | DataType::LongVarchar { length } => {
+                OdbcDataBuf::Text(vec![0u8; min(max_str_len, length) + 1])
             }
             // Specialized buffers for Numeric and decimal are not yet supported.
             DataType::Numeric {
@@ -411,7 +440,9 @@ impl OdbcDataBuf {
                 precision: _,
                 scale: _,
             }
-            | DataType::Time { precision: _ } => OdbcDataBuf::Text(vec![0u8; data_type.display_size().unwrap()]),
+            | DataType::Time { precision: _ } => {
+                OdbcDataBuf::Text(vec![0u8; data_type.display_size().unwrap()])
+            }
             DataType::Unknown
             | DataType::Float { precision: _ }
             | DataType::Other {
