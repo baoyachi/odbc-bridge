@@ -6,6 +6,8 @@ use crate::executor::query::QueryResult;
 use crate::executor::statement::StatementInput;
 use crate::executor::table::{TableDescArgsString, TableDescResult};
 use crate::executor::SupportDatabase;
+use crate::extension::odbc::OdbcColsBuf;
+use crate::extension::odbc::OdbcDataBuf;
 use crate::extension::odbc::{OdbcColumnDesc, OdbcColumnItem, OdbcParamDesc};
 use crate::{Convert, TryConvert};
 use dameng_helper::DmAdapter;
@@ -242,6 +244,33 @@ impl<'a> OdbcDbConnection<'a> {
         let columns: Vec<OdbcColumnDesc> = Self::get_cursor_columns(&mut cursor)?;
 
         debug!("columns:{:?}", columns);
+        if OdbcDataBuf::is_long_data(
+            columns.iter(),
+            self.options.max_str_len,
+            self.options.max_binary_len,
+        ) {
+            let mut cols_buf = OdbcColsBuf::try_from_col_desc(
+                &columns,
+                self.options.max_str_len,
+                self.options.max_binary_len,
+            )?;
+
+            let mut stmt_ref =
+                odbc_common::odbc_api::handles::AsStatementRef::as_stmt_ref(&mut cursor);
+
+            cols_buf.bind_col(&mut stmt_ref)?;
+
+            let mut total_row = vec![];
+
+            while let Some(mut cursor_row) = cursor.next_row()? {
+                total_row.push(cols_buf.get_row(&mut cursor_row)?);
+            }
+
+            return Ok(QueryResult {
+                columns,
+                data: total_row,
+            });
+        }
 
         let descs = columns.iter().map(|c| {
             <(&OdbcColumnDesc, &Options) as TryConvert<BufferDesc>>::try_convert((c, &self.options))
