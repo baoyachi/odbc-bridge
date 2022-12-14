@@ -85,7 +85,7 @@ impl SqlValue for () {
 impl<T, OP> StatementInput for Statement<T, OP>
 where
     T: SqlValue + Debug,
-    OP: Operation + Clone,
+    OP: Operation,
 {
     type Item = T;
     type Operation = OP;
