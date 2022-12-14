@@ -57,7 +57,7 @@ where
         panic!("no need sql")
     }
 
-    fn operation(&self) -> Option<Self::Operation> {
+    fn operation(&mut self) -> Option<Self::Operation> {
         Some(OdbcOperation::ShowTable)
     }
 }

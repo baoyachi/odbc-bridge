@@ -18,7 +18,7 @@ pub trait Operation {
         S: StatementInput;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum OdbcOperation {
     Execute,
     Query,

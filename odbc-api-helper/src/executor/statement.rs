@@ -15,7 +15,7 @@ pub trait StatementInput {
     fn to_value(self) -> Either<Vec<Self::Item>, Box<dyn Any>>;
     fn to_sql(&self) -> &str;
 
-    fn operation(&self) -> Option<Self::Operation> {
+    fn operation(&mut self) -> Option<Self::Operation> {
         None
     }
 
@@ -98,8 +98,8 @@ where
         &self.sql
     }
 
-    fn operation(&self) -> Option<Self::Operation> {
-        self.odbc_operation.clone()
+    fn operation(&mut self) -> Option<Self::Operation> {
+        self.odbc_operation.take()
     }
 }
 
