@@ -154,7 +154,7 @@ impl<'a> ConnectionTrait for OdbcDbConnection<'a> {
         // TODO 2. need change to parallel execution
         // TODO 3. consider when execute try_for_each result return error, transaction need rollback
         // the detail link:<https://github.com/baoyachi/odbc-bridge/issues/38>
-        let result = stmt.into_iter().try_for_each(|mut s| {
+        let result = stmt.into_iter().try_for_each(|s| {
             let op = s
                 .operation()
                 .ok_or_else(|| OdbcStdError::from("not found Operation"))?;
