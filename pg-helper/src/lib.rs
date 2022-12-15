@@ -30,6 +30,6 @@ pub fn oid_typlen(pg_type: PgType) -> i16 {
         PgType::BIT => -1,
         PgType::JSONB => -1,
         PgType::NAME => 64,
-        _ => panic!("unknown pg_type:{}", pg_type),
+        _ => panic!("unknown pg_type:{pg_type}"),
     }
 }

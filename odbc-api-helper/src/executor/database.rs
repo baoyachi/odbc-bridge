@@ -309,8 +309,7 @@ impl<'a> OdbcDbConnection<'a> {
                 cursor.get_table_desc(describe)
             }
             _ => Err(OdbcStdError::StringError(format!(
-                "current not support database:{:?}",
-                db
+                "current not support database:{db:?}"
             ))),
         }
     }

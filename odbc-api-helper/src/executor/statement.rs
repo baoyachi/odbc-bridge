@@ -85,7 +85,7 @@ impl SqlValue for () {
 impl<T, OP> StatementInput for Statement<T, OP>
 where
     T: SqlValue + Debug,
-    OP: Operation,
+    OP: Operation + Clone,
 {
     type Item = T;
     type Operation = OP;
@@ -99,7 +99,7 @@ where
     }
 
     fn operation(&mut self) -> Option<Self::Operation> {
-        self.odbc_operation.take()
+        self.odbc_operation.clone()
     }
 }
 
