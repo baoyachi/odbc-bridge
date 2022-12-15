@@ -28,7 +28,7 @@ fn main() {
     let args = Args::parse();
     let json = fs::read_to_string(args.path).unwrap();
     let config: EnvConfig = serde_json::from_str(&json).unwrap();
-    println!("config:{:?}", config);
+    println!("config:{config:?}");
     let env = Environment::new().unwrap();
     let conn = env
         .connect_with_connection_string(&config.connection)

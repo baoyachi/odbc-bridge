@@ -26,8 +26,7 @@ impl TryConvert<DmDateType> for &PgType {
             PgType::TIMETZ => Ok(DmDateType::TIME_WITH_TIME_ZONE),
             PgType::TIMESTAMPTZ => Ok(DmDateType::TIMESTAMP_WITH_TIME_ZONE),
             _ => Err(OdbcStdError::TypeConversionError(format!(
-                "convert pg data_type to dameng data_type error:{}",
-                self
+                "convert pg data_type to dameng data_type error:{self}"
             ))),
         }
     }

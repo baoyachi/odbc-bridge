@@ -124,7 +124,7 @@ pub enum OdbcColumnType {
 
 impl ToString for OdbcColumnItem {
     fn to_string(&self) -> String {
-        format!("{:?}", self)
+        format!("{self:?}")
     }
 }
 

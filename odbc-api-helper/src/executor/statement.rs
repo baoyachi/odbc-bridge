@@ -15,7 +15,7 @@ pub trait StatementInput {
     fn to_value(self) -> Either<Vec<Self::Item>, Box<dyn Any>>;
     fn to_sql(&self) -> &str;
 
-    fn operation(&mut self) -> Option<Self::Operation> {
+    fn operation(&self) -> Option<Self::Operation> {
         None
     }
 
@@ -85,7 +85,7 @@ impl SqlValue for () {
 impl<T, OP> StatementInput for Statement<T, OP>
 where
     T: SqlValue + Debug,
-    OP: Operation,
+    OP: Operation + Clone,
 {
     type Item = T;
     type Operation = OP;
@@ -98,8 +98,8 @@ where
         &self.sql
     }
 
-    fn operation(&mut self) -> Option<Self::Operation> {
-        self.odbc_operation.take()
+    fn operation(&self) -> Option<Self::Operation> {
+        self.odbc_operation.clone()
     }
 }
 

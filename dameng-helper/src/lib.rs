@@ -55,12 +55,11 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
         // The X is table name;
         let tables = table_names
             .iter()
-            .map(|x| format!("'{}'", x))
+            .map(|x| format!("'{x}'"))
             .collect::<Vec<_>>()
             .join(",");
         let describe_sql = format!(
-            r#"SELECT A.NAME, A.ID, A.COLID, A.TYPE$, A.LENGTH$, A.SCALE, A.NULLABLE$, A.DEFVAL, A.INFO2 AS IS_IDENTITY, B.NAME AS TABLE_NAME, B.CRTDATE, B.SUBTYPE$ FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ({}) AND B.SCHID IN (SELECT ID FROM SYSOBJECTS WHERE name = '{}');"#,
-            tables, db_name
+            r#"SELECT A.NAME, A.ID, A.COLID, A.TYPE$, A.LENGTH$, A.SCALE, A.NULLABLE$, A.DEFVAL, A.INFO2 AS IS_IDENTITY, B.NAME AS TABLE_NAME, B.CRTDATE, B.SUBTYPE$ FROM SYSCOLUMNS AS a LEFT JOIN SYSOBJECTS AS B ON A.id = B.id WHERE B.name IN ({tables}) AND B.SCHID IN (SELECT ID FROM SYSOBJECTS WHERE name = '{db_name}');"#
         );
         TableSqlDescribe {
             db_name,
