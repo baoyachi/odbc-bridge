@@ -13,6 +13,7 @@ use odbc_common::odbc_api::{
 };
 use odbc_common::odbc_api::{Bit, ColumnDescription, CursorRow, Nullability, Nullable};
 use std::cmp::{max, min};
+use std::io::Read;
 
 #[derive(Debug, Clone)]
 pub struct OdbcColumnDesc {
@@ -298,12 +299,12 @@ impl OdbcDataBuf {
 
             OdbcDataBuf::Text(buf) => OdbcColumnItem {
                 odbc_type: crate::extension::odbc::OdbcColumnType::Text,
-                value: Self::get_long_text(column_number, buf, cursor_row)?,
+                value: Self::get_dameng_long_text(column_number, buf, cursor_row)?,
             },
 
             OdbcDataBuf::WText(buf) => OdbcColumnItem {
                 odbc_type: crate::extension::odbc::OdbcColumnType::WText,
-                value: Self::get_long_text(column_number, buf, cursor_row)?,
+                value: Self::get_dameng_long_text(column_number, buf, cursor_row)?,
             },
             OdbcDataBuf::Binary(buf) => OdbcColumnItem {
                 odbc_type: crate::extension::odbc::OdbcColumnType::Binary,
@@ -313,11 +314,169 @@ impl OdbcDataBuf {
         Ok(result)
     }
 
+    pub fn get_dameng_long_text(
+        column_number: u16,
+        buf: &mut Vec<u8>,
+        cursor_row: &mut CursorRow,
+    ) -> OdbcStdResult<Option<BytesMut>> {
+        const INVALID_UTF8_BYTE: u8 = 0xFF;
+        let reset_buf = |buffer: &mut [u8]| {
+            // buf_length 比 data_length 大1才不会截断.
+            // 截断是按照字符而不是字节去截断的, 一个utf8最多占4个字节, 所以可能buf里的倒数第234字节, 总共三个字节没有被使用到(倒数第一个字节总是0).
+            // 通过把最后234字节赋值未一个不可能出现在utf8的字节(0xff), 来判断此次获取的数据长度
+            if let Some(end) = buffer.rchunks_mut(4).next() {
+                for i in end {
+                    *i = INVALID_UTF8_BYTE;
+                }
+            }
+            // 通过查看target.is_complete()的判断条件可以知道, buf的最后一个u8必须要是0.
+            if let Some(last) = buffer.last_mut() {
+                *last = 0;
+            }
+        };
+
+        let trim_invalid_utf8 = |data_without_zero: &[u8]| -> (bool, usize) {
+            let mut current_is_zero = false;
+            // 总是移除最后一个字节0
+            let mut trim_len = 1;
+
+            if let Some(end) = data_without_zero.rchunks(4).next() {
+                let mut iter = end.iter().rev();
+                // 不处理最后一个字节0
+                iter.next();
+                if let Some(second_last) = iter.next() {
+                    match *second_last {
+                        0 => {
+                            current_is_zero = true;
+                        }
+                        INVALID_UTF8_BYTE => {
+                            trim_len += 1;
+                            for item in iter {
+                                if *item == INVALID_UTF8_BYTE {
+                                    trim_len += 1;
+                                } else {
+                                    // 驱动会在实际返回数据的后一字节设置0, 不一定是buf的最后一个字节, 所以这里还需要移除0
+                                    // 比如,(0x61='a') 最开始:
+                                    // buf = .. 0xFF 0xFF 0xFF 0x00
+                                    // get_data 之后:
+                                    // buf = .. 0x61 0x00 0xFF 0x00
+                                    // data_without_zero = .. 0x61 0x00 0xFF
+                                    // 所以除了移除掉0xFF, 还要移除0x00
+                                    trim_len += 1;
+                                    break;
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        
+            (current_is_zero, trim_len)
+        };
+
+        let mut actual = Option::<bytes::BytesMut>::None;
+
+        let mut set_data = |v: &[u8], last_time_is_zero: bool| {
+            match actual {
+                Some(ref mut actual) => {
+                    if last_time_is_zero {
+                        // 0可能是驱动设置的null-termination, 也可能是字符串本身包含0x00
+                        // 上一次最后一个字节是0, 且这一次第一个utf8字符是 一个字节的, 说明上一次最后一个字节0是字符串本身包含的.
+                        // 否则这一次的第一个字节本应该放在上一次的最后一个字节处.
+                        if utf8_char_width(v[0]) > 1 && actual.len() > 1 {
+                            // 移除null-termination
+                            actual.truncate(actual.len() - 1);
+                        }
+                    }
+                    actual.extend_from_slice(v);
+                }
+                None => {
+                    actual = Some(bytes::BytesMut::from(v));
+                }
+            }
+        };
+
+        let mut last_time_is_zero = false;
+
+        // Utilize all of the allocated buffer. We must make sure buffer can at least hold the
+        // terminating zero. We do a bit more than that though, to avoid to many repeated calls to
+        // get_data.
+        buf.resize(max(256, buf.capacity()), 0);
+        // We repeatedly fetch data and add it to the buffer. The buffer length is therefore the
+        // accumulated value size. This variable keeps track of the number of bytes we added with
+        // the next call to get_data.
+        let mut fetch_size = buf.len();
+        reset_buf(buf);
+        let mut target = VarCharSliceMut::from_buffer(buf.as_mut_slice(), Indicator::Null);
+        // Fetch binary data into buffer.
+        cursor_row.get_data(column_number, &mut target)?;
+
+        loop {
+            match target.indicator() {
+                // Value is `NULL`. We are done here.
+                Indicator::Null => {
+                    break;
+                }
+                // We do not know how large the value is. Let's fetch the data with repeated calls
+                // to get_data.
+                Indicator::NoTotal => {
+                    let old_len = buf.len();
+
+                    let (current_is_zero, trim_len) = trim_invalid_utf8(&buf);
+                    set_data(&buf[..fetch_size - trim_len], last_time_is_zero);
+                    last_time_is_zero = current_is_zero;
+
+                    // Use an exponential strategy for increasing buffer size.
+                    buf.resize(old_len * 2, 0);
+                    fetch_size = buf.len();
+                    reset_buf(buf);
+                    target = VarCharSliceMut::from_buffer(buf, Indicator::Null);
+                    cursor_row.get_data(column_number, &mut target)?;
+                }
+                // We did get the complete value, including the terminating zero. Let's resize the
+                // buffer to match the retrieved value exactly (excluding terminating zero).
+                Indicator::Length(len) if len < fetch_size => {
+                    // Since the indicator refers to value length without terminating zero, this
+                    // also implicitly drops the terminating zero at the end of the buffer.
+                    let shrink_by = fetch_size - len;
+                    set_data(&buf[..buf.len() - shrink_by], last_time_is_zero);
+                    break;
+                }
+                // We did not get all of the value in one go, but the data source has been friendly
+                // enough to tell us how much is missing.
+                Indicator::Length(len) => {
+                    let still_missing = len - fetch_size + 1;
+                    let old_len = buf.len();
+
+                    let (current_is_zero, trim_len) = trim_invalid_utf8(&buf);
+                    set_data(&buf[..fetch_size - trim_len], last_time_is_zero);
+                    last_time_is_zero = current_is_zero;
+
+                    if old_len < still_missing {
+                        buf.resize(old_len + still_missing, 0);
+                    }
+                    fetch_size = buf.len();
+                    reset_buf(buf);
+                    target = VarCharSliceMut::from_buffer(buf, Indicator::Null);
+                    cursor_row.get_data(column_number, &mut target)?;
+                }
+            }
+        }
+        Ok(actual)
+    }
+
     pub fn get_long_text(
         column_number: u16,
         buf: &mut [u8],
         cursor_row: &mut CursorRow,
     ) -> OdbcStdResult<Option<BytesMut>> {
+        let mut t = Vec::with_capacity(300);
+
+        let r = cursor_row.get_text(column_number, &mut t)?;
+        println!("获取到{},{}", t.len(), String::from_utf8_lossy(&t));
+        return Ok(r.then(|| bytes::BytesMut::from(t.as_slice())));
+
         // Indicator::Length(len) 如果截断了, 那么len是截断前的数据库期待的返回长度, 而不是这一次get_data实际返回的长度
         // 如果没有截断, 那么len就是这一次get_data实际返回的长度.
 
