@@ -1,7 +1,7 @@
 use crate::executor::query::OdbcRow;
 use crate::{Convert, TryConvert};
 use bytes::BytesMut;
-use odbc_common::error::{OdbcStdError, OdbcStdResult};
+use odbc_common::error::OdbcStdResult;
 use odbc_common::odbc_api::buffers::Indicator;
 use odbc_common::odbc_api::handles::{ParameterDescription, Statement, StatementRef};
 use odbc_common::odbc_api::parameter::{VarBinaryBox, VarCharBox, VarCharSliceMut};
@@ -112,22 +112,6 @@ impl OdbcColsBuf {
         Self { columns }
     }
 
-    pub fn try_from_col_desc(
-        col_desc: &[OdbcColumnDesc],
-        max_str_len: usize,
-        max_binary_len: usize,
-    ) -> OdbcStdResult<Self> {
-        let mut columns = Vec::with_capacity(col_desc.len());
-        let mut col_num = 0;
-        for col_desc in col_desc.iter() {
-            let buf =
-                OdbcDataBuf::try_from_data_type(col_desc.data_type, max_str_len, max_binary_len)?;
-            col_num += 1;
-            columns.push((col_num, buf));
-        }
-        Ok(Self { columns })
-    }
-
     pub fn bind_col(&mut self, cursor: &mut StatementRef<'_>) -> OdbcStdResult<()> {
         for (col_num, col_buf) in &mut self.columns {
             unsafe {
@@ -169,6 +153,48 @@ pub enum OdbcDataBuf {
 }
 
 impl OdbcDataBuf {
+    pub fn from_desc(desc: BufferDesc, max_str_len: usize, max_binary_len: usize) -> Self {
+        const UTF8_MAX_BYTE: usize = 4;
+        match desc {
+            BufferDesc::Binary { length } => {
+                if length <= max_binary_len {
+                    OdbcDataBuf::Binary(VarBinaryBox::from_vec(vec![0u8; length]))
+                } else {
+                    OdbcDataBuf::BigBinary(vec![0u8; max(max_binary_len, 1)])
+                }
+            }
+            BufferDesc::Text {
+                max_str_len: length,
+            } => {
+                if length <= max_str_len {
+                    OdbcDataBuf::Text(VarCharBox::from_vec(vec![0u8; length + 1]))
+                } else {
+                    OdbcDataBuf::BigText(vec![0u8; max(max_str_len, UTF8_MAX_BYTE) + 1])
+                }
+            }
+            BufferDesc::WText {
+                max_str_len: length,
+            } => {
+                if length <= max_str_len {
+                    OdbcDataBuf::WText(VarCharBox::from_vec(vec![0u8; length + 1]))
+                } else {
+                    OdbcDataBuf::BigWText(vec![0u8; max(max_str_len, UTF8_MAX_BYTE) + 1])
+                }
+            }
+            BufferDesc::F64 { .. } => OdbcDataBuf::F64(Nullable::<f64>::null()),
+            BufferDesc::F32 { .. } => OdbcDataBuf::F32(Nullable::<f32>::null()),
+            BufferDesc::Date { .. } => OdbcDataBuf::Date(Nullable::<Date>::null()),
+            BufferDesc::Time { .. } => OdbcDataBuf::Time(Nullable::<Time>::null()),
+            BufferDesc::Timestamp { .. } => OdbcDataBuf::Timestamp(Nullable::<Timestamp>::null()),
+            BufferDesc::I8 { .. } => OdbcDataBuf::I8(Nullable::<i8>::null()),
+            BufferDesc::I16 { .. } => OdbcDataBuf::I16(Nullable::<i16>::null()),
+            BufferDesc::I32 { .. } => OdbcDataBuf::I32(Nullable::<i32>::null()),
+            BufferDesc::I64 { .. } => OdbcDataBuf::I64(Nullable::<i64>::null()),
+            BufferDesc::U8 { .. } => OdbcDataBuf::U8(Nullable::<u8>::null()),
+            BufferDesc::Bit { .. } => OdbcDataBuf::Bit(Nullable::<Bit>::null()),
+        }
+    }
+
     /// # Safety
     ///
     /// It is the callers responsibility to make sure the bound columns live until they are no
@@ -440,148 +466,6 @@ impl OdbcDataBuf {
     ) -> OdbcStdResult<Option<BytesMut>> {
         let is_null = cursor_row.get_binary(column_number, buf)?;
         Ok(is_null.then(|| bytes::BytesMut::from(buf.as_slice())))
-    }
-
-    pub fn try_from_data_type(
-        data_type: DataType,
-        max_str_len: usize,
-        max_binary_len: usize,
-    ) -> OdbcStdResult<Self> {
-        Self::from_data_type(data_type, max_str_len, max_binary_len).ok_or_else(|| {
-            OdbcStdError::StringError(format!(
-                "covert DataType:{:?} to OdbcDataBuf error",
-                data_type
-            ))
-        })
-    }
-
-    pub fn from_desc(desc: BufferDesc, max_str_len: usize, max_binary_len: usize) -> Self {
-        const UTF8_MAX_BYTE: usize = 4;
-        match desc {
-            BufferDesc::Binary { length } => {
-                if length <= max_binary_len {
-                    OdbcDataBuf::Binary(VarBinaryBox::from_vec(vec![0u8; length]))
-                } else {
-                    OdbcDataBuf::BigBinary(vec![0u8; max(max_binary_len, 1)])
-                }
-            }
-            BufferDesc::Text {
-                max_str_len: length,
-            } => {
-                if length <= max_str_len {
-                    OdbcDataBuf::Text(VarCharBox::from_vec(vec![0u8; length + 1]))
-                } else {
-                    OdbcDataBuf::BigText(vec![0u8; max(max_str_len, UTF8_MAX_BYTE) + 1])
-                }
-            }
-            BufferDesc::WText {
-                max_str_len: length,
-            } => {
-                if length <= max_str_len {
-                    OdbcDataBuf::WText(VarCharBox::from_vec(vec![0u8; length + 1]))
-                } else {
-                    OdbcDataBuf::BigWText(vec![0u8; max(max_str_len, UTF8_MAX_BYTE) + 1])
-                }
-            }
-            BufferDesc::F64 { .. } => OdbcDataBuf::F64(Nullable::<f64>::null()),
-            BufferDesc::F32 { .. } => OdbcDataBuf::F32(Nullable::<f32>::null()),
-            BufferDesc::Date { .. } => OdbcDataBuf::Date(Nullable::<Date>::null()),
-            BufferDesc::Time { .. } => OdbcDataBuf::Time(Nullable::<Time>::null()),
-            BufferDesc::Timestamp { .. } => OdbcDataBuf::Timestamp(Nullable::<Timestamp>::null()),
-            BufferDesc::I8 { .. } => OdbcDataBuf::I8(Nullable::<i8>::null()),
-            BufferDesc::I16 { .. } => OdbcDataBuf::I16(Nullable::<i16>::null()),
-            BufferDesc::I32 { .. } => OdbcDataBuf::I32(Nullable::<i32>::null()),
-            BufferDesc::I64 { .. } => OdbcDataBuf::I64(Nullable::<i64>::null()),
-            BufferDesc::U8 { .. } => OdbcDataBuf::U8(Nullable::<u8>::null()),
-            BufferDesc::Bit { .. } => OdbcDataBuf::Bit(Nullable::<Bit>::null()),
-        }
-    }
-    pub fn from_data_type(
-        data_type: DataType,
-        max_str_len: usize,
-        max_binary_len: usize,
-    ) -> Option<Self> {
-        const UTF8_MAX_BYTE: usize = 4;
-        let result = match data_type {
-            DataType::Numeric { precision, scale } | DataType::Decimal { precision, scale }
-                if scale == 0 && precision < 3 =>
-            {
-                OdbcDataBuf::I8(Nullable::<i8>::null())
-            }
-            DataType::Numeric { precision, scale } | DataType::Decimal { precision, scale }
-                if scale == 0 && precision < 10 =>
-            {
-                OdbcDataBuf::I32(Nullable::<i32>::null())
-            }
-            DataType::Numeric { precision, scale } | DataType::Decimal { precision, scale }
-                if scale == 0 && precision < 19 =>
-            {
-                OdbcDataBuf::I64(Nullable::<i64>::null())
-            }
-            DataType::Integer => OdbcDataBuf::I32(Nullable::<i32>::null()),
-            DataType::SmallInt => OdbcDataBuf::I16(Nullable::<i16>::null()),
-            DataType::Float { precision: 0..=24 } | DataType::Real => {
-                OdbcDataBuf::F32(Nullable::<f32>::null())
-            }
-            DataType::Float { precision: 25..=53 } | DataType::Double => {
-                OdbcDataBuf::F64(Nullable::<f64>::null())
-            }
-            DataType::Date => OdbcDataBuf::Date(Nullable::<Date>::null()),
-            DataType::Time { precision: 0 } => OdbcDataBuf::Time(Nullable::<Time>::null()),
-            DataType::Timestamp { precision: _ } => {
-                OdbcDataBuf::Timestamp(Nullable::<Timestamp>::null())
-            }
-            DataType::BigInt => OdbcDataBuf::I64(Nullable::<i64>::null()),
-            DataType::TinyInt => OdbcDataBuf::I8(Nullable::<i8>::null()),
-            DataType::Bit => OdbcDataBuf::Bit(Nullable::<Bit>::null()),
-            DataType::Varbinary { length }
-            | DataType::Binary { length }
-            | DataType::LongVarbinary { length } => {
-                if length <= max_binary_len {
-                    OdbcDataBuf::Binary(VarBinaryBox::from_vec(vec![0u8; length]))
-                } else {
-                    OdbcDataBuf::BigBinary(vec![0u8; max(max_binary_len, 1)])
-                }
-            }
-
-            DataType::WVarchar { length } | DataType::WChar { length } => {
-                if length <= max_str_len {
-                    OdbcDataBuf::WText(VarCharBox::from_vec(vec![0u8; length + 1]))
-                } else {
-                    OdbcDataBuf::BigWText(vec![0u8; max(max_str_len, UTF8_MAX_BYTE) + 1])
-                }
-            }
-            // Plus one, since the null-termination character.
-            DataType::Varchar { length }
-            | DataType::Char { length }
-            | DataType::LongVarchar { length } => {
-                if length <= max_str_len {
-                    OdbcDataBuf::Text(VarCharBox::from_vec(vec![0u8; length + 1]))
-                } else {
-                    OdbcDataBuf::BigText(vec![0u8; max(max_str_len, UTF8_MAX_BYTE) + 1])
-                }
-            }
-            // Specialized buffers for Numeric and decimal are not yet supported.
-            DataType::Numeric {
-                precision: _,
-                scale: _,
-            }
-            | DataType::Decimal {
-                precision: _,
-                scale: _,
-            }
-            | DataType::Time { precision: _ } => {
-                OdbcDataBuf::BigText(vec![0u8; data_type.display_size().unwrap()])
-            }
-            DataType::Unknown
-            | DataType::Float { precision: _ }
-            | DataType::Other {
-                data_type: _,
-                column_size: _,
-                decimal_digits: _,
-            } => return None,
-        };
-        Some(result)
     }
 }
 

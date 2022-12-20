@@ -241,18 +241,22 @@ impl<'a> OdbcDbConnection<'a> {
         })?;
 
         let columns: Vec<OdbcColumnDesc> = Self::get_cursor_columns(&mut cursor)?;
-
         debug!("columns:{:?}", columns);
+
+        let descs = columns
+            .iter()
+            .map(|c| <&OdbcColumnDesc as TryConvert<BufferDesc>>::try_convert(c).unwrap());
+
         if OdbcColsBuf::is_long_data(
             columns.iter(),
             self.options.max_str_len,
             self.options.max_binary_len,
         ) {
-            let mut cols_buf = OdbcColsBuf::try_from_col_desc(
-                &columns,
+            let mut cols_buf = OdbcColsBuf::from_descs(
+                descs,
                 self.options.max_str_len,
                 self.options.max_binary_len,
-            )?;
+            );
 
             let mut stmt_ref =
                 odbc_common::odbc_api::handles::AsStatementRef::as_stmt_ref(&mut cursor);
@@ -270,10 +274,6 @@ impl<'a> OdbcDbConnection<'a> {
                 data: total_row,
             });
         }
-
-        let descs = columns
-            .iter()
-            .map(|c| <&OdbcColumnDesc as TryConvert<BufferDesc>>::try_convert(c).unwrap());
 
         let row_set_buffer =
             ColumnarAnyBuffer::try_from_descs(self.options.max_batch_size, descs).unwrap();
