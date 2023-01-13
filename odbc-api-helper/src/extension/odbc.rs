@@ -74,6 +74,7 @@ impl TryConvert<BufferDesc> for &OdbcColumnDesc {
     }
 }
 
+#[allow(missing_debug_implementations)]
 pub struct OdbcColsBuf {
     pub columns: Vec<(u16, OdbcDataBuf)>,
 }
@@ -132,6 +133,7 @@ impl OdbcColsBuf {
     }
 }
 
+#[allow(missing_debug_implementations)]
 pub enum OdbcDataBuf {
     BigText(Vec<u8>),
     BigWText(Vec<u8>),

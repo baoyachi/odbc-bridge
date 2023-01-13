@@ -1,4 +1,4 @@
-// #![deny(missing_debug_implementations)]
+#![deny(missing_debug_implementations)]
 
 #[macro_use]
 extern crate log;
