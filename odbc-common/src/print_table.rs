@@ -1,11 +1,8 @@
-use nu_protocol::Config;
-use nu_table::Table;
-use nu_table::{Alignments, StyledString, TableTheme, TextStyle};
+use crate::error::OdbcStdResult;
 use odbc_api::buffers::TextRowSet;
 use odbc_api::Cursor;
-use std::collections::HashMap;
-
-use crate::error::{OdbcStdError, OdbcStdResult};
+use tabled::builder::Builder;
+use tabled::{Style, Table};
 
 pub trait Print: Sized {
     fn print_all_tables(self) -> OdbcStdResult<()> {
@@ -17,36 +14,23 @@ pub trait Print: Sized {
     fn header_data(self) -> OdbcStdResult<(Vec<String>, Vec<Vec<String>>)>;
 
     fn convert_table(self) -> OdbcStdResult<Table> {
-        let (headers, data) = self.header_data()?;
-        let headers: Vec<StyledString> = headers
-            .into_iter()
-            .map(|x| StyledString::new(x, TextStyle::default_header()))
-            .collect();
+        let (headers, records) = self.header_data()?;
+        let mut builder = Builder::default();
+        for record in records {
+            builder.add_record(record);
+        }
+        builder.set_columns(headers);
 
-        let rows = data
-            .iter()
-            .map(|x| {
-                x.iter()
-                    .map(|x| StyledString::new(x.to_string(), TextStyle::basic_left()))
-                    .collect()
-            })
-            .collect::<Vec<Vec<StyledString>>>();
+        let mut table = builder.build();
+        table.with(Style::modern());
 
-        Ok(Table::new(headers, rows, TableTheme::rounded()))
+        Ok(table)
     }
 
     fn table_string(self) -> OdbcStdResult<String> {
         let table = self.convert_table()?;
-        let cfg = Config::default();
-        let styles = HashMap::default();
-        let alignments = Alignments::default();
-
-        let p = table
-            .draw_table(&cfg, &styles, alignments, usize::MAX)
-            .ok_or_else(|| {
-                OdbcStdError::TypeConversionError("convert table to string error".to_string())
-            })?;
-        Ok(p)
+        let output = table.to_string();
+        Ok(output)
     }
 }
 
