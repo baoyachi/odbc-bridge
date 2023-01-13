@@ -258,7 +258,7 @@ CREATE TABLE SYSDBA.T4 (
 
                 // validate CRTDATE value:2022-10-24 17:28:26.308000
                 let crtdate = &x[len - 2];
-                info!("{}", crtdate);
+
                 assert!(validate_crtdate(crtdate));
                 let _ = std::mem::replace(&mut x[1], "1058".to_string());
                 let _ =
