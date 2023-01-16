@@ -109,15 +109,12 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
 
 #[cfg(test)]
 mod tests {
-    const DAMENG_CONNECTION: &str = "Driver={DM8};Server=0.0.0.0;UID=SYSDBA;PWD=SYSDBA001;";
 
     use odbc_api_helper::executor::database::{ConnectionTrait, OdbcDbConnection, Options};
     use odbc_api_helper::executor::execute::ExecResult;
     use odbc_api_helper::executor::table::{TableDescArgs, TableDescResult};
     use odbc_api_helper::executor::SupportDatabase;
-    use odbc_common::odbc_api::Environment;
     use odbc_common::Print;
-    use once_cell::sync::Lazy;
     use regex::Regex;
 
     #[macro_export]
@@ -134,8 +131,6 @@ mod tests {
                 v
             }};
         }
-
-    pub static ENV: Lazy<Environment> = Lazy::new(|| Environment::new().unwrap());
 
     /// Validate dameng database crtdate datetime format value
     ///
@@ -154,9 +149,7 @@ mod tests {
     }
 
     fn get_dameng_conn() -> OdbcDbConnection<'static> {
-        let conn = ENV
-            .connect_with_connection_string(DAMENG_CONNECTION)
-            .unwrap();
+        let conn = odbc_common::tests_cfg::get_dameng_conn();
 
         let connection =
             OdbcDbConnection::new(conn, Options::new(SupportDatabase::Dameng)).unwrap();
