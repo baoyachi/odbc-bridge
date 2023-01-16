@@ -13,3 +13,4 @@ Cargo.lock
 test.json
 */tmp/*
 docs/book/*
+tmp/*

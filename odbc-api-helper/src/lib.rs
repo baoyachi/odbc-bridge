@@ -11,6 +11,9 @@ pub mod bridge;
 pub mod executor;
 pub mod extension;
 
+#[cfg(feature = "tests_cfg")]
+pub mod tests_cfg;
+
 pub use odbc_common::Print;
 
 pub trait Convert<T>: Sized {
