@@ -110,10 +110,10 @@ impl DmAdapter for CursorImpl<StatementImpl<'_>> {
 #[cfg(test)]
 mod tests {
 
-    use odbc_api_helper::executor::database::{ConnectionTrait, OdbcDbConnection, Options};
+    use odbc_api_helper::executor::database::ConnectionTrait;
     use odbc_api_helper::executor::execute::ExecResult;
     use odbc_api_helper::executor::table::{TableDescArgs, TableDescResult};
-    use odbc_api_helper::executor::SupportDatabase;
+    use odbc_api_helper::tests_cfg::get_dameng_conn;
     use odbc_common::Print;
     use regex::Regex;
 
@@ -146,14 +146,6 @@ mod tests {
             Regex::new(r#"^[0-9]{4}-[0-9]{2}-[0-9]{2}\s[0-9]{2}:[0-9]{2}:[0-9]{2}[.]{1}[0-9]{6}"#)
                 .unwrap();
         regex.is_match(x)
-    }
-
-    fn get_dameng_conn() -> OdbcDbConnection<'static> {
-        let conn = odbc_common::tests_cfg::get_dameng_conn();
-
-        let connection =
-            OdbcDbConnection::new(conn, Options::new(SupportDatabase::Dameng)).unwrap();
-        connection
     }
 
     #[test]

@@ -21,8 +21,3 @@ tabled = "0.10.0"
 log = "0.4.17"
 odbc-api = "0.53.0"
 serde = "1.0.147"
-once_cell = { version = "1.15.0", optional = true }
-
-
-[features]
-tests_cfg = ["once_cell"]
