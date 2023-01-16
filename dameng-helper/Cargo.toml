@@ -18,11 +18,11 @@ strum = { version = "0.24.1", features = ["derive"] }
 strum_macros = "0.24.3"
 serde = { version = "1.0.147", features = ["derive"] }
 log = "0.4.17"
-odbc-common = { path = "../odbc-common", version = "0.2.3"}
+odbc-common = { path = "../odbc-common", version = "0.2.3" }
 
 [dev-dependencies]
 ctor = "0.1.26"
-odbc-api-helper = { path = "../odbc-api-helper", version = "0.2", features = ["tests_cfg"]  }
+odbc-api-helper = { path = "../odbc-api-helper", version = "0.2", features = ["tests_cfg"] }
 regex = "1.6.0"
 serde_json = "1.0.87"
 simple-log = "1.6.0"
