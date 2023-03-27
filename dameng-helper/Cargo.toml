@@ -21,7 +21,7 @@ log = "0.4.17"
 odbc-common = { path = "../odbc-common", version = "0.2.3" }
 
 [dev-dependencies]
-ctor = "0.1.26"
+ctor = "0.2.0"
 odbc-api-helper = { path = "../odbc-api-helper", version = "0.2" }
 once_cell = "1.15.0"
 regex = "1.6.0"
