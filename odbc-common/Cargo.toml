@@ -17,7 +17,7 @@ license = "Apache-2.0"
 [dependencies]
 chrono = "0.4.22"
 thiserror = "1.0"
-tabled = "0.10.0"
+tabled = "0.12.1"
 log = "0.4.17"
 odbc-api = "0.54.0"
 serde = "1.0.147"
