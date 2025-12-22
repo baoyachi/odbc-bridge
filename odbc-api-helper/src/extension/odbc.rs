@@ -1,14 +1,17 @@
-use crate::executor::database::Options;
+use crate::executor::query::OdbcRow;
 use crate::{Convert, TryConvert};
 use bytes::BytesMut;
-use odbc_common::odbc_api::handles::ParameterDescription;
+use odbc_common::error::OdbcStdResult;
+use odbc_common::odbc_api::buffers::Indicator;
+use odbc_common::odbc_api::handles::{ParameterDescription, Statement, StatementRef};
+use odbc_common::odbc_api::parameter::{VarBinaryBox, VarCharBox, VarCharSliceMut};
 use odbc_common::odbc_api::{
     buffers::{AnySlice, BufferDesc},
     sys::{Date, Time, Timestamp, NULL_DATA},
     DataType,
 };
-use odbc_common::odbc_api::{ColumnDescription, Nullability};
-use std::cmp::min;
+use odbc_common::odbc_api::{Bit, ColumnDescription, CursorRow, Nullability, Nullable};
+use std::cmp::max;
 
 #[derive(Debug, Clone)]
 pub struct OdbcColumnDesc {
@@ -61,40 +64,410 @@ impl TryFrom<ColumnDescription> for OdbcColumnDesc {
     }
 }
 
-impl TryConvert<BufferDesc> for (&OdbcColumnDesc, &Options) {
+impl TryConvert<BufferDesc> for &OdbcColumnDesc {
     type Error = String;
 
     fn try_convert(self) -> Result<BufferDesc, Self::Error> {
-        let c = self.0;
-        let option = self.1;
-        let mut desc = BufferDesc::from_data_type(c.data_type, c.nullable)
-            .ok_or_else(|| format!("covert DataType:{:?} to BufferDesc error", c.data_type))?;
+        let desc = BufferDesc::from_data_type(self.data_type, self.nullable)
+            .ok_or_else(|| format!("covert DataType:{:?} to BufferDesc error", self.data_type))?;
+        Ok(desc)
+    }
+}
 
-        // When use `BufferKind::from_data_type` get result with `BufferKind::Text`
-        // It's maybe caused panic,it need use `Option.max_str_len` to readjust size.
-        // Link: <https://github.com/pacman82/odbc-api/issues/268>
-        match desc {
-            // TODO Notice: The kind of `BufferDesc::Text` mix up varchar or text type
-            // Need to distinguish between text type or varchar type
-            BufferDesc::Text { max_str_len } => {
-                desc = BufferDesc::WText {
-                    max_str_len: min(max_str_len, option.max_str_len),
-                };
+#[allow(missing_debug_implementations)]
+pub struct OdbcColsBuf {
+    pub columns: Vec<(u16, OdbcDataBuf)>,
+}
+
+impl OdbcColsBuf {
+    pub fn is_long_data<'a>(
+        mut col_desc: impl Iterator<Item = &'a OdbcColumnDesc>,
+        max_str_len: usize,
+        max_binary_len: usize,
+    ) -> bool {
+        col_desc.any(|i| match i.data_type {
+            odbc_common::odbc_api::DataType::Char { length }
+            | odbc_common::odbc_api::DataType::WChar { length }
+            | odbc_common::odbc_api::DataType::Varchar { length }
+            | odbc_common::odbc_api::DataType::WVarchar { length }
+            | odbc_common::odbc_api::DataType::LongVarchar { length } => length > max_str_len,
+            odbc_common::odbc_api::DataType::LongVarbinary { length }
+            | odbc_common::odbc_api::DataType::Varbinary { length }
+            | odbc_common::odbc_api::DataType::Binary { length } => length > max_binary_len,
+            _ => false,
+        })
+    }
+
+    pub fn from_descs(
+        descs: impl Iterator<Item = BufferDesc>,
+        max_str_len: usize,
+        max_binary_len: usize,
+    ) -> Self {
+        let mut columns = Vec::new();
+        let mut col_num = 0;
+        for desc in descs {
+            let buf = OdbcDataBuf::from_desc(desc, max_str_len, max_binary_len);
+            col_num += 1;
+            columns.push((col_num, buf));
+        }
+        Self { columns }
+    }
+
+    pub fn bind_col(&mut self, cursor: &mut StatementRef<'_>) -> OdbcStdResult<()> {
+        for (col_num, col_buf) in &mut self.columns {
+            unsafe {
+                col_buf.bind_col(*col_num, cursor)?;
             }
-            BufferDesc::WText { max_str_len } => {
-                desc = BufferDesc::WText {
-                    max_str_len: min(max_str_len, option.max_str_len),
-                };
-            }
-            BufferDesc::Binary { length } => {
-                desc = BufferDesc::Binary {
-                    length: min(length, option.max_binary_len),
-                };
-            }
-            _ => {}
+        }
+        Ok(())
+    }
+
+    pub fn get_row(&mut self, cursor_row: &mut CursorRow) -> OdbcStdResult<OdbcRow> {
+        let mut columns = Vec::with_capacity(self.columns.len());
+
+        for (col_num, col_buf) in &mut self.columns {
+            columns.push(col_buf.get_data(*col_num, cursor_row)?)
         }
 
-        Ok(desc)
+        Ok(columns)
+    }
+}
+
+#[allow(missing_debug_implementations)]
+pub enum OdbcDataBuf {
+    BigText(Vec<u8>),
+    BigWText(Vec<u8>),
+    BigBinary(Vec<u8>),
+    Text(VarCharBox),
+    WText(VarCharBox),
+    Binary(VarBinaryBox),
+    Date(Nullable<Date>),
+    Time(Nullable<Time>),
+    Timestamp(Nullable<Timestamp>),
+    F64(Nullable<f64>),
+    F32(Nullable<f32>),
+    I8(Nullable<i8>),
+    I16(Nullable<i16>),
+    I32(Nullable<i32>),
+    I64(Nullable<i64>),
+    U8(Nullable<u8>),
+    Bit(Nullable<Bit>),
+}
+
+impl OdbcDataBuf {
+    pub fn from_desc(desc: BufferDesc, max_str_len: usize, max_binary_len: usize) -> Self {
+        const UTF8_MAX_BYTE: usize = 4;
+        match desc {
+            BufferDesc::Binary { length } => {
+                if length <= max_binary_len {
+                    OdbcDataBuf::Binary(VarBinaryBox::from_vec(vec![0u8; length]))
+                } else {
+                    OdbcDataBuf::BigBinary(vec![0u8; max(max_binary_len, 1)])
+                }
+            }
+            BufferDesc::Text {
+                max_str_len: length,
+            } => {
+                if length <= max_str_len {
+                    OdbcDataBuf::Text(VarCharBox::from_vec(vec![0u8; length + 1]))
+                } else {
+                    OdbcDataBuf::BigText(vec![0u8; max(max_str_len, UTF8_MAX_BYTE) + 1])
+                }
+            }
+            BufferDesc::WText {
+                max_str_len: length,
+            } => {
+                if length <= max_str_len {
+                    OdbcDataBuf::WText(VarCharBox::from_vec(vec![0u8; length + 1]))
+                } else {
+                    OdbcDataBuf::BigWText(vec![0u8; max(max_str_len, UTF8_MAX_BYTE) + 1])
+                }
+            }
+            BufferDesc::F64 { .. } => OdbcDataBuf::F64(Nullable::<f64>::null()),
+            BufferDesc::F32 { .. } => OdbcDataBuf::F32(Nullable::<f32>::null()),
+            BufferDesc::Date { .. } => OdbcDataBuf::Date(Nullable::<Date>::null()),
+            BufferDesc::Time { .. } => OdbcDataBuf::Time(Nullable::<Time>::null()),
+            BufferDesc::Timestamp { .. } => OdbcDataBuf::Timestamp(Nullable::<Timestamp>::null()),
+            BufferDesc::I8 { .. } => OdbcDataBuf::I8(Nullable::<i8>::null()),
+            BufferDesc::I16 { .. } => OdbcDataBuf::I16(Nullable::<i16>::null()),
+            BufferDesc::I32 { .. } => OdbcDataBuf::I32(Nullable::<i32>::null()),
+            BufferDesc::I64 { .. } => OdbcDataBuf::I64(Nullable::<i64>::null()),
+            BufferDesc::U8 { .. } => OdbcDataBuf::U8(Nullable::<u8>::null()),
+            BufferDesc::Bit { .. } => OdbcDataBuf::Bit(Nullable::<Bit>::null()),
+        }
+    }
+
+    /// # Safety
+    ///
+    /// It is the callers responsibility to make sure the bound columns live until they are no
+    /// longer bound.
+    pub unsafe fn bind_col(
+        &mut self,
+        column_number: u16,
+        cursor: &mut StatementRef<'_>,
+    ) -> OdbcStdResult<()> {
+        match self {
+            OdbcDataBuf::Date(buf) => cursor.bind_col(column_number, buf).into_result(cursor)?,
+            OdbcDataBuf::Time(buf) => cursor.bind_col(column_number, buf).into_result(cursor)?,
+            OdbcDataBuf::Timestamp(buf) => {
+                cursor.bind_col(column_number, buf).into_result(cursor)?
+            }
+            OdbcDataBuf::F64(buf) => cursor.bind_col(column_number, buf).into_result(cursor)?,
+            OdbcDataBuf::F32(buf) => cursor.bind_col(column_number, buf).into_result(cursor)?,
+            OdbcDataBuf::I8(buf) => cursor.bind_col(column_number, buf).into_result(cursor)?,
+            OdbcDataBuf::I16(buf) => cursor.bind_col(column_number, buf).into_result(cursor)?,
+            OdbcDataBuf::I32(buf) => cursor.bind_col(column_number, buf).into_result(cursor)?,
+            OdbcDataBuf::I64(buf) => cursor.bind_col(column_number, buf).into_result(cursor)?,
+            OdbcDataBuf::U8(buf) => cursor.bind_col(column_number, buf).into_result(cursor)?,
+            OdbcDataBuf::Bit(buf) => cursor.bind_col(column_number, buf).into_result(cursor)?,
+
+            OdbcDataBuf::Text(buf) => cursor.bind_col(column_number, buf).into_result(cursor)?,
+            OdbcDataBuf::WText(buf) => cursor.bind_col(column_number, buf).into_result(cursor)?,
+            OdbcDataBuf::Binary(buf) => cursor.bind_col(column_number, buf).into_result(cursor)?,
+
+            OdbcDataBuf::BigText(_) | OdbcDataBuf::BigWText(_) | OdbcDataBuf::BigBinary(_) => {}
+        };
+        Ok(())
+    }
+
+    pub fn get_data(
+        &mut self,
+        column_number: u16,
+        cursor_row: &mut CursorRow,
+    ) -> OdbcStdResult<OdbcColumnItem> {
+        let result = match self {
+            OdbcDataBuf::Date(buf) => OdbcColumnItem {
+                odbc_type: crate::extension::odbc::OdbcColumnType::Date,
+                value: buf.as_opt().map(|value| {
+                    bytes::BytesMut::from(value.try_convert().unwrap().to_string().as_bytes())
+                }),
+            },
+            OdbcDataBuf::Time(buf) => OdbcColumnItem {
+                odbc_type: crate::extension::odbc::OdbcColumnType::Time,
+                value: buf.as_opt().map(|value| {
+                    bytes::BytesMut::from(value.try_convert().unwrap().to_string().as_bytes())
+                }),
+            },
+            OdbcDataBuf::Timestamp(buf) => OdbcColumnItem {
+                odbc_type: crate::extension::odbc::OdbcColumnType::Timestamp,
+                value: buf.as_opt().map(|value| {
+                    bytes::BytesMut::from(
+                        <Timestamp as TryConvert<time::PrimitiveDateTime>>::try_convert(*value)
+                            .unwrap()
+                            .to_string()
+                            .as_bytes(),
+                    )
+                }),
+            },
+            OdbcDataBuf::F64(buf) => OdbcColumnItem {
+                odbc_type: crate::extension::odbc::OdbcColumnType::F64,
+                value: buf
+                    .as_opt()
+                    .map(|value| bytes::BytesMut::from(value.to_string().as_bytes())),
+            },
+            OdbcDataBuf::F32(buf) => OdbcColumnItem {
+                odbc_type: crate::extension::odbc::OdbcColumnType::F32,
+                value: buf
+                    .as_opt()
+                    .map(|value| bytes::BytesMut::from(value.to_string().as_bytes())),
+            },
+            OdbcDataBuf::I8(buf) => OdbcColumnItem {
+                odbc_type: crate::extension::odbc::OdbcColumnType::I8,
+                value: buf
+                    .as_opt()
+                    .map(|value| bytes::BytesMut::from(value.to_string().as_bytes())),
+            },
+            OdbcDataBuf::I16(buf) => OdbcColumnItem {
+                odbc_type: crate::extension::odbc::OdbcColumnType::I16,
+                value: buf
+                    .as_opt()
+                    .map(|value| bytes::BytesMut::from(value.to_string().as_bytes())),
+            },
+            OdbcDataBuf::I32(buf) => OdbcColumnItem {
+                odbc_type: crate::extension::odbc::OdbcColumnType::I32,
+                value: buf
+                    .as_opt()
+                    .map(|value| bytes::BytesMut::from(value.to_string().as_bytes())),
+            },
+            OdbcDataBuf::I64(buf) => OdbcColumnItem {
+                odbc_type: crate::extension::odbc::OdbcColumnType::I64,
+                value: buf
+                    .as_opt()
+                    .map(|value| bytes::BytesMut::from(value.to_string().as_bytes())),
+            },
+            OdbcDataBuf::U8(buf) => OdbcColumnItem {
+                odbc_type: crate::extension::odbc::OdbcColumnType::U8,
+                value: buf
+                    .as_opt()
+                    .map(|value| BytesMut::from(vec![*value].as_slice())),
+            },
+            OdbcDataBuf::Bit(buf) => OdbcColumnItem {
+                odbc_type: crate::extension::odbc::OdbcColumnType::Bit,
+                value: buf
+                    .as_opt()
+                    .map(|value| BytesMut::from(value.as_bool().to_string().as_bytes())),
+            },
+            OdbcDataBuf::Text(buf) => OdbcColumnItem {
+                odbc_type: crate::extension::odbc::OdbcColumnType::Text,
+                value: buf.as_bytes().map(BytesMut::from),
+            },
+            OdbcDataBuf::WText(buf) => OdbcColumnItem {
+                odbc_type: crate::extension::odbc::OdbcColumnType::WText,
+                value: buf.as_bytes().map(BytesMut::from),
+            },
+            OdbcDataBuf::Binary(buf) => OdbcColumnItem {
+                odbc_type: crate::extension::odbc::OdbcColumnType::Binary,
+                value: buf.as_bytes().map(BytesMut::from),
+            },
+            OdbcDataBuf::BigText(buf) => OdbcColumnItem {
+                odbc_type: crate::extension::odbc::OdbcColumnType::Text,
+                value: Self::get_dameng_long_text(column_number, buf, cursor_row)?,
+            },
+            OdbcDataBuf::BigWText(buf) => OdbcColumnItem {
+                odbc_type: crate::extension::odbc::OdbcColumnType::WText,
+                value: Self::get_dameng_long_text(column_number, buf, cursor_row)?,
+            },
+            OdbcDataBuf::BigBinary(buf) => OdbcColumnItem {
+                odbc_type: crate::extension::odbc::OdbcColumnType::Binary,
+                value: Self::get_long_binary(column_number, buf, cursor_row)?,
+            },
+        };
+        Ok(result)
+    }
+
+    pub fn get_dameng_long_text(
+        column_number: u16,
+        buf: &mut Vec<u8>,
+        cursor_row: &mut CursorRow,
+    ) -> OdbcStdResult<Option<BytesMut>> {
+        const INVALID_UTF8_BYTE: u8 = 0xFF;
+        const NULL_BYTE: u8 = 0x00;
+        const MAX_INVALID_UTF8_BYTE_LENGTH: usize = 3;
+
+        let reset_buf = |buffer: &mut [u8]| {
+            // buf_length 比 data_length 大1才不会截断.
+            // 达梦截断是按照字符而不是字节去截断的, 一个utf8最多占4个字节, 所以可能buf里的倒数第234字节, 总共三个字节没有被使用到(倒数第一个字节总是0).
+            // 3+1=4(3个可能未使用的utf8字节和1个截断字节), 这4个字节都可能被驱动设为截断字符, 将其赋值为任意非截断字符.
+            if let Some(end) = buffer.rchunks_mut(MAX_INVALID_UTF8_BYTE_LENGTH + 1).next() {
+                for i in end {
+                    // 可以是任意非0(非NULL_BYTE)字符
+                    *i = INVALID_UTF8_BYTE;
+                }
+            }
+        };
+
+        let trim_null_or_invalid_utf8 = |data: &[u8]| -> usize {
+            let mut trim_len = 0;
+            if let Some(end) = data.rchunks(MAX_INVALID_UTF8_BYTE_LENGTH + 1).next() {
+                for item in end.iter().rev() {
+                    if *item == NULL_BYTE {
+                        trim_len += 1;
+                        break;
+                    } else {
+                        trim_len += 1;
+                    }
+                }
+            }
+            trim_len
+        };
+
+        let mut result = Option::<bytes::BytesMut>::None;
+        let mut set_result = |v: &[u8]| match result {
+            Some(ref mut actual) => {
+                actual.extend_from_slice(v);
+            }
+            None => {
+                result = Some(bytes::BytesMut::from(v));
+            }
+        };
+
+        let resize_buf = |v: &mut Vec<u8>, new_len: usize| {
+            let len = v.len();
+
+            if new_len > len {
+                v.reserve_exact(new_len - len);
+                // # Safety
+                // - `new_len` equal to [`capacity()`].
+                unsafe {
+                    v.set_len(v.capacity());
+                }
+            }
+        };
+
+        resize_buf(buf, buf.capacity());
+
+        // We repeatedly fetch data and add it to the buffer. The buffer length is therefore the
+        // accumulated value size. This variable keeps track of the number of bytes we added with
+        // the next call to get_data.
+        let mut fetch_size = buf.len();
+        reset_buf(buf);
+        let mut target = VarCharSliceMut::from_buffer(buf.as_mut_slice(), Indicator::Null);
+        // Fetch binary data into buffer.
+        cursor_row.get_data(column_number, &mut target)?;
+
+        loop {
+            match target.indicator() {
+                // Value is `NULL`. We are done here.
+                Indicator::Null => {
+                    break;
+                }
+                // We do not know how large the value is. Let's fetch the data with repeated calls
+                // to get_data.
+                Indicator::NoTotal => {
+                    let trim_len = trim_null_or_invalid_utf8(buf);
+                    set_result(&buf[..fetch_size - trim_len]);
+
+                    // Use an exponential strategy for increasing buffer size.
+                    resize_buf(buf, buf.len() * 2);
+
+                    fetch_size = buf.len();
+                    reset_buf(buf);
+                    target = VarCharSliceMut::from_buffer(buf, Indicator::Null);
+                    cursor_row.get_data(column_number, &mut target)?;
+                }
+                // We did get the complete value, including the terminating zero. Let's resize the
+                // buffer to match the retrieved value exactly (excluding terminating zero).
+                Indicator::Length(len) if len < fetch_size => {
+                    // Since the indicator refers to value length without terminating zero, this
+                    // also implicitly drops the terminating zero at the end of the buffer.
+                    let shrink_by = fetch_size - len;
+                    set_result(&buf[..buf.len() - shrink_by]);
+                    break;
+                }
+                // We did not get all of the value in one go, but the data source has been friendly
+                // enough to tell us how much is missing.
+                Indicator::Length(len) => {
+                    let trim_len = trim_null_or_invalid_utf8(buf);
+                    set_result(&buf[..fetch_size - trim_len]);
+
+                    resize_buf(buf, len + 1);
+
+                    fetch_size = buf.len();
+                    reset_buf(buf);
+                    target = VarCharSliceMut::from_buffer(buf, Indicator::Null);
+                    cursor_row.get_data(column_number, &mut target)?;
+                }
+            }
+        }
+        Ok(result)
+    }
+
+    pub fn get_long_text(
+        column_number: u16,
+        buf: &mut Vec<u8>,
+        cursor_row: &mut CursorRow,
+    ) -> OdbcStdResult<Option<BytesMut>> {
+        let is_null = cursor_row.get_text(column_number, buf)?;
+        Ok(is_null.then(|| bytes::BytesMut::from(buf.as_slice())))
+    }
+
+    pub fn get_long_binary(
+        column_number: u16,
+        buf: &mut Vec<u8>,
+        cursor_row: &mut CursorRow,
+    ) -> OdbcStdResult<Option<BytesMut>> {
+        let is_null = cursor_row.get_binary(column_number, buf)?;
+        Ok(is_null.then(|| bytes::BytesMut::from(buf.as_slice())))
     }
 }
 
